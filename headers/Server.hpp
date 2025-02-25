@@ -35,14 +35,10 @@ class Server
 
 		bool			initialize();
 		void			run();
-		bool			parseRequest(const char* request, HttpRequest& httprequest);
-		void			sendBadRequest(int client_fd);
-		std::string		getExtType(const std::string& filename);
-		std::string		serveStaticFile(const std::string& filePath);
-		std::string		handlePostRequest(const HttpRequest &request);
-		std::string		routeRequest(const HttpRequest &request);
+		int				connectClients(fd_set &read_fds, fd_set &tmp_fds, int max_fd);
+		void			handleData(fd_set &read_fds, fd_set &tmp_fds, int max_fd, char *buffer);
+		void			setNonBlocking(int socket);
 		void			sendHtmlResponse(int client_fd, char* buffer, HttpRequest& parsedRequest);
-		void			printRequest(HttpRequest& httprequest);
 
 	private:
 
@@ -51,6 +47,14 @@ class Server
 		socklen_t			_addr_len;
 };
 
-void	setNonBlocking(int socket);
+bool		parseRequest(const char* request, HttpRequest& httprequest);
+void		sendBadRequest(int client_fd);
+std::string	getExtType(const std::string& filename);
+std::string	serveStaticFile(const std::string& filePath);
+std::string	handlePostRequest(const HttpRequest &request);
+std::string	routeRequest(const HttpRequest &request);
+void		printRequest(HttpRequest& httprequest);
+std::string	decodeChunkedBody(std::istringstream& request_stream);
+std::string dechunk(const std::string& input);
 
 #endif

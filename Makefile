@@ -17,8 +17,10 @@ MAIN_DIR			=	$(SRC_DIR)main.cpp
 
 CLASS_DIR			=	$(SRC_DIR)classes/Server.cpp
 
+REQ_DIR				=	$(SRC_DIR)requests/Requests.cpp
+
 # Concatenate all source files
-SRCS				=	$(MAIN_DIR) $(CLASS_DIR)
+SRCS				=	$(MAIN_DIR) $(CLASS_DIR) $(REQ_DIR)
 
 # Object creation
 OBJS 				=	$(patsubst $(SRC_DIR)%.cpp,$(OBJ_DIR)%.o,$(SRCS))

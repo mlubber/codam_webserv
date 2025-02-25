@@ -48,8 +48,49 @@
 </head>
 <body>
     <div class="container">
-        <h2>Abbas page</h2>
-        <a href="/" class="btn">Go Back</a>
+        <h1>Submit a chunked message:</h1>
+		<form id="messageForm">
+			<label for="message">Enter your message:</label><br>
+			<textarea id="message" name="message" rows="4" cols="50" required></textarea><br><br>
+			<button type="submit">Submit</button>
+		</form>
+		<script>
+			document.getElementById("messageForm").addEventListener("submit", function(event) {
+				event.preventDefault(); // Prevent normal form submission
+	
+				const message = document.getElementById("message").value;
+				const chunks = message.match(/.{1,5}/g) || []; // Split into 5-character chunks
+				const encoder = new TextEncoder();
+	
+				const stream = new ReadableStream({
+					start(controller) {
+						function sendChunks(index) {
+							if (index < chunks.length) {
+								controller.enqueue(encoder.encode(chunks[index] + "\r\n")); // Send chunk with CRLF
+								setTimeout(() => sendChunks(index + 1), 500); // Simulated delay
+							} else {
+								controller.enqueue(encoder.encode("0\r\n\r\n")); // End of chunked message
+								controller.close();
+							}
+						}
+						sendChunks(0);
+					}
+				});
+	
+				fetch("/chunkmit", {
+					method: "POST",
+					headers: { 
+						"Transfer-Encoding": "chunked",
+						"Content-Type": "text/plain"
+					},
+					body: stream
+				})
+				.then(response => response.text())
+				.then(data => alert("Response: " + data))
+				.catch(error => console.error("Error:", error));
+			});
+		</script>
+    	<a href="/" class="btn">Go Back</a>
     </div>
 </body>
 </html>
