@@ -55,39 +55,42 @@
 			<button type="submit">Submit</button>
 		</form>
 		<script>
-			document.getElementById("messageForm").addEventListener("submit", function(event) {
-				event.preventDefault(); // Prevent normal form submission
-	
+			document.getElementById("messageForm").addEventListener("submit", function (event) {
+				event.preventDefault(); // Stop default form behavior
+		
 				const message = document.getElementById("message").value;
 				const chunks = message.match(/.{1,5}/g) || []; // Split into 5-character chunks
 				const encoder = new TextEncoder();
-	
+		
 				const stream = new ReadableStream({
 					start(controller) {
 						function sendChunks(index) {
 							if (index < chunks.length) {
-								controller.enqueue(encoder.encode(chunks[index] + "\r\n")); // Send chunk with CRLF
+								const chunkSize = chunks[index].length.toString(16); // Convert chunk size to hex
+								controller.enqueue(encoder.encode(chunkSize + "\r\n")); // Send size
+								controller.enqueue(encoder.encode(chunks[index] + "\r\n")); // Send chunk data
 								setTimeout(() => sendChunks(index + 1), 500); // Simulated delay
 							} else {
-								controller.enqueue(encoder.encode("0\r\n\r\n")); // End of chunked message
+								controller.enqueue(encoder.encode("0\r\n\r\n")); // End chunked message
 								controller.close();
 							}
 						}
 						sendChunks(0);
 					}
 				});
-	
+
 				fetch("/chunkmit", {
 					method: "POST",
-					headers: { 
+					headers: {
 						"Transfer-Encoding": "chunked",
+						"Blelgkali": "flafla",
 						"Content-Type": "text/plain"
 					},
 					body: stream
 				})
-				.then(response => response.text())
-				.then(data => alert("Response: " + data))
-				.catch(error => console.error("Error:", error));
+					.then(response => response.text()) // <-- This reads the stream response correctly!
+					.then(data => alert("Response: " + data))
+					.catch(error => console.error("Error:", error));
 			});
 		</script>
     	<a href="/" class="btn">Go Back</a>

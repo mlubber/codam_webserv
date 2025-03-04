@@ -9,6 +9,8 @@
 # include <map>
 # include <sstream>
 # include <fstream>
+# include <sys/stat.h>
+# include <dirent.h>
 
 # define PORT 8080
 # define BUFFER_SIZE 1024
@@ -54,7 +56,6 @@ std::string	serveStaticFile(const std::string& filePath);
 std::string	handlePostRequest(const HttpRequest &request);
 std::string	routeRequest(const HttpRequest &request);
 void		printRequest(HttpRequest& httprequest);
-std::string	decodeChunkedBody(std::istringstream& request_stream);
-std::string dechunk(const std::string& input);
+std::string dechunk(std::istream& stream, const std::string& input);
 
 #endif

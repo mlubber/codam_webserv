@@ -84,6 +84,7 @@ void	Server::run(void)
 			std::cerr << "Select error" << std::endl;
 			continue;
 		}
+		// std::cout << "here" << std::endl;
 		max_fd = connectClients(read_fds, tmp_fds, max_fd);
 		handleData(read_fds, tmp_fds, max_fd, buffer);
 	}
@@ -103,7 +104,7 @@ int		Server::connectClients(fd_set &read_fds, fd_set &tmp_fds, int max_fd)
 		setNonBlocking(new_client);
 		// Add new client to the set
 		FD_SET(new_client, &read_fds);
-		if (new_client > max_fd) 
+		if (new_client > max_fd)
 			max_fd = new_client; // Update max fd
 		std::cout << "Client connected: " << new_client << std::endl;
 	}
@@ -133,7 +134,7 @@ void	Server::handleData(fd_set &read_fds, fd_set &tmp_fds, int max_fd, char *buf
 					sendBadRequest(i);
 				else
 				{
-					printRequest(httprequest);
+					// printRequest(httprequest);
 					sendHtmlResponse(i, buffer, httprequest);
 				}
 			}
@@ -145,6 +146,10 @@ void	Server::sendHtmlResponse(int client_fd, char* buffer, HttpRequest& parsedRe
 {
 	std::string response;
 
+	if (parsedRequest.path == "/favicon.ico")
+		parsedRequest.path = "/";
+	if (!parsedRequest.path.empty() && *parsedRequest.path.rbegin() != '/')
+		parsedRequest.path.append("/");
 	response = routeRequest(parsedRequest);
 	send(client_fd, response.c_str(), response.length(), 0);
 	(void)buffer;

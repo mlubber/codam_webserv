@@ -8,7 +8,7 @@ PORT = 8080
 request = (
     "POST /chunkmit HTTP/1.1\r\n"
     "Host: localhost\r\n"
-    # "Transfer-Encoding: chunked\r\n"
+    "Transfer-Encoding: chunked\r\n"
 	# "Content-Length: 46\r\n"
     "Content-Type: text/plain\r\n"
 	"\r\n"
