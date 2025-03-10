@@ -11,6 +11,9 @@
 # include <fstream>
 # include <sys/stat.h>
 # include <dirent.h>
+# include <stdlib.h>
+
+// # include "cgi.hpp"
 
 # define PORT 8080
 # define BUFFER_SIZE 1024
@@ -25,11 +28,13 @@ struct HttpRequest
 	std::string							body;
 };
 
+#include "cgi.hpp"
+
 class Server
 {
 	public:
 
-		Server();
+		Server(char** envp);
 		Server(const Server& other);
 		~Server();
 
@@ -47,6 +52,9 @@ class Server
 		int					_server_fd;
 		struct sockaddr_in	_address;
 		socklen_t			_addr_len;
+		char**				_envp;
+
+		const std::string	_root; // temp till Abbas adds his config file code
 };
 
 bool		parseRequest(const char* request, HttpRequest& httprequest);

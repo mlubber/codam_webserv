@@ -1,11 +1,16 @@
 #include "../../headers/Server.hpp"
 
-Server::Server() : _server_fd(-1), _addr_len(sizeof(_address))
+Server::Server(char** envp) : _server_fd(-1), _addr_len(sizeof(_address)), _envp(envp), _root("/home/wsonepou/Projects/5-webserv/www")
 {
 	std::cout	<< "Default constructor"
 				<< "\nServer fd: " << _server_fd
 				<< "\nAddr len: " << _addr_len
 				<< std::endl;
+	for (int i = 0; _envp[i] != nullptr; ++i)
+	{
+		std::cout << "\nstr: " << _envp[i];
+	} std::cout << std::endl;
+
 
 }
 
@@ -14,6 +19,7 @@ Server::Server(const Server& other)
 	std::cout << "Copy constructor" << std::endl;
 	(void)other;
 }
+
 Server::~Server()
 {
 	std::cout	<< "Default destructor"
