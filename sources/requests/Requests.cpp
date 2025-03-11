@@ -40,9 +40,9 @@ bool	parseRequest(const char* request, HttpRequest& httprequest)
 	if (!(first_line >> httprequest.method >> httprequest.path >> httprequest.version))
 		return (false); // Malformed request line
 
-	// std::cout << "Method: " << httprequest.method << std::endl;
-	// std::cout << "Path: " << httprequest.path << std::endl;
-	// std::cout << "Version: " << httprequest.version << std::endl;
+	std::cout << "Method: " << httprequest.method << std::endl;
+	std::cout << "Path: " << httprequest.path << std::endl;
+	std::cout << "Version: " << httprequest.version << std::endl;
 
 	// Extract headers
 	while (getline(request_stream, line) && line != "\r")
@@ -54,8 +54,8 @@ bool	parseRequest(const char* request, HttpRequest& httprequest)
 			// std::cout << colonPos << std::endl;
 			std::string	key = line.substr(0, colonPos);
 			std::string	value = line.substr(colonPos + 2);
-			// std::cout	<< key << ": "
-			// 			<< value << std::endl;
+			std::cout	<< key << ": "
+						<< value << std::endl;
 			httprequest.headers[key] = value;
 		}
 	}
@@ -81,58 +81,25 @@ bool	parseRequest(const char* request, HttpRequest& httprequest)
 			std::cout << "\nDecoded body: \n" << httprequest.body << std::endl;
 		}
 		else
-		{
 			bodytrail(request_stream, httprequest);
-			// std::string body;
-			// char		ch;
-			// while (request_stream.get(ch))
-			// 	body = body + ch;
-			// std::string	trail = (body.size() >= 5) ? body.substr(body.size() - 5, 5) : body; 
-			// if (trail == "0\r\n\r\n")
-			// {
-			// 	httprequest.body = dechunk(request_stream, body);
-			// 	std::cout << "\nNo chunked encoding still chunked Body: \n" << httprequest.body << std::endl;
-			// }
-			// else
-			// {
-			// 	httprequest.body = body;
-			// 	std::cout << "\nNo chunked encoding not chunked Body: \n" << httprequest.body << std::endl;
-			// }
-		}
 	}
 	else
-	{
 		bodytrail(request_stream, httprequest);
-		// std::string body;
-		// char		ch;
-		// while (request_stream.get(ch))
-		// 	body = body + ch;
-		// std::string	trail = (body.size() >= 5) ? body.substr(body.size() - 5, 5) : body; 
-		// if (trail == "0\r\n\r\n")
-		// {
-		// 	httprequest.body = dechunk(request_stream, body);
-		// 	std::cout << "\nDechunked Body: \n" << httprequest.body << std::endl;
-		// }
-		// else
-		// {
-		// 	httprequest.body = body;
-		// 	std::cout << "\nNo-Length Body: \n" << httprequest.body << std::endl;
-		// }
-	}
 	return (true);
 }
 
-void	sendBadRequest(int client_fd)
+std::string	generateHttpResponse(HttpRequest& parsedRequest)
 {
-	std::cout << "Bad request!" << std::endl;
-	const char *bad_response =
-		"HTTP/1.1 400 Bad Request\r\n"
-		"Content-Type: text/plain\r\n"
-		"Content-Length: 11\r\n"
-		"\r\n"
-		"Bad Request";
-	send(client_fd, bad_response, strlen(bad_response), 0);
+	std::string response;
+
+	if (parsedRequest.path == "/favicon.ico")
+		parsedRequest.path = "/";
+	if (!parsedRequest.path.empty() && *parsedRequest.path.rbegin() != '/')
+		parsedRequest.path.append("/");
+	response = routeRequest(parsedRequest);
+	return (response);
 }
+
 
 std::string	getExtType(const std::string& filename)
 {
@@ -266,6 +233,7 @@ std::string	showDirList(const HttpRequest &request, const std::string& filePath)
 				<< "<body><h1>Index of " << request.path << "</h1><ul>"
 				<< list.str();
 	response	<< "</ul></body></html>";
+	closedir(dir);
 	return (response.str());
 }
 
@@ -276,6 +244,7 @@ std::string routeRequest(const HttpRequest &request)
 	if (request.method == "GET")
 	{
 		struct stat stats;
+		std::cout << "after GET filling stats" << std::endl;
 		if (stat(filePath.c_str(), &stats) == 0) //fills stats with metadata from filePath if filePath exists
 		{
 			std::cout << "Size: " << stats.st_size << " bytes" << std::endl;
@@ -295,10 +264,24 @@ std::string routeRequest(const HttpRequest &request)
 				return (showDirList(request, filePath));
 			}
 		}
+		else
+		{
+			if (!filePath.empty() && filePath[filePath.size() - 1] == '/')
+    			filePath.erase(filePath.size() - 1);
+			std::ifstream file(filePath.c_str(), std::ios::binary);
+			if (!file)
+			{
+				std::cout << filePath << std::endl;
+				std::cout << "file does not exist. return 404" << std::endl;
+				return (ER404);
+			}
+			std::cout << "file does exist" << std::endl;
+			return (serveStaticFile(filePath));
+		}
 	}
 	else if (request.method == "POST")
 		return (handlePostRequest(request));
-	return ("HTTP/1.1 405 Method Not Allowed\r\nContent-Length: 18\r\n\r\nMethod Not Allowed");
+	return (ER400);
 }
 
 void	printRequest(HttpRequest& httprequest)
@@ -329,7 +312,7 @@ std::string dechunk(std::istream& stream, const std::string& input)
 		std::istringstream hex_size_stream(line);
 		hex_size_stream >> std::hex >> chunk_size;
 		if (chunk_size == 0)
-            break;
+			break;
 		getline(stream, line);
 		decoded_body.append(line.c_str(), chunk_size);
 	} while (getline(stream, line));

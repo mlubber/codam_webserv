@@ -65,94 +65,134 @@ bool	Server::initialize(void)
 	return (true);
 }
 
-void	Server::run(void)
+void Server::run(void)
 {
-	char	buffer[BUFFER_SIZE];
-	fd_set	read_fds;
-	int		max_fd;
+	int epoll_fd = epoll_create1(0);
+	if (epoll_fd == -1)
+	{
+		std::cerr << "Failed to create epoll instance" << std::endl;
+		return;
+	}
 
-	FD_ZERO(&read_fds);
-	FD_SET(_server_fd, &read_fds);
-	max_fd = _server_fd; // Keep track of the highest fd number
+	struct epoll_event event;
+	event.events = EPOLLIN;
+	event.data.fd = _server_fd;
 
+	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, _server_fd, &event) == -1)
+	{
+		std::cerr << "Failed to add server socket to epoll" << std::endl;
+		close(epoll_fd);
+		return;
+	}
+
+	struct epoll_event ready_events[MAX_EVENTS];
 	while (true)
 	{
-		fd_set tmp_fds = read_fds; // Copy the fd_set to avoid overwriting
-
-		if (select(max_fd + 1, &tmp_fds, NULL, NULL, NULL) < 0)
+		int event_count = epoll_wait(epoll_fd, ready_events, MAX_EVENTS, -1);
+		if (event_count == -1)
 		{
-			std::cerr << "Select error" << std::endl;
+			std::cerr << "Epoll wait error" << std::endl;
 			continue;
 		}
-		// std::cout << "here" << std::endl;
-		max_fd = connectClients(read_fds, tmp_fds, max_fd);
-		handleData(read_fds, tmp_fds, max_fd, buffer);
-	}
-}
 
-int		Server::connectClients(fd_set &read_fds, fd_set &tmp_fds, int max_fd)
-{
-	// Check if the server socket is ready to accept a new client
-	if (FD_ISSET(_server_fd, &tmp_fds))
-	{
-		int new_client = accept(_server_fd, (struct sockaddr*)&_address, &_addr_len);
-		if (new_client < 0)
+		for (int i = 0; i < event_count; i++)
 		{
-			std::cerr << "Failed to accept connection" << std::endl;
-			return (max_fd);
-		}
-		setNonBlocking(new_client);
-		// Add new client to the set
-		FD_SET(new_client, &read_fds);
-		if (new_client > max_fd)
-			max_fd = new_client; // Update max fd
-		std::cout << "Client connected: " << new_client << std::endl;
-	}
-	return (max_fd);
-}
+			int fd = ready_events[i].data.fd;
 
-void	Server::handleData(fd_set &read_fds, fd_set &tmp_fds, int max_fd, char *buffer)
-{
-	for (int i = 0; i <= max_fd; i++)
-	{
-		if (FD_ISSET(i, &tmp_fds) && i != _server_fd) // Ignore server socket
-		{
-			int bytes_read = recv(i, buffer, BUFFER_SIZE - 1, 0);
-			if (bytes_read <= 0)
-			{
-				std::cout << "Client disconnected: " << i << std::endl;
-				close(i);
-				FD_CLR(i, &read_fds);
-			}
+			if (fd == _server_fd)
+				connectClient(epoll_fd);
 			else
 			{
-				buffer[bytes_read] = '\0';
-				std::cout << "\n\n\n\nReceived in buffer:\n\n" << buffer;
-				std::cout << "\n" << "Received from: [" << i << "] in buffer end." << std::endl;
-				HttpRequest httprequest;
-				if (!parseRequest(buffer, httprequest))
-					sendBadRequest(i);
-				else
-				{
-					// printRequest(httprequest);
-					sendHtmlResponse(i, buffer, httprequest);
-				}
+				if (ready_events[i].events & EPOLLIN)
+					handleRead(epoll_fd, fd);
+				if (ready_events[i].events & EPOLLOUT)
+					handleWrite(epoll_fd, fd);
 			}
 		}
 	}
+	close(epoll_fd);
 }
 
-void	Server::sendHtmlResponse(int client_fd, char* buffer, HttpRequest& parsedRequest)
+void Server::connectClient(int epoll_fd)
 {
-	std::string response;
+	int new_client = accept(_server_fd, (struct sockaddr *)&_address, &_addr_len);
+	if (new_client < 0)
+	{
+		std::cerr << "Failed to accept connection" << std::endl;
+		return;
+	}
 
-	if (parsedRequest.path == "/favicon.ico")
-		parsedRequest.path = "/";
-	if (!parsedRequest.path.empty() && *parsedRequest.path.rbegin() != '/')
-		parsedRequest.path.append("/");
-	response = routeRequest(parsedRequest);
-	send(client_fd, response.c_str(), response.length(), 0);
-	(void)buffer;
+	setNonBlocking(new_client);
+
+	struct epoll_event event;
+	event.events = EPOLLIN | EPOLLOUT | EPOLLET;
+	event.data.fd = new_client;
+
+	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, new_client, &event) == -1)
+	{
+		std::cerr << "Failed to add client to epoll" << std::endl;
+		close(new_client);
+		return;
+	}
+	_client_buffers[new_client] = "";
+	std::cout << "Client connected: " << new_client << std::endl;
+}
+
+void	Server::handleRead(int epoll_fd, int client_fd)
+{
+	char buffer[BUFFER_SIZE];
+	int bytes_read = recv(client_fd, buffer, BUFFER_SIZE - 1, 0);
+
+	if (bytes_read <= 0)
+	{
+		std::cout << "Client disconnected: " << client_fd << std::endl;
+		epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client_fd, NULL);
+		close(client_fd);
+		_client_buffers.erase(client_fd);
+		return;
+	}
+
+	buffer[bytes_read] = '\0';
+	_client_buffers[client_fd] += buffer;
+	std::cout << "Received in buffer from [" << client_fd << "]:\n" << buffer << std::endl;
+
+	HttpRequest httprequest;
+	if (!parseRequest(buffer, httprequest))
+		_responses[client_fd] = ER400;
+	else
+		_responses[client_fd] = generateHttpResponse(httprequest);
+
+	struct epoll_event event;
+	event.events = EPOLLIN | EPOLLOUT;
+	event.data.fd = client_fd;
+	epoll_ctl(epoll_fd, EPOLL_CTL_MOD, client_fd, &event);
+}
+
+void	Server::handleWrite(int epoll_fd, int client_fd)
+{
+	if (_responses[client_fd].empty())
+		return;
+
+	int bytes_sent = send(client_fd, _responses[client_fd].c_str(), _responses[client_fd].size(), 0);
+	if (bytes_sent <= 0) 
+	{
+		std::cout << "Error writing to client: " << client_fd << std::endl;
+		epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client_fd, NULL);
+		close(client_fd);
+		_client_buffers.erase(client_fd);
+		_responses.erase(client_fd);
+		return;
+	}
+
+	_responses[client_fd] = _responses[client_fd].substr(bytes_sent); 
+
+	if (_responses[client_fd].empty()) 
+	{
+		struct epoll_event event;
+		event.events = EPOLLIN;
+		event.data.fd = client_fd;
+		epoll_ctl(epoll_fd, EPOLL_CTL_MOD, client_fd, &event);
+	}
 }
 
 void	Server::setNonBlocking(int socket)
