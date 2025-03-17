@@ -19,8 +19,12 @@ CLASS_DIR			=	$(SRC_DIR)classes/Server.cpp
 
 REQ_DIR				=	$(SRC_DIR)requests/Requests.cpp
 
+PARSING_DIR			=	$(SRC_DIR)parsing/Configuration.cpp \
+						$(SRC_DIR)parsing/Serve.cpp \
+						$(SRC_DIR)parsing/ValidationConfigFile.cpp
+
 # Concatenate all source files
-SRCS				=	$(MAIN_DIR) $(CLASS_DIR) $(REQ_DIR)
+SRCS				=	$(MAIN_DIR) $(CLASS_DIR) $(REQ_DIR) $(PARSING_DIR)
 
 # Object creation
 OBJS 				=	$(patsubst $(SRC_DIR)%.cpp,$(OBJ_DIR)%.o,$(SRCS))
