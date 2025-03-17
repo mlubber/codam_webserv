@@ -1,17 +1,11 @@
 #include "../../headers/Server.hpp"
 
-Server::Server(char** envp) : _server_fd(-1), _addr_len(sizeof(_address)), _envp(envp), _root("/home/wsonepou/Projects/5-webserv/www")
+Server::Server() : _server_fd(-1), _addr_len(sizeof(_address)), _name("localhost"), _port("8080")
 {
 	std::cout	<< "Default constructor"
 				<< "\nServer fd: " << _server_fd
 				<< "\nAddr len: " << _addr_len
 				<< std::endl;
-	for (int i = 0; _envp[i] != nullptr; ++i)
-	{
-		std::cout << "\nstr: " << _envp[i];
-	} std::cout << std::endl;
-
-
 }
 
 Server::Server(const Server& other)
@@ -136,7 +130,7 @@ void	Server::handleData(fd_set &read_fds, fd_set &tmp_fds, int max_fd, char *buf
 				std::cout << "\n\n\n\nReceived in buffer:\n\n" << buffer;
 				std::cout << "\n" << "Received from: [" << i << "] in buffer end." << std::endl;
 				HttpRequest httprequest;
-				if (!parseRequest(buffer, httprequest))
+				if (!parseRequest(buffer, httprequest, *this))
 					sendBadRequest(i);
 				else
 				{
@@ -175,4 +169,14 @@ void	Server::setNonBlocking(int socket)
 		std::cerr << "fcntl set failed\n";
 		return ;
 	}
+}
+
+
+
+const std::string	Server::getServerInfo(int i) const
+{
+	if (i == 0)
+		return (_name);
+	else
+		return (_port);
 }

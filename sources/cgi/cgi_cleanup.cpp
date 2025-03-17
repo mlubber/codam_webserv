@@ -1,18 +1,5 @@
 #include "../../headers/Server.hpp"
 
-void	init_cgi_struct(t_cgiData* cgi)
-{
-	cgi->path = nullptr;
-	cgi->script = nullptr;
-	cgi->envp = nullptr;
-	cgi->ste_pipe[0] = -1;
-	cgi->ste_pipe[1] = -1;
-	cgi->ets_pipe[0] = -1;
-	cgi->ets_pipe[1] = -1;
-	cgi->stdin_backup = dup(STDIN_FILENO);
-	cgi->stdout_backup = dup(STDOUT_FILENO);
-}
-
 void	closing_fds(t_cgiData* cgi, bool parent)
 {
 	if (cgi->ste_pipe[0] == -1 && close(cgi->ste_pipe[0]))
@@ -34,4 +21,19 @@ void	closing_fds(t_cgiData* cgi, bool parent)
 		if (dup2(STDOUT_FILENO, cgi->stdout_backup) == -1)
 			std::cout << "CGI ERROR: dup2 stdout_backup to STDOUT_FILENO failed" << std::endl;
 	}
+}
+
+void	cgi_cleanup(t_cgiData* cgi)
+{
+	if (cgi->path != nullptr)
+		delete[] cgi->path;
+	for (int i = 0; i < 10; i++)
+	{
+		if (cgi->envp[i] != nullptr)
+			delete[] cgi->envp[i];
+	}
+	if (cgi->envp != nullptr)
+		delete[] cgi->envp;
+	closing_fds(cgi, false);
+	exit(1);
 }

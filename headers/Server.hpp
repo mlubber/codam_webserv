@@ -28,13 +28,11 @@ struct HttpRequest
 	std::string							body;
 };
 
-#include "cgi.hpp"
-
 class Server
 {
 	public:
 
-		Server(char** envp);
+		Server();
 		Server(const Server& other);
 		~Server();
 
@@ -47,17 +45,22 @@ class Server
 		void			setNonBlocking(int socket);
 		void			sendHtmlResponse(int client_fd, char* buffer, HttpRequest& parsedRequest);
 
+		const std::string		getServerInfo(int i) const;
+
 	private:
 
 		int					_server_fd;
 		struct sockaddr_in	_address;
 		socklen_t			_addr_len;
-		char**				_envp;
+		const std::string	_name; // for cgi environment var server name - Now temp, but needs to come from config
+		const std::string	_port; // for cgi environment var port - Now temp, but needs to come from config
 
 		const std::string	_root; // temp till Abbas adds his config file code
 };
 
-bool		parseRequest(const char* request, HttpRequest& httprequest);
+#include "cgi.hpp"
+
+bool		parseRequest(const char* request, HttpRequest& httprequest, const Server& server);
 void		sendBadRequest(int client_fd);
 std::string	getExtType(const std::string& filename);
 std::string	serveStaticFile(const std::string& filePath);

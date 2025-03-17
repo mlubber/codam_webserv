@@ -26,7 +26,7 @@ static void bodytrail(std::istringstream& request_stream, HttpRequest& httpreque
 	}
 }
 
-bool	parseRequest(const char* request, HttpRequest& httprequest)
+bool	parseRequest(const char* request, HttpRequest& httprequest, const Server& server)
 {
 	std::cout << "\n\nPARSE REQUEST:\n" << std::endl;
 	std::istringstream	request_stream(request);
@@ -44,43 +44,6 @@ bool	parseRequest(const char* request, HttpRequest& httprequest)
 	// std::cout << "Path: " << httprequest.path << std::endl;
 	// std::cout << "Version: " << httprequest.version << std::endl;
 
-
-
-
-
-
-
-
-
-
-	int cgi_status;
-
-	cgi_status = check_cgi(httprequest);
-	if (cgi_status == 1)
-	{
-		std::cout << "YEP CGI STUFF FOUND AND WORKED CORRECTLY" << std::endl;
-		return (true);
-	}
-	else if (cgi_status == -1)
-	{
-		std::cout << "CGI FOUND BUT FAILED" << std::endl;
-		return (false);
-	}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 	// Extract headers
 	while (getline(request_stream, line) && line != "\r")
 	{
@@ -96,6 +59,45 @@ bool	parseRequest(const char* request, HttpRequest& httprequest)
 			httprequest.headers[key] = value;
 		}
 	}
+
+
+
+
+
+
+	int cgi_status;
+
+	cgi_status = cgi_check(httprequest, server);
+	if (cgi_status == 1)
+	{
+		std::cout << "YEP CGI STUFF FOUND AND WORKED CORRECTLY" << std::endl;
+		return (true);
+	}
+	else if (cgi_status == -1)
+	{
+		std::cout << "CGI FOUND BUT FAILED" << std::endl;
+		return (false);
+	}
+	else if (cgi_status == 0)
+	{
+		std::cout << "NO CGI FOUND !!!!!!!" << std::endl;
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	// Unchunk body
 	if (httprequest.headers.find("Content-Length") != httprequest.headers.end()) // Read body if Content-Length is provided
 	{
