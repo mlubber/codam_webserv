@@ -1,6 +1,6 @@
 #include "../../headers/Server.hpp"
 
-Server::Server() : _server_fd(-1), _addr_len(sizeof(_address)), _name("localhost"), _port("8080")
+Server::Server() : _server_fd(-1), _addr_len(sizeof(_address)), _name("localhost"), _port("8080"), _root("/www")
 {
 	std::cout	<< "Default constructor"
 				<< "\nServer fd: " << _server_fd
@@ -177,6 +177,8 @@ const std::string	Server::getServerInfo(int i) const
 {
 	if (i == 0)
 		return (_name);
-	else
+	else if (i == 1)
 		return (_port);
+	else
+		return (_root);
 }

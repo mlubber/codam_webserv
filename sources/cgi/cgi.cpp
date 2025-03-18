@@ -70,7 +70,7 @@ int	cgi_check(const HttpRequest& request, const Server& server)
 
 //		***** Child process *****			|	***** parent process *****
 
-// 4.	create environment array			|	close write-end / dup2 read-end
+// 4.	create environment array  ✓			|	close write-end / dup2 read-end
 
 // 5. 	close read-end / dup2 write-end		|	Wait for data
 

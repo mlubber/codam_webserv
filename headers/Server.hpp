@@ -45,7 +45,7 @@ class Server
 		void			setNonBlocking(int socket);
 		void			sendHtmlResponse(int client_fd, char* buffer, HttpRequest& parsedRequest);
 
-		const std::string		getServerInfo(int i) const;
+		const std::string	getServerInfo(int i) const;
 
 	private:
 
