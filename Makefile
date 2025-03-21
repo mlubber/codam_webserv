@@ -15,6 +15,10 @@ RM					=	rm -f
 # Source Files
 MAIN_DIR			=	$(SRC_DIR)main.cpp
 
+PARSING_DIR			=	$(SRC_DIR)parsing/Configuration.cpp \
+						$(SRC_DIR)parsing/Serve.cpp \
+						$(SRC_DIR)parsing/ValidationConfigFile.cpp
+
 CLASS_DIR			=	$(SRC_DIR)classes/Server.cpp
 
 REQ_DIR				=	$(SRC_DIR)requests/Requests.cpp
@@ -25,7 +29,7 @@ CGI_DIR				=	$(SRC_DIR)cgi/cgi.cpp \
 						$(SRC_DIR)cgi/cgi_cleanup.cpp 
 
 # Concatenate all source files
-SRCS				=	$(MAIN_DIR) $(CLASS_DIR) $(REQ_DIR) $(CGI_DIR)
+SRCS				=	$(MAIN_DIR) $(PARSING_DIR) $(CLASS_DIR) $(REQ_DIR) $(CGI_DIR)
 
 # Object creation
 OBJS 				=	$(patsubst $(SRC_DIR)%.cpp,$(OBJ_DIR)%.o,$(SRCS))
