@@ -1,12 +1,11 @@
 #include "../../headers/Server.hpp"
 
-Server::Server() : _server_fd(-1), _addr_len(sizeof(_address))
+Server::Server() : _server_fd(-1), _addr_len(sizeof(_address)), _name("localhost"), _port("8080"), _root("/www")
 {
 	std::cout	<< "Default constructor"
 				<< "\nServer fd: " << _server_fd
 				<< "\nAddr len: " << _addr_len
 				<< std::endl;
-
 }
 
 Server::Server(const Server& other)
@@ -14,6 +13,7 @@ Server::Server(const Server& other)
 	std::cout << "Copy constructor" << std::endl;
 	(void)other;
 }
+
 Server::~Server()
 {
 	std::cout	<< "Default destructor"
@@ -104,7 +104,7 @@ void Server::run(void)
 			else
 			{
 				if (ready_events[i].events & EPOLLIN)
-					handleRead(epoll_fd, fd);
+					handleRead(epoll_fd, fd, *this);
 				if (ready_events[i].events & EPOLLOUT)
 					handleWrite(epoll_fd, fd);
 			}
@@ -138,7 +138,7 @@ void Server::connectClient(int epoll_fd)
 	std::cout << "Client connected: " << new_client << std::endl;
 }
 
-void	Server::handleRead(int epoll_fd, int client_fd)
+void	Server::handleRead(int epoll_fd, int client_fd, const Server& server)
 {
 	char buffer[BUFFER_SIZE];
 	int bytes_read = recv(client_fd, buffer, BUFFER_SIZE - 1, 0);
@@ -157,7 +157,7 @@ void	Server::handleRead(int epoll_fd, int client_fd)
 	std::cout << "Received in buffer from [" << client_fd << "]:\n" << buffer << std::endl;
 
 	HttpRequest httprequest;
-	if (!parseRequest(buffer, httprequest))
+	if (!parseRequest(buffer, httprequest, server))
 		_responses[client_fd] = ER400;
 	else
 		_responses[client_fd] = generateHttpResponse(httprequest);
@@ -209,4 +209,16 @@ void	Server::setNonBlocking(int socket)
 		std::cerr << "fcntl set failed\n";
 		return ;
 	}
+}
+
+
+
+const std::string	Server::getServerInfo(int i) const
+{
+	if (i == 0)
+		return (_name);
+	else if (i == 1)
+		return (_port);
+	else
+		return (_root);
 }

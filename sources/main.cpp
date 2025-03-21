@@ -1,6 +1,6 @@
 #include "../headers/Server.hpp"
 
-int	main(void)
+int	main()
 {
 	Server server;
 

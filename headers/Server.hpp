@@ -12,6 +12,9 @@
 # include <sys/stat.h>
 # include <sys/epoll.h>
 # include <dirent.h>
+# include <stdlib.h>
+
+// # include "cgi.hpp"
 
 # define PORT 8080
 # define BUFFER_SIZE 1024
@@ -43,9 +46,11 @@ class Server
 		bool			initialize();
 		void			run();
 		void			connectClient(int epoll_fd);
-		void			handleRead(int epoll_fd, int client_fd);
+		void			handleRead(int epoll_fd, int client_fd, const Server& server);
 		void			handleWrite(int epoll_fd, int client_fd);
 		void			setNonBlocking(int socket);
+
+		const std::string	getServerInfo(int i) const;
 
 	private:
 
@@ -54,10 +59,15 @@ class Server
 		socklen_t					_addr_len;
 		std::map<int, std::string>	_client_buffers;
 		std::map<int, std::string>	_responses;
+		const std::string	_name; // for cgi environment var server name - Now temp, but needs to come from config
+		const std::string	_port; // for cgi environment var port - Now temp, but needs to come from config
 
+		const std::string	_root; // temp till Abbas adds his config file code
 };
 
-bool		parseRequest(const char* request, HttpRequest& httprequest);
+#include "cgi.hpp"
+
+bool		parseRequest(const char* request, HttpRequest& httprequest, const Server& server);
 std::string	generateHttpResponse(HttpRequest& parsedRequest);
 std::string	getExtType(const std::string& filename);
 std::string	serveStaticFile(const std::string& filePath);
