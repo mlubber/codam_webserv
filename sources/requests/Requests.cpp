@@ -71,6 +71,7 @@ bool	parseRequest(const char* request, HttpRequest& httprequest, const Server& s
 	if (cgi_status == 1)
 	{
 		std::cout << "YEP CGI STUFF FOUND AND WORKED CORRECTLY" << std::endl;
+		std::cout << "RETURN FROM CGI SCRIPT (cgiBody):\n\n" << httprequest.cgiBody << std::endl;
 		return (true);
 	}
 	else if (cgi_status == -1)
@@ -282,6 +283,10 @@ std::string routeRequest(const HttpRequest &request)
 
 	if (request.method == "GET")
 	{
+		if (request.cgi == true)
+		{
+			// set return body not to static file but cgi
+		}
 		struct stat stats;
 		std::cout << "after GET filling stats" << std::endl;
 		if (stat(filePath.c_str(), &stats) == 0) //fills stats with metadata from filePath if filePath exists

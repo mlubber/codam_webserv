@@ -95,5 +95,9 @@ bool	cgi_setup(t_cgiData* cgi, const HttpRequest& request, const Server& server)
 	setup_environment(cgi, request, server);
 	get_exe_path(cgi, request, server);
 	get_exe(cgi, request);
+
+	dup2(cgi->ets_pipe[1], STDOUT_FILENO); // add error handling
+	close(cgi->ets_pipe[0]); // add error handling
+
 	return (true);
 }

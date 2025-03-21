@@ -9,38 +9,77 @@ static bool	init_cgi_struct(t_cgiData* cgi)
 	cgi->stdout_backup = dup(STDOUT_FILENO);
 	if (cgi->stdin_backup == -1 || cgi->stdout_backup == -1)
 		return (1);
-	if (pipe(cgi->ste_pipe) == -1)
+	if (pipe(cgi->ets_pipe) == -1)
 	{
-		std::cout << "CGI ERROR: creating pipe failed" << std::endl;
-		return (1);
-	}
-	else if (pipe(cgi->ets_pipe) == -1)
-	{
-		std::cout << "CGI ERROR: creating pipe failed" << std::endl;
-		closing_fds(cgi, true);
+		std::cerr << "CGI ERROR: creating pipe failed" << std::endl;
 		return (1);
 	}
 	return (0);
 }
 
-static bool	create_cgi_process(t_cgiData* cgi, const HttpRequest& request, const Server& server)
+void	read_from_pipe(t_cgiData* cgi, std::string& cgiBody)
 {
-	pid_t		pid;
+	char	buffer[CGIBUFFER];
+	int		bytes_read = 0;
+
+	if (close(cgi->ets_pipe[1]) == -1)
+	{
+		std::cerr << "CGI ERROR: Failed closing write-end pipe in parent" << std::endl;
+		if (close(cgi->ets_pipe[0]) == -1)
+			std::cerr << "CGI ERROR: Failed closing read-end pipe in parent" << std::endl;
+		return ;
+	}
+	std::cerr << "WE'RE IN CGI READ_FROM_PIPE" << std::endl;
+
+	dup2(cgi->ets_pipe[0], STDIN_FILENO);
+	do
+	{
+		bytes_read = read(cgi->ets_pipe[0], buffer, CGIBUFFER - 1);
+		std::cerr << "READING" << std::endl;
+		if (bytes_read > 0)
+		{
+			buffer[bytes_read] = '\0';
+			cgiBody += buffer;
+		}
+	} while (bytes_read > 0);
+	if (close(cgi->ets_pipe[0]) == -1)
+		std::cerr << "CGI ERROR: Failed closing read-end pipe in parent" << std::endl;
+	dup2(cgi->stdin_backup, STDIN_FILENO);
+
+
+
+}
+
+
+static bool	create_cgi_process(t_cgiData* cgi, HttpRequest& request, const Server& server)
+{
+	pid_t	pid;
+	pid_t	wpid;
+	int		status;
 
 	pid = fork();
 	if (pid == -1)
 	{
-		std::cout << "CGI ERROR: creating child process failed" << std::endl;
+		std::cerr << "CGI ERROR: creating child process failed" << std::endl;
 		return (-1);
 	}
 	else if (pid == 0)
 		cgi_child_process(cgi, request, server);
 	else
-		std::cout << "Doing parent process stuff!" << std::endl;
+	{
+		std::cerr << "Doing parent process stuff!" << std::endl;
+		read_from_pipe(cgi, request.cgiBody);
+		wpid = waitpid(pid, &status, 0);
+		while (wait(NULL) != -1)
+			continue ;
+		if (wpid == -1)
+			std::cout << "Something wrong with child process after waitpid" << std::endl;
+		std::cout << "WPID and Status: " << wpid << " " << status << std::endl;
+	}
 	return (1);
 }
 
-int	cgi_check(const HttpRequest& request, const Server& server)
+int	cgi_check(HttpRequest& request, const Server& server)
 {
 	t_cgiData	cgi;
 	int			status = 0;
@@ -48,7 +87,8 @@ int	cgi_check(const HttpRequest& request, const Server& server)
 	std::cout << "PATH from request: " << request.path << std::endl;
 	if (request.path.compare(0, 9, "/cgi-bin/") == 0)
 	{
-		std::cout << "CGI FOUND !!!" << std::endl;
+		// std::cout << "CGI FOUND !!!" << std::endl;
+		request.cgi = true;
 		if (init_cgi_struct(&cgi))
 			return (-1);
 		status = create_cgi_process(&cgi, request, server);

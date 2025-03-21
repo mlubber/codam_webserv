@@ -13,6 +13,7 @@
 # include <sys/epoll.h>
 # include <dirent.h>
 # include <stdlib.h>
+# include <sys/wait.h>
 
 // # include "cgi.hpp"
 
@@ -31,6 +32,8 @@ struct HttpRequest
 	std::string							version;
 	std::map<std::string, std::string>	headers;
 	std::string							body;
+	bool								cgi;
+	std::string							cgiBody;
 };
 
 class Server
@@ -59,10 +62,11 @@ class Server
 		socklen_t					_addr_len;
 		std::map<int, std::string>	_client_buffers;
 		std::map<int, std::string>	_responses;
-		const std::string	_name; // for cgi environment var server name - Now temp, but needs to come from config
-		const std::string	_port; // for cgi environment var port - Now temp, but needs to come from config
 
-		const std::string	_root; // temp till Abbas adds his config file code
+		const std::string			_name; // for cgi environment var server name - Now temp, but needs to come from config
+		const std::string			_port; // for cgi environment var port - Now temp, but needs to come from config
+
+		const std::string			_root; // temp till Abbas adds his config file code
 };
 
 #include "cgi.hpp"
