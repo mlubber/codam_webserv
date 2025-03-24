@@ -6,6 +6,7 @@
 # include <cstring>
 # include <unistd.h>
 # include <fcntl.h>
+# include <vector>
 # include <map>
 # include <sstream>
 # include <fstream>
@@ -18,7 +19,7 @@
 // # include "cgi.hpp"
 
 # define PORT 8080
-# define BUFFER_SIZE 1024
+# define BUFFER_SIZE 8192 // 8kb
 # define STATIC_DIR "./www"
 # define MAX_EVENTS 16
 # define ER400 "HTTP/1.1 400 Bad Request\r\nContent-Length: 143\r\n\r\n<html><head><title>400 Bad Request</title></head><body><center><h1>400 Bad Request</h1></center><hr><center>webserv</center></hr></body></html>"
@@ -71,7 +72,8 @@ class Server
 
 #include "cgi.hpp"
 
-bool		parseRequest(const char* request, HttpRequest& httprequest, const Server& server);
+bool		parseRequest(const std::string request, HttpRequest& httprequest, const Server& server);
+// bool		parseRequest(const char* request, HttpRequest& httprequest, const Server& server);
 std::string	generateHttpResponse(HttpRequest& parsedRequest);
 std::string	getExtType(const std::string& filename);
 std::string	serveStaticFile(const std::string& filePath);

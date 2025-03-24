@@ -1,5 +1,4 @@
-#include "../headers/Serve.hpp"
-
+#include "../../headers/Serve.hpp"
 
 
 Serve::~Serve(){}
@@ -42,7 +41,7 @@ void	Serve::answerRequest(std::string host, std::string port, std::string error_
 			}
 		}
 		if (isHost && isPort) { 
-			std::cout << "server block: " << i << " has to respone to the request." << std::endl;
+			std::cout << "server block: " << i << " has to respond to the request." << std::endl;
 			serverNumber = i;
 		}
 		++i;

@@ -24,9 +24,69 @@ static void bodytrail(std::istringstream& request_stream, HttpRequest& httpreque
 		httprequest.body = body;
 		std::cout << "\nNo-Length Body: \n" << httprequest.body << std::endl;
 	}
+	size_t bodysize = httprequest.body.size();
+	httprequest.headers.insert({"Content-Length", std::to_string(bodysize)});
 }
 
-bool	parseRequest(const char* request, HttpRequest& httprequest, const Server& server)
+static void saveUploadedFile(const HttpRequest& httprequest, const std::string& boundary)
+{
+	std::cout << "save file here" << std::endl;
+	size_t start = httprequest.body.find(boundary);
+	if (start == std::string::npos)
+	{
+		std::cout << "Boundary not found!" << std::endl;
+		return;
+	}
+	start += boundary.length();
+	std::cout << "start position: " << start << std::endl;
+
+	size_t dispositionPos = httprequest.body.find("Content-Disposition:", start);
+	if (dispositionPos ==  std::string::npos)
+		return;
+	std::cout << "Content-disposition position: " << dispositionPos << std::endl;
+	
+	size_t	filenamePos = httprequest.body.find("filename=\"", dispositionPos);
+	if (filenamePos == std::string::npos)
+		return;
+	filenamePos += 10;
+	std::cout << "filename position: " << filenamePos << std::endl;
+	
+	size_t filenameEnd = httprequest.body.find("\"", filenamePos);
+	std::string fileName = httprequest.body.substr(filenamePos, filenameEnd - filenamePos);
+	std::cout << "filename: " << fileName << std::endl;
+
+	std::string filePath = joinPaths(STATIC_DIR + httprequest.path, fileName);
+	std::cout << "registry path: " << filePath << std::endl;
+
+	size_t dataStart = httprequest.body.find("\r\n\r\n", filenameEnd);
+	if (dataStart == std::string::npos)
+		return;
+	dataStart += 4;
+	std::cout << "data start position: " << dataStart << std::endl;
+
+	size_t dataEnd = httprequest.body.find(boundary, dataStart);
+	if (dataEnd == std::string::npos)
+		return;
+	dataEnd -= 2;
+	std::cout << "data end position: " << dataEnd << std::endl;
+
+	std::string fileData = httprequest.body.substr(dataStart, dataEnd - dataStart);
+	std::cout << "file data: \n" << fileData << std::endl;
+
+	std::ofstream outFile(filePath.c_str(), std::ios::binary);
+	if (!outFile)
+	{
+		std::cout << "Error opening file for writing: " << fileName << std::endl;
+		return;
+	}
+
+	outFile.write(fileData.c_str(), fileData.size());
+	outFile.close();
+
+	std::cout << "File saved: " << fileName << std::endl;
+}
+
+bool	parseRequest(const std::string request, HttpRequest& httprequest, const Server& server)
 {
 	std::cout << "\n\nPARSE REQUEST:\n" << std::endl;
 	std::istringstream	request_stream(request);
@@ -63,8 +123,6 @@ bool	parseRequest(const char* request, HttpRequest& httprequest, const Server& s
 
 
 
-
-
 	int cgi_status;
 
 	cgi_status = cgi_check(httprequest, server);
@@ -88,19 +146,32 @@ bool	parseRequest(const char* request, HttpRequest& httprequest, const Server& s
 
 
 
+	// Process body
+	if (httprequest.headers.find("Content-Type") != httprequest.headers.end() &&
+		httprequest.headers.at("Content-Type").find("multipart/form-data") != std::string::npos)
+	{
+		size_t bod = request.find("\r\n\r\n");
+		httprequest.body = request.substr(bod + 4);
+		std::cout << "upload body: \n" << httprequest.body << std::endl;
 
+		std::string contentType = httprequest.headers.at("Content-Type");
+		std::string boundary;
+		std::string key = "boundary=";
+		size_t pos = contentType.find(key);
+		
+		if (pos != std::string::npos)
+			boundary = contentType.substr(pos + key.length());
+		std::string::size_type car;
+		while ((car = boundary.find('\r')) != std::string::npos)
+			boundary.erase(car, 1);
+		std::string closing_boundary = "--" + boundary + "--";
 
+		std::cout << boundary << std::endl;
+		std::cout << closing_boundary << std::endl;
 
-
-
-
-
-
-
-
-
-	// Unchunk body
-	if (httprequest.headers.find("Content-Length") != httprequest.headers.end()) // Read body if Content-Length is provided
+		saveUploadedFile(httprequest, boundary);
+	}
+	else if (httprequest.headers.find("Content-Length") != httprequest.headers.end()) // Read body if Content-Length is provided
 	{
 		std::cout << "Content-Length found" << std::endl;
 		int contentLength = std::atoi(httprequest.headers["Content-Length"].c_str());
@@ -196,7 +267,7 @@ std::string serveStaticFile(const std::string& filePath)
 
 std::string	handlePostRequest(const HttpRequest &request)
 {
-	std::string filePath = STATIC_DIR + request.path + std::string("/index.html");
+	// std::string filePath = STATIC_DIR + request.path + std::string("/index.html");
 	std::ostringstream response;
 
 
@@ -206,6 +277,7 @@ std::string	handlePostRequest(const HttpRequest &request)
 
 		if (contentType.find("application/x-www-form-urlencoded") != std::string::npos)
 		{
+			std::string filePath = joinPaths((STATIC_DIR + request.path), "index.html");
 			return (serveStaticFile(filePath));
 			// response	<< "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: "
 			// 			<< (20 + request.body.size()) << "\r\n\r\n"
@@ -222,12 +294,18 @@ std::string	handlePostRequest(const HttpRequest &request)
 			response	<< "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: "
 						<< (request.body.size()) << "\r\n\r\n"
 						<< request.body;
-		} 
+		}
+		else if (contentType.find("multipart/form-data") != std::string::npos)
+		{
+			std::string filePath = joinPaths((STATIC_DIR + request.path), "upload.html");
+			std::cout << "filePath: " << filePath << std::endl;
+			return (serveStaticFile(filePath));
+		}
 		else
-			response 	<< "HTTP/1.1 400 Bad Request\r\nContent-Length: 12\r\n\r\nInvalid Format";
+			response 	<< "HTTP/1.1 400 Bad Request\r\nContent-Length: 14\r\n\r\nInvalid Format";
 	}
 	else 
-		response << "HTTP/1.1 400 Bad Request\r\nContent-Length: 12\r\n\r\nNo Content-Type";
+		response << "HTTP/1.1 400 Bad Request\r\nContent-Length: 15\r\n\r\nNo Content-Type";
 
 	return (response.str());
 }
@@ -277,18 +355,42 @@ std::string	showDirList(const HttpRequest &request, const std::string& filePath)
 	return (response.str());
 }
 
+std::string	deleteFile(const HttpRequest &request)
+{
+	std::ostringstream response;
+	std::cout << "delete file here" << std::endl;
+	std::cout << request.path << std::endl;
+
+	size_t	filenamePos = request.path.find("filename=");
+	if (filenamePos == std::string::npos)
+		return ("HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\nContent-Length: 9\r\n\r\nBad Query");
+	filenamePos += 9;
+	
+	size_t filenameEnd = request.path.find("/", filenamePos);
+	std::string fileName = "/uploads/" + request.path.substr(filenamePos, filenameEnd - filenamePos);
+	std::cout << "filename: " << fileName << std::endl;
+	std::string filePath = STATIC_DIR + fileName;
+	std::cout << "filepath: " << filePath << std::endl;
+
+	if (remove(filePath.c_str()) == 0)
+		response	<< "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 12\r\n\r\nFile Deleted";
+	else
+		response	<< "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\nContent-Length: 14\r\n\r\nFile Not Found";
+	return (response.str());
+}
+
 std::string routeRequest(const HttpRequest &request)
 {
 	std::string filePath = STATIC_DIR + request.path;
-
 	if (request.method == "GET")
 	{
-		if (request.cgi == true)
-		{
-			// set return body not to static file but cgi
-		}
+		// if (request.cgi == true)
+		// {
+		// 	// set return body not to static file but cgi
+		// }
 		struct stat stats;
 		std::cout << "after GET filling stats" << std::endl;
+		std::cout << "this is the filepath: " << filePath << std::endl;
 		if (stat(filePath.c_str(), &stats) == 0) //fills stats with metadata from filePath if filePath exists
 		{
 			std::cout << "Size: " << stats.st_size << " bytes" << std::endl;
@@ -311,20 +413,24 @@ std::string routeRequest(const HttpRequest &request)
 		else
 		{
 			if (!filePath.empty() && filePath[filePath.size() - 1] == '/')
-    			filePath.erase(filePath.size() - 1);
-			std::ifstream file(filePath.c_str(), std::ios::binary);
-			if (!file)
+				filePath.erase(filePath.size() - 1);
+			if (stat(filePath.c_str(), &stats) == 0)
 			{
-				std::cout << filePath << std::endl;
-				std::cout << "file does not exist. return 404" << std::endl;
-				return (ER404);
+				std::cout << "Size: " << stats.st_size << " bytes" << std::endl;
+				if (S_ISREG(stats.st_mode)) // checks if filePath is an existing file (registry)
+				{
+					std::cout << filePath << " is a registry!" << std::endl;
+					return (serveStaticFile(filePath));
+				}
 			}
-			std::cout << "file does exist" << std::endl;
-			return (serveStaticFile(filePath));
+			else
+				return (ER404);
 		}
 	}
 	else if (request.method == "POST")
 		return (handlePostRequest(request));
+	else if (request.method == "DELETE")
+		return (deleteFile(request));
 	return (ER400);
 }
 

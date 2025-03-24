@@ -1,4 +1,4 @@
-#include "../headers/Configuration.hpp"
+#include "../../headers/Configuration.hpp"
 #include <sstream>
 #include <iterator>
 #include <algorithm>

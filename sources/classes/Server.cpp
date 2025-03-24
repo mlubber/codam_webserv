@@ -140,10 +140,12 @@ void Server::connectClient(int epoll_fd)
 
 void	Server::handleRead(int epoll_fd, int client_fd, const Server& server)
 {
-	char buffer[BUFFER_SIZE];
-	int bytes_read = recv(client_fd, buffer, BUFFER_SIZE - 1, 0);
+	std::vector<char> vbuffer(BUFFER_SIZE);
+	std::string full_request;
 
-	if (bytes_read <= 0)
+	ssize_t	bytes_received = recv(client_fd, vbuffer.data(), BUFFER_SIZE, 0);
+	std::cout << "bytes read: " << bytes_received << std::endl;
+	if (bytes_received <= 0)
 	{
 		std::cout << "Client disconnected: " << client_fd << std::endl;
 		epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client_fd, NULL);
@@ -151,14 +153,24 @@ void	Server::handleRead(int epoll_fd, int client_fd, const Server& server)
 		_client_buffers.erase(client_fd);
 		return;
 	}
+	else
+		_client_buffers[client_fd].append(vbuffer.data(), bytes_received);
 
-	buffer[bytes_read] = '\0';
-	_client_buffers[client_fd] += buffer;
-	std::cout << "Received in buffer from [" << client_fd << "]:\n" << buffer << std::endl;
+	while ((bytes_received = recv(client_fd, vbuffer.data(), BUFFER_SIZE, 0)) > 0)
+	{
+		std::cout << "bytes_received: " << bytes_received << std::endl;
+		_client_buffers[client_fd].append(vbuffer.data(), bytes_received);
+	}
+
+	std::cout << "\n\nClient [" << client_fd << "] full request: \n\n"<< _client_buffers[client_fd] << std::endl;
+	std::cout << "\n\n\nend of buffer..." << std::endl;
 
 	HttpRequest httprequest;
-	if (!parseRequest(buffer, httprequest, server))
+	if (!parseRequest(_client_buffers[client_fd], httprequest, server))
+	{
+		std::cout << "parse request failed" << std::endl;
 		_responses[client_fd] = ER400;
+	}
 	else
 		_responses[client_fd] = generateHttpResponse(httprequest);
 
@@ -166,6 +178,7 @@ void	Server::handleRead(int epoll_fd, int client_fd, const Server& server)
 	event.events = EPOLLIN | EPOLLOUT;
 	event.data.fd = client_fd;
 	epoll_ctl(epoll_fd, EPOLL_CTL_MOD, client_fd, &event);
+	_client_buffers.erase(client_fd);
 }
 
 void	Server::handleWrite(int epoll_fd, int client_fd)
