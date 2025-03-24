@@ -5,28 +5,19 @@ void	cgi_child_process(t_cgiData* cgi, const HttpRequest& request, const Server&
 	// setup
 	cgi_setup(cgi, request, server);
 
-
-
-	// execve
-	// std::cout << "execve Path: " << cgi->path << std::endl;
-	// std::cout << "execve exe[0]: " << cgi->exe[0] << std::endl;
-	// if (cgi->exe[1] == nullptr)
-	// 	std::cout << "execve exe[1]: nullptr" << std::endl;
+	// Check if file exists and permissions
 	if (access(cgi->path, F_OK | X_OK) != 0)
 	{
-		std::cout << "Path to python script was not found and executable" << std::endl;
-		// return that script or whatever was not found and handle error
+		std::cerr << "CGI ERROR: " << cgi->path << ": Path to script not found or invalid permissions" << std::endl;
+		cgi_cleanup(cgi, true);
 	}
-	// std::cout << "Path to python script is found and executable" << std::endl;
-	std::cout << errno << std::endl;
 
+
+	// Execve
 	execve(cgi->path, cgi->exe, cgi->envp);
 
 
-	std::cout << "execve failed" << std::endl;
 
-
-
-	// cleanup / exit if execve failed
-	cgi_cleanup(cgi);
+	// cleanup & exit if execve failed
+	cgi_cleanup(cgi, true);
 }

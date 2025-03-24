@@ -127,20 +127,20 @@ bool	parseRequest(const std::string request, HttpRequest& httprequest, const Ser
 	int cgi_status;
 
 	cgi_status = cgi_check(httprequest, server);
-	if (cgi_status == 1)
+	if (cgi_status == 0)
 	{
 		std::cout << "YEP CGI STUFF FOUND AND WORKED CORRECTLY" << std::endl;
 		std::cout << "RETURN FROM CGI SCRIPT (cgiBody):\n\n" << httprequest.cgiBody << std::endl;
 		return (true);
 	}
-	else if (cgi_status == -1)
+	else if (cgi_status > 0)
 	{
-		std::cout << "CGI FOUND BUT FAILED" << std::endl;
+		std::cerr << "CGI ERROR: " << strerror(cgi_status) << std::endl;
 		return (false);
 	}
-	else if (cgi_status == 0)
+	else if (cgi_status == -1)
 	{
-		std::cout << "NO CGI FOUND !!!!!!!" << std::endl;
+		// std::cout << "NO CGI FOUND !!!!!!!" << std::endl;
 	}
 
 

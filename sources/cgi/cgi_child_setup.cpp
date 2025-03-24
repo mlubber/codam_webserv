@@ -17,7 +17,7 @@ void	get_exe(t_cgiData* cgi, const HttpRequest& request)
 	cgi->exe = new char*[2](); // Need to be in try/catch block  OR new(std::nothrow_t) to check for nullptrs
 	int i = request.path.find_last_of('/'); 
 	std::string exe = request.path.substr(i + 1);
-	cgi->exe[0] = new char[exe.length()]; // Need to be in try/catch block  OR new(std::nothrow_t) to check for nullptrs
+	cgi->exe[0] = new char[exe.length() + 1]; // Need to be in try/catch block  OR new(std::nothrow_t) to check for nullptrs
 	std::strcpy(cgi->exe[0], exe.c_str());
 }
 
@@ -55,7 +55,10 @@ std::string get_path_info(const HttpRequest& request, const Server& server)
 	if (access(str, F_OK | X_OK) == 0)
 		std::cout << "get_path_info file was found and is executable" << std::endl;
 	else
+	{
+		std::cout << "Checking errno in child for permission, this is errno: " << errno << std::endl;
 		std::cout << "get_path_info file was not found!!!!!!!!!!!1" << std::endl;
+	}
 	// end of testing
 
 
