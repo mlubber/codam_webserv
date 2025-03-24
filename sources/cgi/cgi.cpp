@@ -35,7 +35,6 @@ void	read_from_pipe(t_cgiData* cgi, std::string& cgiBody)
 	do
 	{
 		bytes_read = read(cgi->ets_pipe[0], buffer, CGIBUFFER - 1);
-		std::cerr << "READING" << std::endl;
 		if (bytes_read > 0)
 		{
 			buffer[bytes_read] = '\0';
@@ -84,7 +83,6 @@ int	cgi_check(HttpRequest& request, const Server& server)
 	t_cgiData	cgi;
 	int			status = 0;
 
-	std::cout << "PATH from request: " << request.path << std::endl;
 	if (request.path.compare(0, 9, "/cgi-bin/") == 0)
 	{
 		// std::cout << "CGI FOUND !!!" << std::endl;

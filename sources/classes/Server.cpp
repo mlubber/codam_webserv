@@ -67,8 +67,8 @@ bool	Server::initialize(void)
 
 void Server::run(void)
 {
-	int epoll_fd = epoll_create1(0);
-	if (epoll_fd == -1)
+	_epoll_fd = epoll_create1(0);
+	if (_epoll_fd == -1)
 	{
 		std::cerr << "Failed to create epoll instance" << std::endl;
 		return;
@@ -78,17 +78,17 @@ void Server::run(void)
 	event.events = EPOLLIN;
 	event.data.fd = _server_fd;
 
-	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, _server_fd, &event) == -1)
+	if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, _server_fd, &event) == -1)
 	{
 		std::cerr << "Failed to add server socket to epoll" << std::endl;
-		close(epoll_fd);
+		close(_epoll_fd);
 		return;
 	}
 
 	struct epoll_event ready_events[MAX_EVENTS];
 	while (true)
 	{
-		int event_count = epoll_wait(epoll_fd, ready_events, MAX_EVENTS, -1);
+		int event_count = epoll_wait(_epoll_fd, ready_events, MAX_EVENTS, -1);
 		if (event_count == -1)
 		{
 			std::cerr << "Epoll wait error" << std::endl;
@@ -100,20 +100,20 @@ void Server::run(void)
 			int fd = ready_events[i].data.fd;
 
 			if (fd == _server_fd)
-				connectClient(epoll_fd);
+				connectClient(_epoll_fd);
 			else
 			{
 				if (ready_events[i].events & EPOLLIN)
-					handleRead(epoll_fd, fd, *this);
+					handleRead(_epoll_fd, fd, *this);
 				if (ready_events[i].events & EPOLLOUT)
-					handleWrite(epoll_fd, fd);
+					handleWrite(_epoll_fd, fd);
 			}
 		}
 	}
-	close(epoll_fd);
+	close(_epoll_fd);
 }
 
-void Server::connectClient(int epoll_fd)
+void Server::connectClient(int _epoll_fd)
 {
 	int new_client = accept(_server_fd, (struct sockaddr *)&_address, &_addr_len);
 	if (new_client < 0)
@@ -128,7 +128,7 @@ void Server::connectClient(int epoll_fd)
 	event.events = EPOLLIN | EPOLLOUT | EPOLLET;
 	event.data.fd = new_client;
 
-	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, new_client, &event) == -1)
+	if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, new_client, &event) == -1)
 	{
 		std::cerr << "Failed to add client to epoll" << std::endl;
 		close(new_client);
@@ -138,7 +138,7 @@ void Server::connectClient(int epoll_fd)
 	std::cout << "Client connected: " << new_client << std::endl;
 }
 
-void	Server::handleRead(int epoll_fd, int client_fd, const Server& server)
+void	Server::handleRead(int _epoll_fd, int client_fd, const Server& server)
 {
 	std::vector<char> vbuffer(BUFFER_SIZE);
 	std::string full_request;
@@ -148,7 +148,7 @@ void	Server::handleRead(int epoll_fd, int client_fd, const Server& server)
 	if (bytes_received <= 0)
 	{
 		std::cout << "Client disconnected: " << client_fd << std::endl;
-		epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client_fd, NULL);
+		epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, client_fd, NULL);
 		close(client_fd);
 		_client_buffers.erase(client_fd);
 		return;
@@ -161,6 +161,25 @@ void	Server::handleRead(int epoll_fd, int client_fd, const Server& server)
 		std::cout << "bytes_received: " << bytes_received << std::endl;
 		_client_buffers[client_fd].append(vbuffer.data(), bytes_received);
 	}
+
+	// ssize_t	bytes_received = 0;
+	// do
+	// {
+	// 	bytes_received = recv(client_fd, vbuffer.data(), BUFFER_SIZE, 0);
+	// 	std::cout << "bytes_received: " << bytes_received << std::endl;
+	// 	if (bytes_received > 0)
+	// 	{
+	// 		_client_buffers[client_fd].append(vbuffer.data(), bytes_received);
+	// 	}
+	// 	else
+	// 	{
+	// 		epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, client_fd, NULL);
+	// 		close(client_fd);
+	// 		std::cout << "Client disconnected: " << client_fd << std::endl;
+	// 		_client_buffers.erase(client_fd);
+	// 		return ;
+	// 	}
+	// } while (bytes_received == BUFFER_SIZE);
 
 	std::cout << "\n\nClient [" << client_fd << "] full request: \n\n"<< _client_buffers[client_fd] << std::endl;
 	std::cout << "\n\n\nend of buffer..." << std::endl;
@@ -177,11 +196,11 @@ void	Server::handleRead(int epoll_fd, int client_fd, const Server& server)
 	struct epoll_event event;
 	event.events = EPOLLIN | EPOLLOUT;
 	event.data.fd = client_fd;
-	epoll_ctl(epoll_fd, EPOLL_CTL_MOD, client_fd, &event);
+	epoll_ctl(_epoll_fd, EPOLL_CTL_MOD, client_fd, &event);
 	_client_buffers.erase(client_fd);
 }
 
-void	Server::handleWrite(int epoll_fd, int client_fd)
+void	Server::handleWrite(int _epoll_fd, int client_fd)
 {
 	if (_responses[client_fd].empty())
 		return;
@@ -190,7 +209,7 @@ void	Server::handleWrite(int epoll_fd, int client_fd)
 	if (bytes_sent <= 0) 
 	{
 		std::cout << "Error writing to client: " << client_fd << std::endl;
-		epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client_fd, NULL);
+		epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, client_fd, NULL);
 		close(client_fd);
 		_client_buffers.erase(client_fd);
 		_responses.erase(client_fd);
@@ -204,7 +223,7 @@ void	Server::handleWrite(int epoll_fd, int client_fd)
 		struct epoll_event event;
 		event.events = EPOLLIN;
 		event.data.fd = client_fd;
-		epoll_ctl(epoll_fd, EPOLL_CTL_MOD, client_fd, &event);
+		epoll_ctl(_epoll_fd, EPOLL_CTL_MOD, client_fd, &event);
 	}
 }
 
@@ -234,4 +253,9 @@ const std::string	Server::getServerInfo(int i) const
 		return (_port);
 	else
 		return (_root);
+}
+
+int	Server::getEpollFd() const
+{
+	return (_epoll_fd);
 }

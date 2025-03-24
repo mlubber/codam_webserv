@@ -99,6 +99,7 @@ bool	parseRequest(const std::string request, HttpRequest& httprequest, const Ser
 	std::istringstream first_line(line);
 	if (!(first_line >> httprequest.method >> httprequest.path >> httprequest.version))
 		return (false); // Malformed request line
+	httprequest.cgi = false;
 
 	std::cout << "Method: " << httprequest.method << std::endl;
 	std::cout << "Path: " << httprequest.path << std::endl;
@@ -278,10 +279,10 @@ std::string	handlePostRequest(const HttpRequest &request)
 		if (contentType.find("application/x-www-form-urlencoded") != std::string::npos)
 		{
 			std::string filePath = joinPaths((STATIC_DIR + request.path), "index.html");
-			return (serveStaticFile(filePath));
-			// response	<< "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: "
-			// 			<< (20 + request.body.size()) << "\r\n\r\n"
-			// 			<< "Received Form Data: " << request.body;
+			// return (serveStaticFile(filePath));
+			response	<< "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: "
+						<< (request.cgiBody.size()) << "\r\n\r\n"
+						<< request.cgiBody;
 		} 
 		else if (contentType.find("application/json") != std::string::npos)
 		{

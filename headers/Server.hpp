@@ -55,6 +55,7 @@ class Server
 		void			setNonBlocking(int socket);
 
 		const std::string	getServerInfo(int i) const;
+		int					getEpollFd() const;
 
 	private:
 
@@ -63,7 +64,7 @@ class Server
 		socklen_t					_addr_len;
 		std::map<int, std::string>	_client_buffers;
 		std::map<int, std::string>	_responses;
-
+		int							_epoll_fd;
 		const std::string			_name; // for cgi environment var server name - Now temp, but needs to come from config
 		const std::string			_port; // for cgi environment var port - Now temp, but needs to come from config
 
