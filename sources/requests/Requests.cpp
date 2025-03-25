@@ -380,6 +380,21 @@ std::string	deleteFile(const HttpRequest &request)
 	return (response.str());
 }
 
+
+// void	headers()
+// {
+// 	std::string headers_response;
+
+// 	if (bad_request == true)
+// 	{
+// 		headers_response = ER404
+// 		return ;
+// 	}
+// 	headers_response = "http/1.1" + get_response_code() + "\r\n";
+// 	headers_response += "CONTENT_LENGTH=" + get_content_length() + "\r\n";
+// }
+
+
 std::string routeRequest(const HttpRequest &request)
 {
 	std::string filePath = STATIC_DIR + request.path;

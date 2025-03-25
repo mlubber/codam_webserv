@@ -1,6 +1,6 @@
 #include "../../headers/Server.hpp"
 
-void	get_exe_path(t_cgiData* cgi, const HttpRequest& request, const Server& server)
+void	get_exe_path(t_cgiData& cgi, const HttpRequest& request, const Server& server)
 {
 	std::string path;
 	const std::string& root = server.getServerInfo(2);
@@ -8,17 +8,17 @@ void	get_exe_path(t_cgiData* cgi, const HttpRequest& request, const Server& serv
 		path = "." + root + request.path;
 	else
 		path = root + request.path;
-	cgi->path = new char[path.size() + 1]; // Need to be in try/catch block  OR new(std::nothrow_t) to check for nullptrs
-	std::strcpy(cgi->path, path.c_str());
+	cgi.path = new char[path.size() + 1]; // Need to be in try/catch block  OR new(std::nothrow_t) to check for nullptrs
+	std::strcpy(cgi.path, path.c_str());
 }
 
-void	get_exe(t_cgiData* cgi, const HttpRequest& request)
+void	get_exe(t_cgiData& cgi, const HttpRequest& request)
 {
-	cgi->exe = new char*[2](); // Need to be in try/catch block  OR new(std::nothrow_t) to check for nullptrs
+	cgi.exe = new char*[2](); // Need to be in try/catch block  OR new(std::nothrow_t) to check for nullptrs
 	int i = request.path.find_last_of('/'); 
 	std::string exe = request.path.substr(i + 1);
-	cgi->exe[0] = new char[exe.length() + 1]; // Need to be in try/catch block  OR new(std::nothrow_t) to check for nullptrs
-	std::strcpy(cgi->exe[0], exe.c_str());
+	cgi.exe[0] = new char[exe.length() + 1]; // Need to be in try/catch block  OR new(std::nothrow_t) to check for nullptrs
+	std::strcpy(cgi.exe[0], exe.c_str());
 }
 
 char* create_env_ptr(std::string key, std::string value)
@@ -65,42 +65,42 @@ std::string get_path_info(const HttpRequest& request, const Server& server)
 	return (path_info);
 }
 
-void	setup_environment(t_cgiData* cgi, const HttpRequest& request, const Server& server)
+void	setup_environment(t_cgiData& cgi, const HttpRequest& request, const Server& server)
 {
-	cgi->envp = new char*[11](); // Need to be in try/catch block  OR new(std::nothrow_t) to check for nullptrs
+	cgi.envp = new char*[11](); // Need to be in try/catch block  OR new(std::nothrow_t) to check for nullptrs
 
-	cgi->envp[0] = create_env_ptr("REQUEST_METHOD", request.method);
-	cgi->envp[1] = create_env_ptr("SCRIPT_NAME", request.path);
-	cgi->envp[2] = create_env_ptr("SERVER_NAME", server.getServerInfo(0));
-	cgi->envp[3] = create_env_ptr("SERVER_PORT", server.getServerInfo(1));
-	cgi->envp[4] = create_env_ptr("SERVER_PROTOCOL", "HTTP/1.1");
-	cgi->envp[5] = create_env_ptr("GATEWAY_INTERFACE", "CGI/1.1");
-	cgi->envp[6] = create_env_ptr("CONTENT_LENGTH", get_header_data(request, "Content-Length", 0));
-	cgi->envp[7] = create_env_ptr("CONTENT_TYPE", get_header_data(request, "Content-Type", 1));
-	cgi->envp[8] = create_env_ptr("QUERY_STRING", get_header_data(request, "Query-String", 1));
-	cgi->envp[9] = create_env_ptr("PATH_INFO", get_path_info(request, server));
+	cgi.envp[0] = create_env_ptr("REQUEST_METHOD", request.method);
+	cgi.envp[1] = create_env_ptr("SCRIPT_NAME", request.path);
+	cgi.envp[2] = create_env_ptr("SERVER_NAME", server.getServerInfo(0));
+	cgi.envp[3] = create_env_ptr("SERVER_PORT", server.getServerInfo(1));
+	cgi.envp[4] = create_env_ptr("SERVER_PROTOCOL", "HTTP/1.1");
+	cgi.envp[5] = create_env_ptr("GATEWAY_INTERFACE", "CGI/1.1");
+	cgi.envp[6] = create_env_ptr("CONTENT_LENGTH", get_header_data(request, "Content-Length", 0));
+	cgi.envp[7] = create_env_ptr("CONTENT_TYPE", get_header_data(request, "Content-Type", 1));
+	cgi.envp[8] = create_env_ptr("QUERY_STRING", get_header_data(request, "Query-String", 1));
+	cgi.envp[9] = create_env_ptr("PATH_INFO", get_path_info(request, server));
 
 
 
 	//  Test printing environment
 	std::cout << "\n--- CGI Environment ---" << std::endl;
 	for (int i = 0; i < 10; ++i) {
-		if (cgi->envp[i] == nullptr)
+		if (cgi.envp[i] == nullptr)
 			std::cout << "null\n";
 		else
-			std::cout << cgi->envp[i] << "\n";
+			std::cout << cgi.envp[i] << "\n";
 	} std::cout << std::endl;
 	//  End test printing environment
 }
 
-bool	cgi_setup(t_cgiData* cgi, const HttpRequest& request, const Server& server)
+bool	cgi_setup(t_cgiData& cgi, const HttpRequest& request, const Server& server)
 {
 	setup_environment(cgi, request, server);
 	get_exe_path(cgi, request, server);
 	get_exe(cgi, request);
 
-	dup2(cgi->ets_pipe[1], STDOUT_FILENO); // add error handling
-	close(cgi->ets_pipe[0]); // add error handling
+	dup2(cgi.ets_pipe[1], STDOUT_FILENO); // add error handling
+	close(cgi.ets_pipe[0]); // add error handling
 
 	return (true);
 }

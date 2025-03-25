@@ -1,20 +1,20 @@
 #include "../../headers/Server.hpp"
 
-static void	read_from_pipe(t_cgiData* cgi, std::string& cgiBody)
+static void	read_from_pipe(t_cgiData& cgi, std::string& cgiBody)
 {
 	char	buffer[CGIBUFFER];
 	int		bytes_read = 0;
 
-	if (close(cgi->ets_pipe[1]) == -1)
+	if (close(cgi.ets_pipe[1]) == -1)
 	{
 		std::cerr << "CGI ERROR: Failed closing write-end pipe in parent" << std::endl;
-		if (close(cgi->ets_pipe[0]) == -1)
+		if (close(cgi.ets_pipe[0]) == -1)
 			std::cerr << "CGI ERROR: Failed closing read-end pipe in parent" << std::endl;
 		return ;
 	}
 	do
 	{
-		bytes_read = read(cgi->ets_pipe[0], buffer, CGIBUFFER - 1);
+		bytes_read = read(cgi.ets_pipe[0], buffer, CGIBUFFER - 1);
 		if (bytes_read == -1)
 		{
 			std::cerr << "CGI ERROR: Failed reading from pipe with read()" << std::endl;
@@ -26,16 +26,24 @@ static void	read_from_pipe(t_cgiData* cgi, std::string& cgiBody)
 			cgiBody += buffer;
 		}
 	} while (bytes_read > 0);
-	if (close(cgi->ets_pipe[0]) == -1)
+	if (close(cgi.ets_pipe[0]) == -1)
 		std::cerr << "CGI ERROR: Failed closing read-end pipe in parent" << std::endl;
 }
 
-int	cgi_parent_process(t_cgiData* cgi, HttpRequest& request, const pid_t& pid)
+static int	write_to_pipe(t_cgiData& cgi)
+{
+	if (dup2(cgi.ste_pipe[1], STDOUT_FILENO) == -1)
+		return (errno);
+}
+
+int	cgi_parent_process(t_cgiData& cgi, HttpRequest& request, const pid_t& pid)
 {
 	pid_t	wpid;
 	int		status;
 	int		exit_code = 0;
 
+	if (request.method == "POST")
+		write_to_pipe(cgi); // Needs check for dup2 or other failures
 	read_from_pipe(cgi, request.cgiBody);
 	if (errno != 0)
 		return (errno);

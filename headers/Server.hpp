@@ -17,6 +17,7 @@
 # include <sys/wait.h>
 
 // # include "cgi.hpp"
+#include "Client.hpp"
 
 # define PORT 8080
 # define BUFFER_SIZE 8192 // 8kb
@@ -25,17 +26,6 @@
 # define ER400 "HTTP/1.1 400 Bad Request\r\nContent-Length: 143\r\n\r\n<html><head><title>400 Bad Request</title></head><body><center><h1>400 Bad Request</h1></center><hr><center>webserv</center></hr></body></html>"
 # define ER404 "HTTP/1.1 404 Not Found\r\nContent-Length: 139\r\n\r\n<html><head><title>404 Not Found</title></head><body><center><h1>404 Not Found</h1></center><hr><center>webserv</center></hr></body></html>"
 # define ER405 "HTTP/1.1 405 Method Not Allowed\r\nContent-Length: 157\r\n\r\n<html><head><title>405 Method Not Allowed</title></head><body><center><h1>405 Method Not Allowed</h1></center><hr><center>webserv</center></hr></body></html>"
-
-struct HttpRequest
-{
-	std::string							method;
-	std::string							path;
-	std::string							version;
-	std::map<std::string, std::string>	headers;
-	std::string							body;
-	bool								cgi;
-	std::string							cgiBody;
-};
 
 class Server
 {

@@ -1,41 +1,51 @@
 #include "../../headers/Server.hpp"
 
-void	cgi_cleanup(t_cgiData* cgi, bool child)
+void	cgi_cleanup(t_cgiData& cgi, bool child)
 {
-	if (cgi->ets_pipe[0] == -1 && close(cgi->ets_pipe[0]))
+	if (cgi.ets_pipe[0] != -1 && close(cgi.ets_pipe[0]))
 		std::cerr << "CGI ERROR: closing ets_pipe[0] failed" << std::endl;
-	if (cgi->ets_pipe[1] == -1 && close(cgi->ets_pipe[1]))
+	if (cgi.ets_pipe[1] != -1 && close(cgi.ets_pipe[1]))
+		std::cerr << "CGI ERROR: closing ets_pipe[1] failed" << std::endl;
+	if (cgi.ste_pipe[0] != -1 && close(cgi.ste_pipe[0]))
+		std::cerr << "CGI ERROR: closing ste_pipe[0] failed" << std::endl;
+	if (cgi.ste_pipe[1] != -1 && close(cgi.ste_pipe[1]))
 		std::cerr << "CGI ERROR: closing ets_pipe[1] failed" << std::endl;
 	if (child == true)
 	{
-		if (cgi->path != nullptr)
-			delete[] cgi->path;
-		if (cgi->exe != nullptr && cgi->exe[0] != nullptr)
-			delete[] cgi->exe[0];
-		if (cgi->exe != nullptr)
-			delete[] cgi->exe;
+		if (cgi.path != nullptr)
+			delete[] cgi.path;
+		if (cgi.exe != nullptr && cgi.exe[0] != nullptr)
+			delete[] cgi.exe[0];
+		if (cgi.exe != nullptr)
+			delete[] cgi.exe;
 		for (int i = 0; i < 10; i++)
 		{
-			if (cgi->envp[i] != nullptr)
-				delete[] cgi->envp[i];
+			if (cgi.envp[i] != nullptr)
+				delete[] cgi.envp[i];
 		}
-		if (cgi->envp != nullptr)
-			delete[] cgi->envp;
+		if (cgi.envp != nullptr)
+			delete[] cgi.envp;
 		exit(errno); // Exit actually not allowed
 	}
 }
 
-static bool	init_cgi_struct(t_cgiData* cgi)
+static bool	init_cgi_struct(t_cgiData& cgi, HttpRequest& request)
 {
-	cgi->path = nullptr;
-	cgi->exe = nullptr;
-	cgi->envp = nullptr;
-	if (pipe(cgi->ets_pipe) == -1)
+	cgi.path = nullptr;
+	cgi.exe = nullptr;
+	cgi.envp = nullptr;
+	if (pipe(cgi.ets_pipe) == -1)
 		return (1);
+	if (request.method == "POST" && pipe(cgi.ste_pipe) == -1)
+	{
+		if (close(cgi.ste_pipe[0]) == -1 || close(cgi.ste_pipe[0]) == -1)
+			return (1);
+		return (1);
+	}
 	return (0);
 }
 
-static bool	create_cgi_process(t_cgiData* cgi, HttpRequest& request, const Server& server)
+static int	create_cgi_process(t_cgiData& cgi, HttpRequest& request, const Server& server)
 {
 	pid_t	pid;
 
@@ -59,9 +69,9 @@ int	cgi_check(HttpRequest& request, const Server& server)
 	{
 		errno = 0; // temporary, till bug somewhere else is found
 		request.cgi = true;
-		if (init_cgi_struct(&cgi))
+		if (init_cgi_struct(cgi, request))
 			return (errno);
-		status = create_cgi_process(&cgi, request, server);
+		status = create_cgi_process(cgi, request, server);
 		std::cout << "STATUS: " << status << std::endl;
 		errno = 0;
 		return (status);
