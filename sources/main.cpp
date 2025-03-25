@@ -21,7 +21,15 @@
 #include "../headers/ValidationConfigFile.hpp"
 #include "../headers/Serve.hpp"
 
-
+// void mainLoop()
+// {
+// 	_epoll_fd = epoll_create1(0);
+// 	while (true)
+// 	{
+// 		epoll_wait()
+// 		handle_event();
+// 	}
+// }
 
 int main(int argc, char **argv) {
 
@@ -43,27 +51,30 @@ int main(int argc, char **argv) {
 	Configuration myconfig;
 	myconfig.parseConfig(confFile);
 	std::cout << "printing all server blocks begin!\n\n\n\n" << std::endl;
-	//myconfig.printConfig(myconfig.getConfigData(), 0);
+	myconfig.printConfig(myconfig.getConfigData(), 0);
 
 
 
 
 	ValidationConfigFile	validator(myconfig.getConfigData());
 	std::cout << "printing all server blocks after check and add all base key value!\n\n\n\n" << std::endl;
-	//validator.printConfig(validator.getConfig(), 0);
-	//myconfig.printConfig(myconfig.getConfigData(), 0);
+	// validator.printConfig(validator.getConfig(), 0);
+	myconfig.printConfig(myconfig.getConfigData(), 0);
 
 	Serve	serveRequest(myconfig.getConfigData());
 	serveRequest.answerRequest("127.0.0.1", "80", "", "");
-
-
-
-
-
 	
-	Server server;
+	std::vector<std::string> configports;
+	configports = myconfig.getConfigValues(myconfig.getConfigData(), "listen");
 
-	if (!server.initialize())
+	Server server;
+	
+	std::vector<int> ports;
+
+	for (const std::string& str : configports)
+		ports.push_back(std::stoi(str));
+
+	if (!server.initialize(ports))
 		return (1);
 	server.run();
 

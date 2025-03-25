@@ -247,3 +247,14 @@ void Configuration::printConfig(const ConfigBlock &config, int depth) {
     }
 }
 
+std::vector<std::string> Configuration::getConfigValues(ConfigBlock &config, const std::string &key) 
+{
+
+	for (std::pair<const std::string, ConfigBlock> &pairBlock : config.nested)
+	{
+		if (pairBlock.second.values.find(key) != pairBlock.second.values.end())
+			return (pairBlock.second.values[key]);
+	}
+	return (std::vector<std::string>());
+}
+

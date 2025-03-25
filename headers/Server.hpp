@@ -15,6 +15,7 @@
 # include <dirent.h>
 # include <stdlib.h>
 # include <sys/wait.h>
+# include <algorithm>
 
 // # include "cgi.hpp"
 
@@ -47,9 +48,9 @@ class Server
 
 		Server&	operator=(const Server& other);
 
-		bool			initialize();
+		bool			initialize(std::vector<int> ports);
 		void			run();
-		void			connectClient(int epoll_fd);
+		void			connectClient(int epoll_fd, int server_fd);
 		void			handleRead(int epoll_fd, int client_fd, const Server& server);
 		void			handleWrite(int epoll_fd, int client_fd);
 		void			setNonBlocking(int socket);
@@ -59,7 +60,7 @@ class Server
 
 	private:
 
-		int							_server_fd;
+		std::vector<int>			_server_fds;
 		struct sockaddr_in			_address;
 		socklen_t					_addr_len;
 		std::map<int, std::string>	_client_buffers;
