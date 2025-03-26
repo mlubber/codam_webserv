@@ -17,7 +17,8 @@ MAIN_DIR			=	$(SRC_DIR)main.cpp
 
 PARSING_DIR			=	$(SRC_DIR)parsing/Configuration.cpp \
 						$(SRC_DIR)parsing/Serve.cpp \
-						$(SRC_DIR)parsing/ValidationConfigFile.cpp
+						$(SRC_DIR)parsing/ValidationConfigFile.cpp \
+						$(SRC_DIR)parsing/Request.cpp
 
 CLASS_DIR			=	$(SRC_DIR)classes/Server.cpp
 
