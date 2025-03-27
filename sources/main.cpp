@@ -72,9 +72,9 @@ int	findResponsibleServer(std::vector<Serve>& serverArray, clRequest clientStruc
 			std::vector<std::string> ports = data.getPort();
 			std::string host = data.getHost();
 			std::string virtualHost = data.getServer_name();
-			std::cout << "server virtualHost is : (" << virtualHost << ") , and client host is : (" << clientStruct.host << ")." << std::endl;
-			std::cout << "server host is : (" << host << ") , and client host is : (" << clientStruct.host << ")." << std::endl;
-			std::cout << "server port is : (" << ports.front() << ") , and client port is : (" << clientStruct.port << ")." << std::endl;
+			// std::cout << "server virtualHost is : (" << virtualHost << ") , and client host is : (" << clientStruct.host << ")." << std::endl;
+			//std::cout << "server host is : (" << host << ") , and client host is : (" << clientStruct.host << ")." << std::endl;
+			// std::cout << "server port is : (" << ports.front() << ") , and client port is : (" << clientStruct.port << ")." << std::endl;
 			for (std::string &port : ports) {
 				if (port == clientStruct.port) {
 					if (host == clientStruct.host) {
@@ -144,18 +144,18 @@ int main(int argc, char **argv) {
 //     "Connection: keep-alive\r\n"
 
 
-	std::string str =
-	"POST /upload HTTP/1.1\r\n"
-	"Host: 127.0.0.1:8080\r\n"
-	"Content-Type: multipart/form-data\r\n"
-	"Content-Length: 174\r\n"
-	"\r\n"
-	"------WebKitFormBoundary\r\n"
-	"Content-Disposition: form-data; name=\"file\"; filename=\"image.png\"\r\n"
-	"Content-Type: image/png\r\n"
-	"\r\n"
-	"(binary image data here)\r\n"
-	"------WebKitFormBoundary--\r\n";
+	// std::string str =
+	// "POST /upload HTTP/1.1\r\n"
+	// "Host: 127.0.0.1:8080\r\n"
+	// "Content-Type: multipart/form-data\r\n"
+	// "Content-Length: 174\r\n"
+	// "\r\n"
+	// "------WebKitFormBoundary\r\n"
+	// "Content-Disposition: form-data; name=\"file\"; filename=\"image.png\"\r\n"
+	// "Content-Type: image/png\r\n"
+	// "\r\n"
+	// "(binary image data here)\r\n"
+	// "------WebKitFormBoundary--\r\n";
 
 	// std::string str =
 	// "POST /upload HTTP/1.1\r\n"
@@ -173,15 +173,44 @@ int main(int argc, char **argv) {
 	// "\r\n";
 
 
+	std::string str1 =
+	"POST /upload HTTP/1.1\r\n"
+	"Host: 127.0.0.1:8080\r\n"
+	"Content-Type: multipart/form-data\r\n"
+	"Expect: 100-continue\r\n"
+	"Content-Length: 174\r\n"
+	"\r\n";
+	std::string str2 =
+	"------WebKitFormBoundary\r\n"
+	"Content-Disposition: form-data; name=\"file\"; filename=\"image.png\"\r\n"
+	"Content-Type: image/png\r\n"
+	"\r\n"
+	"(binary image data here)\r\n"
+	"------WebKitFormBoundary--\r\n";
+
+
 
 	Request		client;
-	client.readRequest(str, 5);
-	//std::cout << "main here" << std::endl;
-	int result = findResponsibleServer(serverArray, client.getClStructRequest(5));
-	if (result != -1) {
-		std::cout << "server number : (" << result << ") should answer!" << std::endl; 
+
+
+	for (int i = 0 ; i < 2; ++i) {
+		if (i == 0)
+			client.readRequest(str1, 5);
+		if (i == 1)
+			client.readRequest(str2, 5);
+		std::cout << "to check if server found\n" << std::endl;
+		int result = findResponsibleServer(serverArray, client.getClStructRequest(5));
+		if (result != -1) {
+			std::cout << "server number : (" << result << ") should answer!" << std::endl; 
+		}
 	}
 
+	// client.readRequest(str, 5);
+	// std::cout << "to check if server found\n" << std::endl;
+	// int result = findResponsibleServer(serverArray, client.getClStructRequest(5));
+	// if (result != -1) {
+	// 	std::cout << "server number : (" << result << ") should answer!" << std::endl; 
+	// }
 
 	// Server server;
 

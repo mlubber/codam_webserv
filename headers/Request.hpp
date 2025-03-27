@@ -9,8 +9,8 @@ class Serve;
 
 
 struct clRequest {
-	bool	invalidRequest;
-	bool	hundredContinue;
+	bool	invalidRequest = false;
+	bool	hundredContinue = false;
     std::string method;
     std::string path;
 	std::string	queryStr;

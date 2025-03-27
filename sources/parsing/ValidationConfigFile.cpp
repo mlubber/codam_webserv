@@ -1,5 +1,6 @@
 #include "../headers/ValidationConfigFile.hpp"
 #include <iterator>
+#include <algorithm>
 
 
 std::vector<std::vector<std::string>> compare;
@@ -62,7 +63,13 @@ void	onlyPrintErrorExit(std::string key, int i) {
 	if (i == 1)
 		std::cerr << "Error: unknown methods or invalid! => " << key << std::endl;
 	if (i == 2)
-		std::cerr << "Error: " << key << " should exist and have a value!" << std::endl;
+		std::cerr << "Error: ( " << key << " ) should exist and have a value!" << std::endl;
+	if (i == 3)
+		std::cerr << "Error: ( " << key << " ) should contain only didgit !" << std::endl;
+	if (i == 4)
+		std::cerr << "Error: ( " << key << " ) has to have correct format => (0 - 255 and 3 dot !) 127.0.0.0" << std::endl;
+	if (i == 5)
+		std::cerr << "Error: ( " << key << " ) has incorrect format !" << std::endl;
 	std::exit(1);
 }
 
@@ -72,6 +79,8 @@ void	checkBodySize(std::string &bodySize) {
 	std::string	strNum;
 	if (isdigit(last)) {
 		strNum = bodySize;
+		if (!std::all_of(strNum.begin(), strNum.end(), [](unsigned char c) {return std::isdigit(c);})) 
+			onlyPrintErrorExit("client_max_body_size", 5);
 		try
 		{
 			i = std::stoul(strNum);
@@ -85,6 +94,8 @@ void	checkBodySize(std::string &bodySize) {
 	}
 	else {
 		strNum = bodySize.substr(0, bodySize.size() - 1);
+		if (!std::all_of(strNum.begin(), strNum.end(), [](unsigned char c) {return std::isdigit(c);})) 
+			onlyPrintErrorExit("client_max_body_size", 5);
 		try
 		{
 			i = std::stoul(strNum);
@@ -192,6 +203,67 @@ void	ValidationConfigFile::duplicateKey() {
 	}
 }
 
+void	checkListen(std::vector<std::string> &listens)  {
+	for (std::string listen : listens) {
+		if (!std::all_of(listen.begin(), listen.end(), [] (unsigned char c) { return std::isdigit(c); })) {
+			onlyPrintErrorExit("listen", 3);
+		}
+	}
+
+	// for (std::string listen : listens) {
+	// 	for (size_t i = 0; i < listen.size(); ++i){
+	// 		if (!std::isdigit(listen[i]))
+	// 			onlyPrintErrorExit("listen", 3);
+	// 	}
+	// }
+}
+
+void	checkHost(std::string host) {
+	size_t		pos = 0;
+	std::string	digitPart;
+	int			convertToInt;
+	int			dot = 0;
+	while(1) {
+		if (dot == 3) {
+			if (!std::all_of(host.begin(), host.end(), [] (unsigned char c) { return std::isdigit(c); })) {
+				onlyPrintErrorExit("host", 4);
+			}
+			try{
+				convertToInt  = stoi(host);
+			}catch(const std::exception& e){
+				std::cerr << "Error: convert host to  int failed! " << e.what() << std::endl;
+				std::exit(1);
+			}
+			if (convertToInt > 255 || convertToInt < 0)
+				onlyPrintErrorExit("host", 4);
+			return;
+		} else {
+			pos = host.find_first_of('.');
+			if (pos == std::string::npos)
+				onlyPrintErrorExit("host", 4);
+			digitPart = host.substr(0,pos);
+			if (pos < host.size())
+				host = host.substr(pos+1);
+			else
+				onlyPrintErrorExit("host", 4);
+
+			if (!std::all_of(digitPart.begin(), digitPart.end(), [] (unsigned char c) { return std::isdigit(c); })) {
+				onlyPrintErrorExit("host", 4);
+			}
+			try{
+				convertToInt  = stoi(digitPart);
+			}catch(const std::exception& e){
+				std::cerr << "Error: convert host to  int failed! " << e.what() << std::endl;
+				std::exit(1);
+			}
+			if (convertToInt > 255 || convertToInt < 0)
+				onlyPrintErrorExit("host", 4);
+		}
+		++dot;
+
+	}
+}
+
 
 ValidationConfigFile::ValidationConfigFile(ConfigBlock &configData) : _configData(configData)
 {
@@ -230,15 +302,17 @@ ValidationConfigFile::ValidationConfigFile(ConfigBlock &configData) : _configDat
 	
 		if (server.second.values.find("listen") != server.second.values.end()) {
 			compare[i] = server.second.values["listen"];
+			checkListen(server.second.values["listen"]);
 			//compare[i].push_back(server.second.values["listen"].front());	 
 		}else {
 			onlyPrintErrorExit("listen", 2);
 		}
-		// if (server.second.values.find("host") != server.second.values.end()) {
-		// 	compare[i].push_back(server.second.values["host"].front());	 
-		// }else {
-		// 	onlyPrintErrorExit("host", 2);
-		// }
+		if (server.second.values.find("host") != server.second.values.end()) {
+			checkHost(server.second.values["host"].front());
+ 
+		}else {
+			onlyPrintErrorExit("host", 2);
+		}
 		// if (server.second.values.find("server_name") != server.second.values.end()) {
 		// 	compare[i].push_back(server.second.values["server_name"].front());	 
 		// }else  {

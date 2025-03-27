@@ -5,7 +5,7 @@
 
 std::vector<std::string> headerSingleValue = {"authorization","content-type","content-length",	
 	"date","host","location","server","set-cookie","user-agent","x-requested-with","cache-control",
-	"if-modified-since","etag","referer","upgrade-insecure-requests","x-frame-options",
+	"if-modified-since","etag","referer","upgrade-insecure-requests","x-frame-options","expect",
 	"x-content-type-options","content-disposition","strict-ransport-security","content-encoding"};
 
 std::vector<std::string> MultieValueByComma = {"accept", "accept-encoding",
@@ -176,13 +176,15 @@ int	parseRequestHeaders(std::string &line, clRequest &myStruct) {
 	trim(headerValue);
 	if (headerValue.empty())
 		return 1;
-
+	
 	
 	std::transform(headerName.begin(), headerName.end(), headerName.begin(), ::tolower);
 	// std::cout << "headerName is : (" << headerName << ")" << std::endl;
 	// std::cout << "headerValue is : (" << headerValue << ")" << std::endl;
 
-	
+	if (headerName ==  "expect" && headerValue == "100-continue")
+		myStruct.hundredContinue = true;
+
 
 	if (std::find(MultieValueByComma.begin(), MultieValueByComma.end(), headerName) != MultieValueByComma.end() ) {
 		// multie value 
@@ -206,12 +208,15 @@ int	parseRequestHeaders(std::string &line, clRequest &myStruct) {
 	return 0;
 }
 
+
+
 int	parseRequestLine(std::string &line, clRequest &myStruct) {
 	//std::cout << "parse line (" << line << ")" << std::endl;
 
-	size_t i = 0;
-	size_t j = 0;
+	//size_t i = 0;
+	int wordCounter = 0;
 	std::string word;
+	size_t pos = 0;
 
 	// max size request line 8 k.
 	if (line.size() > 8192 ) {
@@ -219,17 +224,20 @@ int	parseRequestLine(std::string &line, clRequest &myStruct) {
 		//std::cout << "return" << std::endl;
 		return 1;
 	}
-	int wordCounter = 0;
-	while (i < line.size()) {
-		j = i;
-		word.clear();
-		while (j < line.size() && !isspace(line[j]))
-		{
-			word += line[j];
-				++j;
+	while(wordCounter < 3){
+		if (wordCounter < 2) {
+			pos = line.find_first_of(' ');
+			if (pos == std::string::npos){
+				myStruct.invalidRequest = true;
+				return 1;
+			}
+			word = line.substr(0, pos);
+			line = line.substr(pos + 1);
+		} else if (wordCounter == 2) {
+			word = line;
 		}
 		++wordCounter;
-		size_t pos = 0;
+		
 		std::string query;
 		switch (wordCounter)
 		{
@@ -264,26 +272,101 @@ int	parseRequestLine(std::string &line, clRequest &myStruct) {
 			return 1;
 			break;
 		}
-
-		//std::cout << "word is : (" << word << ")" << std::endl;
-		if (j < line.size()) {
-			if ((line[j] != ' ') || (isspace(line[j + 1]))) {
-				myStruct.invalidRequest = true;
-				//std::cout << "return" << std::endl;
-				return 1;
-			}
-		}
-		if (wordCounter == 3 && j != line.size()) {
-			myStruct.invalidRequest = true;
-			//std::cout << "return" << std::endl;
-			return 1;
-		}
-		i = j;
-		if (i + 1 <= line.size())
-			++i;
 	}
 	return 0;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// int	parseRequestLine(std::string &line, clRequest &myStruct) {
+// 	//std::cout << "parse line (" << line << ")" << std::endl;
+
+// 	size_t i = 0;
+// 	size_t j = 0;
+// 	std::string word;
+
+// 	// max size request line 8 k.
+// 	if (line.size() > 8192 ) {
+// 		myStruct.invalidRequest = true;
+// 		//std::cout << "return" << std::endl;
+// 		return 1;
+// 	}
+// 	int wordCounter = 0;
+// 	while (i < line.size()) {
+// 		j = i;
+// 		word.clear();
+// 		while (j < line.size() && !isspace(line[j]))
+// 		{
+// 			word += line[j];
+// 				++j;
+// 		}
+// 		++wordCounter;
+// 		size_t pos = 0;
+// 		std::string query;
+// 		switch (wordCounter)
+// 		{
+// 		case 1:
+// 			myStruct.method = word;
+// 			if (word != "POST" && word != "GET" && word != "DELETE") {
+// 				myStruct.invalidRequest = true;
+// 				return 1;
+// 			}
+// 			break;
+// 		case 2:
+// 			pos = word.find('?');
+// 			if (pos == std::string::npos)
+// 				myStruct.path = word;
+// 			else {
+// 				query = word.substr(pos, word.size() - pos);
+// 				word = word.substr(0, pos);
+// 				myStruct.path = word;
+// 				myStruct.queryStr = query;
+// 			}
+// 			break;
+// 		case 3:
+// 			if (word.compare("HTTP/1.1") != 0) {
+// 				myStruct.invalidRequest = true;
+// 				//std::cout << "return" << std::endl;
+// 				return 1;
+// 			}
+// 			break;
+// 		default:
+// 			myStruct.invalidRequest = true;
+// 			//std::cout << "return" << std::endl;
+// 			return 1;
+// 			break;
+// 		}
+
+// 		//std::cout << "word is : (" << word << ")" << std::endl;
+// 		if (j < line.size()) {
+// 			if ((line[j] != ' ') || (isspace(line[j + 1]))) {
+// 				myStruct.invalidRequest = true;
+// 				//std::cout << "return" << std::endl;
+// 				return 1;
+// 			}
+// 		}
+// 		if (wordCounter == 3 && j != line.size()) {
+// 			myStruct.invalidRequest = true;
+// 			//std::cout << "return" << std::endl;
+// 			return 1;
+// 		}
+// 		i = j;
+// 		if (i + 1 <= line.size())
+// 			++i;
+// 	}
+// 	return 0;
+// }
 
 void	printRequestStruct(clRequest &myStruct) {
 	std::cout << "is valid : (" << myStruct.invalidRequest << ")"<< std::endl;
@@ -293,7 +376,7 @@ void	printRequestStruct(clRequest &myStruct) {
 	for (std::pair<const std::string, std::vector<std::string>> &it : myStruct.headers) {
 		std::cout << "key is : (" << it.first << ")\nvalue is : (" << it.second.front() << ")" << std::endl;
 	}
-	//std::cout << "" << << std::endl;
+
 }
 
 // fix issue for colon for each key of headers and fix it for to works find for map 
@@ -304,8 +387,8 @@ int	parseChunkedBody(std::string &body, clRequest &myStruct) {
 	// for (std::pair<std::string, std::vector<std::string>> myPair : myStruct.headers) {
 	// 	std::cout << "key: (" << myPair.first << "), value: " << myPair.second.front() << std::endl; 
 	// }
-	if (myStruct.headers.find("transfer-encoding") == myStruct.headers.end()) {
-		//std::cout << "not found  :  transfer-encoding" << std::endl;
+	if (myStruct.headers["transfer-encoding"].front() != "chunked") {
+		std::cout << "transfer-encoding: has other value than chunked!" << std::endl;
 		myStruct.invalidRequest = true;
 		return 1;
 	}
@@ -361,15 +444,15 @@ int	parseChunkedBody(std::string &body, clRequest &myStruct) {
 int	parseBody(std::string &body, clRequest &myStruct) {
 	std::cout << "---parse body---" << std::endl;
 	if (myStruct.method != "POST") {
-		std::cout << "---method not post---" << std::endl;
+		std::cout << "---method not post--- nginx ignore the body" << std::endl;
 		return 0;
 	}
 	std::cout << "parse body" << std::endl;
 	std::string strBodyLength, bodyHasToRead;
 	size_t	bodyLength = 0;
-	for (std::pair<std::string, std::vector<std::string>> myPair : myStruct.headers) {
-		std::cout << "key: (" << myPair.first << "), value: " << myPair.second.front() << std::endl; 
-	}
+	// for (std::pair<std::string, std::vector<std::string>> myPair : myStruct.headers) {
+	// 	std::cout << "key: (" << myPair.first << "), value: " << myPair.second.front() << std::endl; 
+	// }
 	if (myStruct.headers.find("content-length") != myStruct.headers.end()) {
 		std::cout << "---content-length---" << std::endl;
 		// if (myStruct.headers.find("transfer-encoding") != myStruct.headers.end()) {
@@ -406,26 +489,31 @@ int	parseBody(std::string &body, clRequest &myStruct) {
 
 
 
-
 void Request::readRequest(std::string strClRequest, int clientFD) {
 	
 	std::cout << "read  request" << std::endl;
+	bool	is100Continue = false;
 	clRequest &myStruct = _clientRequests[clientFD];
 
 	if (_clientRequests.find(clientFD) != _clientRequests.end()) {
-       
-		//std::cout << "inside if" << std::endl;
-		if (!_clientRequests[clientFD].hundredContinue)
+		if (_clientRequests[clientFD].hundredContinue) {
+			is100Continue = true;
+			//std::cout << "inside if" << std::endl;
+		} else {
 			resetStruct(clientFD);
+			//std::cout << "inside else" << std::endl;
+		}
     }
-	
-	//std::cout << "read  request" << std::endl;
-
-	
 
 	size_t pos = 0;
 	size_t	i = 0;
 	size_t	headersSize = 0;
+	if (is100Continue)  {
+		//std::cout << "just parse body" << std::endl;
+		parseBody(strClRequest, myStruct);
+		return;
+
+	}
 	while ((pos = strClRequest.find_first_of('\n')) != std::string::npos)
 	{
 
@@ -436,7 +524,15 @@ void Request::readRequest(std::string strClRequest, int clientFD) {
 		}
 		else if (pos == 1) {
 			// end of headers
-			
+			if (myStruct.hundredContinue) {
+				//std::cout << "strClRequest.size() here is : " << strClRequest.size() << std::endl;
+				if (strClRequest.size() > 2) {
+					// it shouldn't has any 
+					myStruct.invalidRequest = true;
+					std::cout << "return 6" << std::endl;
+					return;
+				}
+			}
 			if (strClRequest.size() > 2) {
 				std::string body = strClRequest.substr(pos + 1);
 				//std::cout << "read request printing body: (" << body << ")" << std::endl;
