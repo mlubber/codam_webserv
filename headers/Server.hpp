@@ -42,7 +42,7 @@ class Server
 {
 	public:
 
-		Server();
+		Server(std::string server_host);
 		Server(const Server& other);
 		~Server();
 
@@ -83,6 +83,5 @@ std::string	handlePostRequest(const HttpRequest &request);
 std::string	routeRequest(const HttpRequest &request);
 void		printRequest(HttpRequest& httprequest);
 std::string dechunk(std::istream& stream, const std::string& input);
-
 
 #endif

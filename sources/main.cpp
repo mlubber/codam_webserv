@@ -66,13 +66,23 @@ int main(int argc, char **argv) {
 	
 	std::vector<std::string> configports;
 	configports = myconfig.getConfigValues(myconfig.getConfigData(), "listen");
-
-	Server server;
 	
-	std::vector<int> ports;
 
-	for (const std::string& str : configports)
-		ports.push_back(std::stoi(str));
+	std::vector<std::string> confighosts;
+	confighosts = myconfig.getConfigValues(myconfig.getConfigData(), "host");
+
+	for (const std::string& str : confighosts)
+		std::cout << str << std::endl;
+
+	Server server("127.0.0.2");
+	
+	std::vector<int> ports {8080, 4040};
+
+	// for (const std::string& str : configports)
+	// {
+	// 	ports.push_back(std::stoi(str));
+	// 	std::cout << str << std::endl;
+	// }
 
 	if (!server.initialize(ports))
 		return (1);

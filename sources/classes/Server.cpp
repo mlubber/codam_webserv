@@ -1,8 +1,9 @@
 #include "../../headers/Server.hpp"
 
-Server::Server() : _addr_len(sizeof(_address)), _name("localhost"), _port("8080"), _root("/www")
+Server::Server(std::string server_host) : _addr_len(sizeof(_address)), _name(server_host), _port("8080"), _root("/www")
 {
 	std::cout	<< "Default constructor"
+				<< "\nserver_host: " << _name
 				<< "\nAddr len: " << _addr_len
 				<< std::endl;
 }
@@ -49,7 +50,7 @@ bool	Server::initialize(std::vector<int> ports)
 		
 		memset(&_address, 0, sizeof(_address)); // Sets all bytes to 0 in address struct
 		_address.sin_family = AF_INET; // Sets Adress Family to IPv4
-		_address.sin_addr.s_addr = INADDR_ANY; // Assigns the address to INADDR_ANY (which is 0.0.0.0)
+		_address.sin_addr.s_addr = inet_addr(_name.c_str()); // INADDR_ANY; // Assigns the address to INADDR_ANY (which is 0.0.0.0)
 		_address.sin_port = htons(ports[i]); // Converts port number from host byte order to network byte order.
 		if (bind(server_fd, (struct sockaddr*)&_address, sizeof(_address)) < 0)
 		{
