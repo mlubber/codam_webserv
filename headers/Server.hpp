@@ -8,6 +8,8 @@
 # include <fcntl.h>
 # include <vector>
 # include <map>
+# include <set>
+# include <netdb.h>
 # include <sstream>
 # include <fstream>
 # include <sys/stat.h>
@@ -42,13 +44,13 @@ class Server
 {
 	public:
 
-		Server(std::string server_host);
+		Server();
 		Server(const Server& other);
 		~Server();
 
 		Server&	operator=(const Server& other);
 
-		bool			initialize(std::vector<int> ports);
+		bool			initialize(const std::vector<std::pair<std::string, std::vector<int> > >& server_configs);
 		void			run();
 		void			connectClient(int epoll_fd, int server_fd);
 		void			handleRead(int epoll_fd, int client_fd, const Server& server);

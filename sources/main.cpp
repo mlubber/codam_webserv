@@ -74,9 +74,17 @@ int main(int argc, char **argv) {
 	for (const std::string& str : confighosts)
 		std::cout << str << std::endl;
 
-	Server server("127.0.0.2");
+	Server server;
 	
 	std::vector<int> ports {8080, 4040};
+
+	std::vector<std::pair<std::string, std::vector<int> > > server_configs = 
+	{
+		{"127.0.0.1", {8080, 9090}},
+		{"localhost", {8000}},
+		{"127.0.0.2", {3000, 4000}}
+	};
+	
 
 	// for (const std::string& str : configports)
 	// {
@@ -84,7 +92,7 @@ int main(int argc, char **argv) {
 	// 	std::cout << str << std::endl;
 	// }
 
-	if (!server.initialize(ports))
+	if (!server.initialize(server_configs))
 		return (1);
 	server.run();
 

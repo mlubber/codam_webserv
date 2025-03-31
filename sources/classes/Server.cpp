@@ -1,6 +1,6 @@
 #include "../../headers/Server.hpp"
 
-Server::Server(std::string server_host) : _addr_len(sizeof(_address)), _name(server_host), _port("8080"), _root("/www")
+Server::Server() : _addr_len(sizeof(_address)), _name("localhost"), _port("8080"), _root("/www")
 {
 	std::cout	<< "Default constructor"
 				<< "\nserver_host: " << _name
@@ -28,59 +28,158 @@ Server&	Server::operator=(const Server& other)
 	return (*this);
 }
 
-bool	Server::initialize(std::vector<int> ports)
+bool Server::initialize(const std::vector<std::pair<std::string, std::vector<int> > >& server_configs)
 {
-	_epoll_fd = epoll_create1(0);
-	if (_epoll_fd == -1)
-	{
-		std::cerr << "Failed to create epoll instance" << std::endl;
-		return (false);
-	}
-	for (size_t i = 0; i < ports.size(); i++)
-	{
-		int server_fd = socket(AF_INET, SOCK_STREAM, 0);
-		if (server_fd == -1)
-		{
-			std::cerr << "Socket creation failed for port: " << ports[i] << std::endl;
-			continue;
-		}
+    _epoll_fd = epoll_create1(0);
+    if (_epoll_fd == -1)
+    {
+        std::cerr << "Failed to create epoll instance" << std::endl;
+        return false;
+    }
 
-		int opt = 1;
-		setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)); // Makes sure the server can bind to the same port immediately after restarting.
-		
-		memset(&_address, 0, sizeof(_address)); // Sets all bytes to 0 in address struct
-		_address.sin_family = AF_INET; // Sets Adress Family to IPv4
-		_address.sin_addr.s_addr = inet_addr(_name.c_str()); // INADDR_ANY; // Assigns the address to INADDR_ANY (which is 0.0.0.0)
-		_address.sin_port = htons(ports[i]); // Converts port number from host byte order to network byte order.
-		if (bind(server_fd, (struct sockaddr*)&_address, sizeof(_address)) < 0)
-		{
-			std::cerr << "Binding failed on port: " << ports[i] << std::endl;
-			close(server_fd);
-			continue;
-		}
-		if (listen(server_fd, 10) < 0)
-		{
-			std::cerr << "Listening failed on port: " << ports[i] << std::endl;
-			close(server_fd);
-			continue;
-		}
-		std::cout << "Listening on port " << ports[i] << std::endl;
-        _server_fds.push_back(server_fd);
+    std::set<std::pair<std::string, int> > bound_servers;
 
-		struct epoll_event event;
-		event.events = EPOLLIN;
-		event.data.fd = server_fd;
+    for (size_t i = 0; i < server_configs.size(); i++)
+    {
+        const std::string& host = server_configs[i].first;
+        const std::vector<int>& ports = server_configs[i].second;
 
-		if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, server_fd, &event) == -1)
-		{
-			std::cerr << "Failed to add server socket to epoll" << std::endl;
-			close(server_fd);
-			continue;
-		}
-	}
+        for (size_t j = 0; j < ports.size(); j++)
+        {
+            std::pair<std::string, int> host_port_pair = std::make_pair(host, ports[j]);
+            if (bound_servers.find(host_port_pair) != bound_servers.end())
+            {
+                std::cerr << "Skipping duplicate binding: " << host << ":" << ports[j] << std::endl;
+                continue;
+            }
+            bound_servers.insert(host_port_pair);
 
-	return (!_server_fds.empty());
+            int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+            if (server_fd == -1)
+            {
+                std::cerr << "Socket creation failed for " << host << ":" << ports[j] << std::endl;
+                continue;
+            }
+
+            int opt = 1;
+            setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+            struct sockaddr_in address;
+            memset(&address, 0, sizeof(address));
+            address.sin_family = AF_INET;
+            address.sin_port = htons(ports[j]);
+
+            if (host == "*" || host == "0.0.0.0")
+            {
+                address.sin_addr.s_addr = INADDR_ANY;
+            }
+            else if (inet_pton(AF_INET, host.c_str(), &address.sin_addr) != 1)
+            {
+                struct addrinfo hints, *res;
+                memset(&hints, 0, sizeof(hints));
+                hints.ai_family = AF_INET;
+                hints.ai_socktype = SOCK_STREAM;
+                hints.ai_flags = AI_PASSIVE;
+
+                if (getaddrinfo(host.c_str(), NULL, &hints, &res) != 0)
+                {
+                    std::cerr << "Failed to resolve hostname: " << host << std::endl;
+                    close(server_fd);
+                    continue;
+                }
+                struct sockaddr_in *addr = (struct sockaddr_in *)res->ai_addr;
+                address.sin_addr = addr->sin_addr;
+                freeaddrinfo(res);
+            }
+
+            if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) < 0)
+            {
+                std::cerr << "Binding failed on " << host << ":" << ports[j] << std::endl;
+                close(server_fd);
+                continue;
+            }
+
+            if (listen(server_fd, 10) < 0)
+            {
+                std::cerr << "Listening failed on " << host << ":" << ports[j] << std::endl;
+                close(server_fd);
+                continue;
+            }
+
+            std::cout << "Listening on " << host << ":" << ports[j] << std::endl;
+            _server_fds.push_back(server_fd);
+
+            struct epoll_event event;
+            event.events = EPOLLIN;
+            event.data.fd = server_fd;
+
+            if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, server_fd, &event) == -1)
+            {
+                std::cerr << "Failed to add server socket to epoll" << std::endl;
+                close(server_fd);
+                continue;
+            }
+        }
+    }
+
+    return !_server_fds.empty();
 }
+
+// bool	Server::initialize(std::vector<int> ports)
+// {
+// 	_epoll_fd = epoll_create1(0);
+// 	if (_epoll_fd == -1)
+// 	{
+// 		std::cerr << "Failed to create epoll instance" << std::endl;
+// 		return (false);
+// 	}
+
+
+// 	for (size_t i = 0; i < ports.size(); i++)
+// 	{
+// 		int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+// 		if (server_fd == -1)
+// 		{
+// 			std::cerr << "Socket creation failed for port: " << ports[i] << std::endl;
+// 			continue;
+// 		}
+
+// 		int opt = 1;
+// 		setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)); // Makes sure the server can bind to the same port immediately after restarting.
+		
+// 		memset(&_address, 0, sizeof(_address)); // Sets all bytes to 0 in address struct
+// 		_address.sin_family = AF_INET; // Sets Adress Family to IPv4
+// 		_address.sin_addr.s_addr = INADDR_ANY; // Assigns the address to INADDR_ANY (which is 0.0.0.0)
+// 		_address.sin_port = htons(ports[i]); // Converts port number from host byte order to network byte order.
+// 		if (bind(server_fd, (struct sockaddr*)&_address, sizeof(_address)) < 0)
+// 		{
+// 			std::cerr << "Binding failed on port: " << ports[i] << std::endl;
+// 			close(server_fd);
+// 			continue;
+// 		}
+// 		if (listen(server_fd, 10) < 0)
+// 		{
+// 			std::cerr << "Listening failed on port: " << ports[i] << std::endl;
+// 			close(server_fd);
+// 			continue;
+// 		}
+// 		std::cout << "Listening on port " << ports[i] << std::endl;
+//         _server_fds.push_back(server_fd);
+
+// 		struct epoll_event event;
+// 		event.events = EPOLLIN;
+// 		event.data.fd = server_fd;
+
+// 		if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, server_fd, &event) == -1)
+// 		{
+// 			std::cerr << "Failed to add server socket to epoll" << std::endl;
+// 			close(server_fd);
+// 			continue;
+// 		}
+// 	}
+
+// 	return (!_server_fds.empty());
+// }
 
 void Server::run(void)
 {
