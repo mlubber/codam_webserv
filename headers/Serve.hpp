@@ -1,6 +1,8 @@
 #pragma once
 #include "Configuration.hpp"
 
+#include "Request.hpp"
+
 // struct ConfigBlock {
 //     std::map<std::string, std::vector<std::string>> values;
 //     std::multimap<std::string, ConfigBlock>		nested;
@@ -22,6 +24,7 @@ public:
 	std::string&				getRoot();
 	std::string& 				getServer_name();
 	std::vector<std::string>&	getPort();
+	void	answerRequest(clRequest& clientRequest);
 
 };
 

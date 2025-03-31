@@ -6,6 +6,7 @@
 #include <map>
 #include <stack>
 #include <set>
+#include <filesystem>
 
 
 enum TokenType { KEYWORD, VALUE, BLOCK_START, BLOCK_END, SEMICOLON };

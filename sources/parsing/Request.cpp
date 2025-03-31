@@ -567,7 +567,7 @@ void Request::readRequest(std::string strClRequest, int clientFD) {
 		++i;
 	}
 	std::cout << "printing  request\n\n\n" << std::endl;
-	printRequestStruct(myStruct);
+	// printRequestStruct(myStruct);
 	
 	std::cout << "end read  request" << std::endl;
 	

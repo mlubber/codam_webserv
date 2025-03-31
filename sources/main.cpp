@@ -104,6 +104,19 @@ int	findResponsibleServer(std::vector<Serve>& serverArray, clRequest clientStruc
 // 		handle_event();
 // 	}
 // }
+std::vector<int> convertTo_int(std::vector<std::string> &portsStr) {
+
+	std::vector<int> portsInt;
+	for (size_t i = 0; i <portsStr.size(); ++i){
+		try{
+			portsInt.push_back(std::stoi(portsStr[i]));
+
+		}catch(const std::exception &e) {
+			std::cerr << "Error : Conversion failed!" << e.what() << std::endl;
+		}
+	}
+	return (portsInt);
+}
 
 int main(int argc, char **argv) {
 
@@ -125,7 +138,7 @@ int main(int argc, char **argv) {
 	Configuration myconfig;
 	myconfig.parseConfig(confFile);
 	std::cout << "printing all server blocks begin!\n\n\n\n" << std::endl;
-	myconfig.printConfig(myconfig.getConfigData(), 0);
+	// myconfig.printConfig(myconfig.getConfigData(), 0);
 
 
 
@@ -136,20 +149,12 @@ int main(int argc, char **argv) {
 	//myconfig.printConfig(myconfig.getConfigData(), 0);
 	std::vector<Serve> serverArray = makeServerArray(myconfig.getConfigData());
 
-
-
-
-
-
-
-
-
-// std::string str = 
-//     "GET /index.html?now=hello HTTP/1.1\r\n"
-//     "Host: 127.0.0.1:8080\r\n"
-//     "User-Agent: curl/7.68.0\r\n"
-//     "Accept: text/html\r\n"
-//     "Connection: keep-alive\r\n"
+std::string str = 
+    "GET /index.html?now=hello HTTP/1.1\r\n"
+    "Host: 127.0.0.1:8080\r\n"
+    "User-Agent: curl/7.68.0\r\n"
+    "Accept: text/html\r\n"
+    "Connection: keep-alive\r\n";
 
 
 	// std::string str =
@@ -181,50 +186,71 @@ int main(int argc, char **argv) {
 	// "\r\n";
 
 
-	std::string str1 =
-	"POST /upload HTTP/1.1\r\n"
-	"Host: 127.0.0.1:8080\r\n"
-	"Content-Type: multipart/form-data\r\n"
-	"Expect: 100-continue\r\n"
-	"Content-Length: 174\r\n"
-	"\r\n";
-	std::string str2 =
-	"------WebKitFormBoundary\r\n"
-	"Content-Disposition: form-data; name=\"file\"; filename=\"image.png\"\r\n"
-	"Content-Type: image/png\r\n"
-	"\r\n"
-	"(binary image data here)\r\n"
-	"------WebKitFormBoundary--\r\n";
+	// std::string str1 =
+	// "POST /upload HTTP/1.1\r\n"
+	// "Host: 127.0.0.1:8080\r\n"
+	// "Content-Type: multipart/form-data\r\n"
+	// "Expect: 100-continue\r\n"
+	// "Content-Length: 174\r\n"
+	// "\r\n";
+	// std::string str2 =
+	// "------WebKitFormBoundary\r\n"
+	// "Content-Disposition: form-data; name=\"file\"; filename=\"image.png\"\r\n"
+	// "Content-Type: image/png\r\n"
+	// "\r\n"
+	// "(binary image data here)\r\n"
+	// "------WebKitFormBoundary--\r\n";
 
 
 
 	Request		client;
 
 
-	for (int i = 0 ; i < 2; ++i) {
-		if (i == 0)
-			client.readRequest(str1, 5);
-		if (i == 1)
-			client.readRequest(str2, 5);
-		std::cout << "to check if server found\n" << std::endl;
-		int result = findResponsibleServer(serverArray, client.getClStructRequest(5));
-		if (result != -1) {
-			std::cout << "server number : (" << result << ") should answer!" << std::endl; 
+	// for (int i = 0 ; i < 2; ++i) {
+	// 	if (i == 0)
+	// 		client.readRequest(str1, 5);
+	// 	if (i == 1)
+	// 		client.readRequest(str2, 5);
+	// 	std::cout << "to check if server found\n" << std::endl;
+	// 	int result = findResponsibleServer(serverArray, client.getClStructRequest(5));
+	// 	if (result != -1) {
+	// 		std::cout << "server number : (" << result << ") should answer!" << std::endl; 
+	// 	}
+	// }
+
+	client.readRequest(str, 5);
+	std::cout << "to check if server found\n" << std::endl;
+	int result = findResponsibleServer(serverArray, client.getClStructRequest(5));
+	if (result != -1) {
+		std::cout << "server number : (" << result << ") should answer!" << std::endl; 
+	}
+
+	serverArray[result].answerRequest(client.getClStructRequest(5));
+
+
+
+
+
+
+	std::vector<std::pair<std::string, std::vector<int>>> configdata(serverArray.size());
+
+	for (size_t i = 0; i < serverArray.size(); i++)
+	{
+		configdata[i].first = serverArray[i].getHost();
+		configdata[i].second = convertTo_int(serverArray[i].getPort());
+		std::cout << "host: " << serverArray[i].getHost() << std::endl;
+		
+		for (size_t j = 0; j < serverArray[i].getPort().size(); j++)
+		{
+			std::cout << "ports: " << serverArray[i].getPort()[j] << std::endl;
 		}
 	}
 
-	// client.readRequest(str, 5);
-	// std::cout << "to check if server found\n" << std::endl;
-	// int result = findResponsibleServer(serverArray, client.getClStructRequest(5));
-	// if (result != -1) {
-	// 	std::cout << "server number : (" << result << ") should answer!" << std::endl; 
-	// }
+	Server server;
 
-	// Server server;
-
-	// if (!server.initialize())
-	// 	return (1);
-	// server.run();
+	if (!server.initialize(configdata))
+		return (1);
+	server.run();
 
 	
 	return 0;
