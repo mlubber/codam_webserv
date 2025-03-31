@@ -52,25 +52,25 @@ std::string headerMultieValueSeparatedWithSemicolon = "cookie";
 // (binary image data here)
 // ------WebKitFormBoundary--
 
-Request::Request() {}
+Client::Client() {}
 
-Request::~Request() {}
+Client::~Client() {}
 
-// std::map<int, clRequest>&	Request::getClStructRequest() {
+// std::map<int, clRequest>&	Client::getClStructRequest() {
 // 	return (_clientRequests);
 // }
 
 
-clRequest&	Request::getClStructRequest(int fd){
+clRequest&	Client::getClStructRequest(int fd){
 	if (_clientRequests.find(fd) != _clientRequests.end()) {
-		std::cout << "found" << std::endl;
+		// std::cout << "client fd for request found" << std::endl;
 		return(_clientRequests.find(fd)->second);
 	}
 	static clRequest defaultRequest;
     return defaultRequest;
 }
 
-void	Request::resetStruct(int clientFD) {
+void	Client::resetStruct(int clientFD) {
 	if (_clientRequests.find(clientFD) != _clientRequests.end()) {
 		auto &myStruct = _clientRequests[clientFD];
 		myStruct.invalidRequest = false;
@@ -489,7 +489,7 @@ int	parseBody(std::string &body, clRequest &myStruct) {
 
 
 
-void Request::readRequest(std::string strClRequest, int clientFD) {
+void Client::readRequest(std::string strClRequest, int clientFD) {
 	
 	std::cout << "read  request" << std::endl;
 	bool	is100Continue = false;
@@ -566,7 +566,7 @@ void Request::readRequest(std::string strClRequest, int clientFD) {
 		strClRequest = strClRequest.substr(pos + 1);
 		++i;
 	}
-	std::cout << "printing  request\n\n\n" << std::endl;
+	// std::cout << "printing  request\n\n\n" << std::endl;
 	// printRequestStruct(myStruct);
 	
 	std::cout << "end read  request" << std::endl;

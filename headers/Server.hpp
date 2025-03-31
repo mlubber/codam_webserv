@@ -19,7 +19,9 @@
 # include <sys/wait.h>
 # include <algorithm>
 
+# include "Request.hpp"
 // # include "cgi.hpp"
+
 
 # define PORT 8080
 # define BUFFER_SIZE 8192 // 8kb

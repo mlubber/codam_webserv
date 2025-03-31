@@ -89,6 +89,33 @@ static void saveUploadedFile(const HttpRequest& httprequest, const std::string& 
 bool	parseRequest(const std::string request, HttpRequest& httprequest, const Server& server)
 {
 	std::cout << "\n\nPARSE REQUEST:\n" << std::endl;
+	
+	Client		client;
+	clRequest 	cl_request;
+
+	client.readRequest(request, 0);
+
+	cl_request = client.getClStructRequest(0);
+
+	std::cout << "Method: " << cl_request.method << std::endl;
+	std::cout << "Path: " << cl_request.path << std::endl;
+	for (std::pair<const std::string, std::vector<std::string>> &it : cl_request.headers)
+		std::cout << it.first << ": " << it.second.front() << std::endl;
+
+	if (cl_request.headers.find("priority") != cl_request.headers.end())
+	{
+		std::cout << "priority FOUND!" << std::endl;
+		const std::vector<std::string>& values_vector = cl_request.headers.at("priority");
+		for (size_t i = 0; i < values_vector.size(); i++)
+		{
+			if (values_vector[i].find("i") != std::string::npos)
+				std::cout << "i FOUND!" << std::endl;
+		}
+	}
+
+	std::cout << "client request body: " << cl_request.body << std::endl;
+
+
 	std::istringstream	request_stream(request);
 	std::string			line;
 
@@ -101,9 +128,9 @@ bool	parseRequest(const std::string request, HttpRequest& httprequest, const Ser
 		return (false); // Malformed request line
 	httprequest.cgi = false;
 
-	std::cout << "Method: " << httprequest.method << std::endl;
-	std::cout << "Path: " << httprequest.path << std::endl;
-	std::cout << "Version: " << httprequest.version << std::endl;
+	// std::cout << "Method: " << httprequest.method << std::endl;
+	// std::cout << "Path: " << httprequest.path << std::endl;
+	// std::cout << "Version: " << httprequest.version << std::endl;
 
 	// Extract headers
 	while (getline(request_stream, line) && line != "\r")
@@ -115,11 +142,12 @@ bool	parseRequest(const std::string request, HttpRequest& httprequest, const Ser
 			// std::cout << colonPos << std::endl;
 			std::string	key = line.substr(0, colonPos);
 			std::string	value = line.substr(colonPos + 2);
-			std::cout	<< key << ": "
-						<< value << std::endl;
+			// std::cout	<< key << ": "
+						// << value << std::endl;
 			httprequest.headers[key] = value;
 		}
 	}
+
 
 
 

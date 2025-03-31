@@ -9,7 +9,7 @@ INC					=	-I ./headers
 
 # Complier and Flags
 CPP					=	c++
-CPPFLAGS			=	-Wall -Wextra -Werror #-std=c++98
+CPPFLAGS			=	-Wall -Wextra -Werror -std=c++20 #-std=c++98
 RM					=	rm -f
 
 # Source Files

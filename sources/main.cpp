@@ -149,12 +149,12 @@ int main(int argc, char **argv) {
 	//myconfig.printConfig(myconfig.getConfigData(), 0);
 	std::vector<Serve> serverArray = makeServerArray(myconfig.getConfigData());
 
-std::string str = 
-    "GET /index.html?now=hello HTTP/1.1\r\n"
-    "Host: 127.0.0.1:8080\r\n"
-    "User-Agent: curl/7.68.0\r\n"
-    "Accept: text/html\r\n"
-    "Connection: keep-alive\r\n";
+// std::string str = 
+//     "GET /index.html?now=hello HTTP/1.1\r\n"
+//     "Host: 127.0.0.2:8081\r\n"
+//     "User-Agent: curl/7.68.0\r\n"
+//     "Accept: text/html\r\n"
+//     "Connection: keep-alive\r\n";
 
 
 	// std::string str =
@@ -203,7 +203,7 @@ std::string str =
 
 
 
-	Request		client;
+	// Client		client;
 
 
 	// for (int i = 0 ; i < 2; ++i) {
@@ -218,14 +218,14 @@ std::string str =
 	// 	}
 	// }
 
-	client.readRequest(str, 5);
-	std::cout << "to check if server found\n" << std::endl;
-	int result = findResponsibleServer(serverArray, client.getClStructRequest(5));
-	if (result != -1) {
-		std::cout << "server number : (" << result << ") should answer!" << std::endl; 
-	}
+	// client.readRequest(str, 5);
+	// std::cout << "to check if server found\n" << std::endl;
+	// int result = findResponsibleServer(serverArray, client.getClStructRequest(5));
+	// if (result != -1) {
+	// 	std::cout << "server number : (" << result << ") should answer!" << std::endl;
+	// }
 
-	serverArray[result].answerRequest(client.getClStructRequest(5));
+	// serverArray[result].answerRequest(client.getClStructRequest(5));
 
 
 
@@ -238,11 +238,11 @@ std::string str =
 	{
 		configdata[i].first = serverArray[i].getHost();
 		configdata[i].second = convertTo_int(serverArray[i].getPort());
-		std::cout << "host: " << serverArray[i].getHost() << std::endl;
+		// std::cout << "host: " << serverArray[i].getHost() << std::endl;
 		
 		for (size_t j = 0; j < serverArray[i].getPort().size(); j++)
 		{
-			std::cout << "ports: " << serverArray[i].getPort()[j] << std::endl;
+			// std::cout << "ports: " << serverArray[i].getPort()[j] << std::endl;
 		}
 	}
 
