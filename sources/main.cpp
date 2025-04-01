@@ -66,6 +66,10 @@ std::vector<Serve>& makeServerArray(ConfigBlock& configData) {
 }
 
 int	findResponsibleServer(std::vector<Serve>& serverArray, clRequest clientStruct){
+	if (clientStruct.methodNotAllowd) {
+		std::cout << "we have to respond with method not allowed!" << std::endl;
+		return -1;
+	}
 	if (!clientStruct.invalidRequest) {
 		int i = 0;
 		for (Serve &data : serverArray) {
@@ -149,16 +153,25 @@ int main(int argc, char **argv) {
 	//myconfig.printConfig(myconfig.getConfigData(), 0);
 	std::vector<Serve> serverArray = makeServerArray(myconfig.getConfigData());
 
-std::string str = 
+	std::string str = 
     "GET /index.html HTTP/1.1\r\n"
     "Host: 127.0.0.1:8080\r\n"
     "User-Agent: curl/7.68.0\r\n"
     "Accept: text/html\r\n"
-    "Connection: keep-alive\r\n";
+	"content-type: text/html\r\n"
+    "Connection: keep-alive\r\n"
+	"Transfer-Encoding:chunked\r\n"
+	"\r\n"
+	"a\r\n"
+	"key: value\r\n"
+	"e\r\n"
+	"blabla: blabla\r\n"
+	"0\r\n"
+	"\r\n";
 
 
 	// std::string str =
-	// "POST /upload HTTP/1.1\r\n"
+	// "DELETE /upload HTTP/1.1\r\n"
 	// "Host: 127.0.0.1:8080\r\n"
 	// "Content-Type: multipart/form-data\r\n"
 	// "Content-Length: 174\r\n"
@@ -203,7 +216,7 @@ std::string str =
 
 
 
-	// Client		client;
+	Client		client;
 
 
 	// for (int i = 0 ; i < 2; ++i) {
