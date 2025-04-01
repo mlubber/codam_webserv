@@ -244,7 +244,7 @@ int	parseRequestLine(std::string &line, clRequest &myStruct) {
 		case 1:
 			myStruct.method = word;
 			if (word != "POST" && word != "GET" && word != "DELETE") {
-				myStruct.invalidRequest = true;
+				myStruct.methodNotAllowd = true;
 				return 1;
 			}
 			break;
@@ -476,6 +476,8 @@ int	parseBody(std::string &body, clRequest &myStruct) {
 			return 1;
 		}
 		bodyHasToRead = body.substr(0, bodyLength);
+		if (myStruct.hundredContinue)
+		myStruct.hundredContinue = false;
 		//std::cout << "body : " << bodyHasToRead << std::endl;
 	} // chunk or not found content length and chunk
 	else  if (myStruct.headers.find("transfer-encoding") != myStruct.headers.end()) {

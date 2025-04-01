@@ -2,14 +2,14 @@
 #include <iostream>
 #include <map>
 #include <vector>
-#include <unordered_map>
 
-class Serve;
+//class Serve;
 
 
 
 struct clRequest {
 	bool	invalidRequest = false;
+	bool	methodNotAllowd = false;
 	bool	hundredContinue = false;
     std::string method;
     std::string path;

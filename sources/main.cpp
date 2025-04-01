@@ -150,7 +150,7 @@ int main(int argc, char **argv) {
 	std::vector<Serve> serverArray = makeServerArray(myconfig.getConfigData());
 
 std::string str = 
-    "GET /index.html?now=hello HTTP/1.1\r\n"
+    "GET /index.html HTTP/1.1\r\n"
     "Host: 127.0.0.1:8080\r\n"
     "User-Agent: curl/7.68.0\r\n"
     "Accept: text/html\r\n"
@@ -223,9 +223,12 @@ std::string str =
 	int result = findResponsibleServer(serverArray, client.getClStructRequest(5));
 	if (result != -1) {
 		std::cout << "server number : (" << result << ") should answer!" << std::endl; 
+		serverArray[result].answerRequest(client.getClStructRequest(5));
+	} else {
+		serverArray[0].answerRequest(client.getClStructRequest(5));
 	}
 
-	serverArray[result].answerRequest(client.getClStructRequest(5));
+	
 
 
 
