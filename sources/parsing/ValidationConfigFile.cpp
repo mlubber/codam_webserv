@@ -3,7 +3,8 @@
 #include <algorithm>
 
 
-std::vector<std::vector<std::string>> compare;
+//std::vector<std::vector<std::string>> compare;
+std::vector<std::map<std::string, std::vector<std::string>>> compareArray;
 
 ValidationConfigFile::~ValidationConfigFile(){}
 
@@ -20,40 +21,83 @@ ValidationConfigFile& ValidationConfigFile::operator=(const ValidationConfigFile
 }
 
 
-void	isSeversSame() {
-
-	for (size_t i = 0; i < compare.size() ; ++i)  {
-		std::vector<std::string> s1 = compare[i];
-		for (size_t j = i + 1; j < compare.size() ; ++j)  {
-			std::vector<std::string> s2 = compare[j];
-			for (size_t isub = 0; isub < s1.size(); ++isub){
-				for (size_t jsub = 0; jsub < s2.size(); ++jsub) {
-					if (s1[isub] == s2[jsub]) {
-						std::cerr << "Error: servers can't has same port! => " << s1[isub] << std::endl;
-						std::exit(1);
-					}
-				}
-			}
-		}
-	}
-}
-
-
 // void	isSeversSame() {
 
 // 	for (size_t i = 0; i < compare.size() ; ++i)  {
 // 		std::vector<std::string> s1 = compare[i];
-// 		std::string listen1 = s1[0];
-// 		std::string host1 = s1[1];
-// 		std::string server_name1 = s1[2];
 // 		for (size_t j = i + 1; j < compare.size() ; ++j)  {
 // 			std::vector<std::string> s2 = compare[j];
-// 			std::string listen2 = s2[0];
-// 			std::string host2 = s2[1];
-// 			std::string server_name2 = s2[2];
-// 			if (listen1 == listen2 && host1 == host2 && server_name1 == server_name2) {
-// 				std::cerr << "Error: servers can't has same port!" << std::endl;
-// 				std::exit(1);
+// 			for (size_t isub = 0; isub < s1.size(); ++isub){
+// 				for (size_t jsub = 0; jsub < s2.size(); ++jsub) {
+// 					if (s1[isub] == s2[jsub]) {
+// 						std::cerr << "Error: servers can't has same port! => " << s1[isub] << std::endl;
+// 						std::exit(1);
+// 					}
+// 				}
+// 			}
+// 		}
+// 	}
+// }
+
+
+
+void isSeversSame() {
+    for (size_t i = 0; i < compareArray.size(); ++i) {
+        std::map<std::string, std::vector<std::string>>& s1 = compareArray[i];  // Reference to avoid copying
+        // Iterate through the map s1
+        for (const auto& entry1 : s1) {
+            const std::string& host1 = entry1.first;
+            const std::vector<std::string>& listen1 = entry1.second;
+
+            for (size_t j = i + 1; j < compareArray.size(); ++j) {
+                std::map<std::string, std::vector<std::string>>& s2 = compareArray[j];  // Reference to avoid copying
+                for (const auto& entry2 : s2) {
+                    const std::string& host2 = entry2.first;
+                    const std::vector<std::string>& listen2 = entry2.second;
+
+                    if (host1 == host2) {
+                        for (size_t k = 0; k < listen1.size(); ++k) {
+                            std::string lis1 = listen1[k];
+                            for (size_t l = 0; l < listen2.size(); ++l) {
+                                std::string lis2 = listen2[l];
+                                if (lis1 == lis2) {
+                                    std::cerr << "Error: servers can't have the same port!" << std::endl;
+                                    std::exit(1);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+
+// void	isSeversSame() {
+
+// 	for (size_t i = 0; i < compareArray.size(); ++i)  {
+// 		std::map<std::string, std::vector<std::string>> s1 = compareArray[i];
+
+
+// 		std::vector<std::string> listen1 = s1.second;
+// 		std::string host1 = s1.first;
+// 		for (size_t j = i + 1; j < compareArray.size() ; ++j)  {
+// 			std::map<std::string, std::vector<std::string>> s2 = compareArray[j];
+// 			std::vector<std::string> listen2 = s2.second;
+// 			std::string host2 = s2.first;
+// 			if (host1 == host2){
+// 				for (size_t k = 0; k < listen1.size(); ++k){
+// 					std::string lis1 = listen1[k];
+// 					for (size_t l = 0; l < listen2.size(); ++l){
+// 						std::string lis2 = listen2[l];
+// 						if (lis1 == lis2){
+// 							std::cerr << "Error: servers can't has same port!" << std::endl;
+// 							std::exit(1);
+// 						}
+// 					}
+// 				}
 // 			}
 // 		}
 // 	}
@@ -298,21 +342,30 @@ ValidationConfigFile::ValidationConfigFile(ConfigBlock &configData) : _configDat
 	duplicateKey();
 	int i = 0;
 	for (std::pair<const std::string, ConfigBlock> &server : _configData.nested){
-		compare.push_back(std::vector<std::string>());
+		//compare.push_back(std::vector<std::string>());
+		//compareArray.push_back(std::map<std::string, std::vector<std::string>>());
+		std::string key;
+		std::vector<std::string> valueForKey;
+		std::map<std::string, std::vector<std::string>> myMap;
 	
-		if (server.second.values.find("listen") != server.second.values.end()) {
-			compare[i] = server.second.values["listen"];
-			checkListen(server.second.values["listen"]);
-			//compare[i].push_back(server.second.values["listen"].front());	 
-		}else {
-			onlyPrintErrorExit("listen", 2);
-		}
 		if (server.second.values.find("host") != server.second.values.end()) {
 			checkHost(server.second.values["host"].front());
+			key = server.second.values["host"].front();
+			//compareArray[i].first = server.second.values["host"].front();
  
 		}else {
 			onlyPrintErrorExit("host", 2);
 		}
+		if (server.second.values.find("listen") != server.second.values.end()) {
+			//compare[i] = server.second.values["listen"];
+			checkListen(server.second.values["listen"]);
+			valueForKey = server.second.values["listen"];
+			//compareArray[i].second = server.second.values["listen"];
+			//compare[i].push_back(server.second.values["listen"].front());	 
+		}else {
+			onlyPrintErrorExit("listen", 2);
+		}
+
 		// if (server.second.values.find("server_name") != server.second.values.end()) {
 		// 	compare[i].push_back(server.second.values["server_name"].front());	 
 		// }else  {
@@ -321,8 +374,11 @@ ValidationConfigFile::ValidationConfigFile(ConfigBlock &configData) : _configDat
 		if (server.second.values.find("client_max_body_size") != server.second.values.end()) {
 			checkBodySize(server.second.values["client_max_body_size"].front());
 		}
+		myMap[key] = valueForKey;
+		compareArray.push_back(myMap);
 		++i;
 	}
+	
 	isSeversSame();
 }
 
