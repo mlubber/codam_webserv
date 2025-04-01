@@ -160,21 +160,21 @@ int main(int argc, char **argv) {
     // "Accept: text/html\r\n"
     // "Connection: keep-alive\r\n";
 
-	std::string str = 
-    "GET /index.html HTTP/1.1\r\n"
-    "Host: 127.0.0.1:8080\r\n"
-    "User-Agent: curl/7.68.0\r\n"
-    "Accept: text/html\r\n"
-	"content-type: text/html\r\n"
-    "Connection: keep-alive\r\n"
-	"Transfer-Encoding:chunked\r\n"
-	"\r\n"
-	"a\r\n"
-	"key: value\r\n"
-	"e\r\n"
-	"blabla: blabla\r\n"
-	"0\r\n"
-	"\r\n";
+	// std::string str = 
+    // "GET /index.html HTTP/1.1\r\n"
+    // "Host: 127.0.0.1:8080\r\n"
+    // "User-Agent: curl/7.68.0\r\n"
+    // "Accept: text/html\r\n"
+	// "content-type: text/html\r\n"
+    // "Connection: keep-alive\r\n"
+	// "Transfer-Encoding:chunked\r\n"
+	// "\r\n"
+	// "a\r\n"
+	// "key: value\r\n"
+	// "e\r\n"
+	// "blabla: blabla\r\n"
+	// "0\r\n"
+	// "\r\n";
 
 	// std::string str =
 	// "DELETE /upload HTTP/1.1\r\n"
@@ -222,7 +222,7 @@ int main(int argc, char **argv) {
 
 
 
-	Client		client;
+	// Client		client;
 
 
 	// for (int i = 0 ; i < 2; ++i) {
@@ -237,15 +237,15 @@ int main(int argc, char **argv) {
 	// 	}
 	// }
 
-	client.readRequest(str, 5);
-	std::cout << "to check if server found\n" << std::endl;
-	int result = findResponsibleServer(serverArray, client.getClStructRequest(5));
-	if (result != -1) {
-		std::cout << "server number : (" << result << ") should answer!" << std::endl; 
-		serverArray[result].answerRequest(client.getClStructRequest(5));
-	} else {
-		serverArray[0].answerRequest(client.getClStructRequest(5));
-	}
+	// client.readRequest(str, 5);
+	// std::cout << "to check if server found\n" << std::endl;
+	// int result = findResponsibleServer(serverArray, client.getClStructRequest(5));
+	// if (result != -1) {
+	// 	std::cout << "server number : (" << result << ") should answer!" << std::endl; 
+	// 	serverArray[result].answerRequest(client.getClStructRequest(5));
+	// } else {
+	// 	serverArray[0].answerRequest(client.getClStructRequest(5));
+	// }
 
 
 	std::vector<std::pair<std::string, std::vector<int>>> configdata(serverArray.size());

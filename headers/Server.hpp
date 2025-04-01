@@ -27,9 +27,12 @@
 # define BUFFER_SIZE 8192 // 8kb
 # define STATIC_DIR "./www"
 # define MAX_EVENTS 16
+# define ER100 "HTTP/1.1 100 Continue"
 # define ER400 "HTTP/1.1 400 Bad Request\r\nContent-Length: 143\r\n\r\n<html><head><title>400 Bad Request</title></head><body><center><h1>400 Bad Request</h1></center><hr><center>webserv</center></hr></body></html>"
 # define ER404 "HTTP/1.1 404 Not Found\r\nContent-Length: 139\r\n\r\n<html><head><title>404 Not Found</title></head><body><center><h1>404 Not Found</h1></center><hr><center>webserv</center></hr></body></html>"
 # define ER405 "HTTP/1.1 405 Method Not Allowed\r\nContent-Length: 157\r\n\r\n<html><head><title>405 Method Not Allowed</title></head><body><center><h1>405 Method Not Allowed</h1></center><hr><center>webserv</center></hr></body></html>"
+# define ER413 "HTTP/1.1 413 Payload Too Large\r\nContent-Length: 156\r\n\r\n<html><head><title>413 Payload Too Large</title></head><body><center><h1>413 Payload Too Large</h1></center><hr><center>webserv</center></hr></body></html>"
+# define ER500 "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 156\r\n\r\n<html><head><title>500 Internal Server Error</title></head><body><center><h1>500 Internal Server</h1></center><hr><center>webserv</center></hr></body></html>"
 
 struct HttpRequest
 {
@@ -87,5 +90,6 @@ std::string	handlePostRequest(const HttpRequest &request, clRequest& cl_request)
 std::string	routeRequest(const HttpRequest &request, clRequest& cl_request);
 void		printRequest(HttpRequest& httprequest);
 std::string dechunk(std::istream& stream, const std::string& input);
+std::string	deleteFile(const HttpRequest& request);
 
 #endif

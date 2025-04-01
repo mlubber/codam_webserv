@@ -200,6 +200,16 @@ void Server::run(void)
                 connectClient(_epoll_fd, fd);
 			else
 			{
+				// for (client : clients)
+				// {
+				// 	for (int i = 0; i < client._fds.size(); ++i)
+				// 		if (fd == client._fds[i])
+				// 			break;
+				// }
+				// if (client._state == waiting_for_read)
+				// 	readthis();
+				// else if (client._state == request_sent)
+				// 	parserequest();
 				if (ready_events[i].events & EPOLLIN)
 					handleRead(_epoll_fd, fd, *this);
 				if (ready_events[i].events & EPOLLOUT)

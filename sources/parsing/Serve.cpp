@@ -35,13 +35,14 @@ bool	fileOrDirectoryExists(std::string path) {
 
 }
 
-std::string Serve::answerRequest(clRequest& clientRequest) {
+std::string	Serve::answerRequest(clRequest& clientRequest) 
+{
 	if (clientRequest.invalidRequest){
-		// return bad request
+		return (ER400); // return bad request
 	}
 	if (clientRequest.methodNotAllowd){
-		// return	method not allowed
-	}else {
+		return (ER405); // return	method not allowed
+	} else {
 		if (clientRequest.hundredContinue){
 			// check if content lenght is less than max body size return 100 continue else return 413 payload
 			std::string clContentLengthStr;
@@ -57,17 +58,17 @@ std::string Serve::answerRequest(clRequest& clientRequest) {
 					serverMaxBodySizeInt = std::stoi(serverMaxBodySizeStr);
 					clContentLengthInt  = std::stoi(clContentLengthStr);
 				}catch(const std::exception &e) {
-					// internal error 500
-					std::cerr << "Error : converstion failed! " << e.what() << std::endl;
+					std::cerr << "Error : conversion failed! " << e.what() << std::endl;
+					return (ER500); // internal error 500
 				}
 				if (clContentLengthInt > serverMaxBodySizeInt) {
-					// return 413 payload
+					return (ER413); // return 413 payload
 				} else {
-					// return 100 continue
+					return (ER100);// return 100 continue
 				}
 
-			}else{
-				// return bad request no content length exist
+			} else {
+				return (ER400); // return bad request no content length exist
 			}
 		}else{
 			if (clientRequest.method == "GET" ){
@@ -76,16 +77,17 @@ std::string Serve::answerRequest(clRequest& clientRequest) {
 					std::cout << "file found " << std::endl;
 				}else {
 					std::cout << "file NOT found " << std::endl;
-					// 404 
+					return (ER404); // 404 
 				}
 			}
 			if (clientRequest.method == "POST" ){
-				
+
 			}
 			if (clientRequest.method == "DELETE" ){
-				
+
 			}
 		}
 	}
+	return ("blij");
 }
 
