@@ -3,9 +3,16 @@
 #include <map>
 #include <vector>
 
-//class Serve;
 
+// class Serve;
 
+enum state {
+	none,
+	cgi_Read,
+	cgi_write,
+	request_sent,
+	waiting_reponse
+};
 
 struct clRequest {
 	bool	invalidRequest = false;
@@ -21,14 +28,15 @@ struct clRequest {
 };
 
 
-class Request
+class Client
 {
 private:
-	std::map<int, clRequest> _clientRequests;
+	std::map<int, clRequest>	_clientRequests;
+	// int							_state;
 public:
-	Request();
-	void readRequest(std::string strClRequest, int clientFD);
-	void	resetStruct(int clientFD);
+	Client();
+	void 		readRequest(std::string strclRequest, int clientFD);
+	void		resetStruct(int clientFD);
 	clRequest&	getClStructRequest(int fd);
-	~Request();
+	~Client();
 };

@@ -203,7 +203,7 @@ std::string str =
 
 
 
-	Request		client;
+	// Client		client;
 
 
 	// for (int i = 0 ; i < 2; ++i) {
@@ -228,8 +228,6 @@ std::string str =
 		serverArray[0].answerRequest(client.getClStructRequest(5));
 	}
 
-	
-
 
 
 
@@ -241,11 +239,11 @@ std::string str =
 	{
 		configdata[i].first = serverArray[i].getHost();
 		configdata[i].second = convertTo_int(serverArray[i].getPort());
-		std::cout << "host: " << serverArray[i].getHost() << std::endl;
+		// std::cout << "host: " << serverArray[i].getHost() << std::endl;
 		
 		for (size_t j = 0; j < serverArray[i].getPort().size(); j++)
 		{
-			std::cout << "ports: " << serverArray[i].getPort()[j] << std::endl;
+			// std::cout << "ports: " << serverArray[i].getPort()[j] << std::endl;
 		}
 	}
 

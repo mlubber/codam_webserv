@@ -3,7 +3,6 @@
 Server::Server() : _addr_len(sizeof(_address)), _name("localhost"), _port("8080"), _root("/www")
 {
 	std::cout	<< "Default constructor"
-				<< "\nserver_host: " << _name
 				<< "\nAddr len: " << _addr_len
 				<< std::endl;
 }
@@ -54,15 +53,15 @@ bool Server::initialize(const std::vector<std::pair<std::string, std::vector<int
             }
             bound_servers.insert(host_port_pair);
 
-            int server_fd = socket(AF_INET, SOCK_STREAM, 0);
-            if (server_fd == -1)
+            int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
+            if (socket_fd == -1)
             {
                 std::cerr << "Socket creation failed for " << host << ":" << ports[j] << std::endl;
                 continue;
             }
 
             int opt = 1;
-            setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+            setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
             struct sockaddr_in address;
             memset(&address, 0, sizeof(address));
@@ -84,7 +83,7 @@ bool Server::initialize(const std::vector<std::pair<std::string, std::vector<int
                 if (getaddrinfo(host.c_str(), NULL, &hints, &res) != 0)
                 {
                     std::cerr << "Failed to resolve hostname: " << host << std::endl;
-                    close(server_fd);
+                    close(socket_fd);
                     continue;
                 }
                 struct sockaddr_in *addr = (struct sockaddr_in *)res->ai_addr;
@@ -92,31 +91,31 @@ bool Server::initialize(const std::vector<std::pair<std::string, std::vector<int
                 freeaddrinfo(res);
             }
 
-            if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) < 0)
+            if (bind(socket_fd, (struct sockaddr*)&address, sizeof(address)) < 0)
             {
                 std::cerr << "Binding failed on " << host << ":" << ports[j] << std::endl;
-                close(server_fd);
+                close(socket_fd);
                 continue;
             }
 
-            if (listen(server_fd, 10) < 0)
+            if (listen(socket_fd, 10) < 0)
             {
                 std::cerr << "Listening failed on " << host << ":" << ports[j] << std::endl;
-                close(server_fd);
+                close(socket_fd);
                 continue;
             }
 
             std::cout << "Listening on " << host << ":" << ports[j] << std::endl;
-            _server_fds.push_back(server_fd);
+            _server_fds.push_back(socket_fd);
 
             struct epoll_event event;
             event.events = EPOLLIN;
-            event.data.fd = server_fd;
+            event.data.fd = socket_fd;
 
-            if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, server_fd, &event) == -1)
+            if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, socket_fd, &event) == -1)
             {
                 std::cerr << "Failed to add server socket to epoll" << std::endl;
-                close(server_fd);
+                close(socket_fd);
                 continue;
             }
         }
@@ -196,7 +195,7 @@ void Server::run(void)
 		for (int i = 0; i < event_count; i++)
 		{
 			int fd = ready_events[i].data.fd;
-
+			
 			if (find(_server_fds.begin(), _server_fds.end(), fd) != _server_fds.end())
                 connectClient(_epoll_fd, fd);
 			else
