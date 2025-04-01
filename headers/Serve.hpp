@@ -24,7 +24,7 @@ public:
 	std::string&				getRoot();
 	std::string& 				getServer_name();
 	std::vector<std::string>&	getPort();
-	void	answerRequest(clRequest& clientRequest);
+	std::string					answerRequest(clRequest& clientRequest);
 
 };
 

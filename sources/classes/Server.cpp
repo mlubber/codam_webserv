@@ -235,7 +235,7 @@ void Server::connectClient(int _epoll_fd, int server_fd)
 		return;
 	}
 	_client_buffers[new_client] = "";
-	std::cout << "Client connected on socket " << server_fd << ": " << new_client << std::endl;
+	std::cout << "Client connected on socket: " << new_client << std::endl;
 }
 
 void	Server::handleRead(int _epoll_fd, int client_fd, const Server& server)
@@ -267,13 +267,16 @@ void	Server::handleRead(int _epoll_fd, int client_fd, const Server& server)
 	std::cout << "\n\n\nend of buffer..." << std::endl;
 
 	HttpRequest httprequest;
-	if (!parseRequest(_client_buffers[client_fd], httprequest, server))
+	Client client;
+	client.readRequest(_client_buffers[client_fd], client_fd);
+	clRequest cl_request = client.getClStructRequest(client_fd);
+	if (!parseRequest(_client_buffers[client_fd], httprequest, server, cl_request))
 	{
 		std::cout << "parse request failed" << std::endl;
 		_responses[client_fd] = ER400;
 	}
 	else
-		_responses[client_fd] = generateHttpResponse(httprequest);
+		_responses[client_fd] = generateHttpResponse(httprequest, cl_request);
 
 	struct epoll_event event;
 	event.events = EPOLLIN | EPOLLOUT;
@@ -298,9 +301,9 @@ void	Server::handleWrite(int _epoll_fd, int client_fd)
 		return;
 	}
 
-	_responses[client_fd] = _responses[client_fd].substr(bytes_sent); 
+	_responses[client_fd] = _responses[client_fd].substr(bytes_sent);
 
-	if (_responses[client_fd].empty()) 
+	if (_responses[client_fd].empty())
 	{
 		struct epoll_event event;
 		event.events = EPOLLIN;

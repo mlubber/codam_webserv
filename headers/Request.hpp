@@ -24,6 +24,7 @@ struct clRequest {
     std::string body;
 	std::string port;
 	std::string host;
+	
 };
 
 

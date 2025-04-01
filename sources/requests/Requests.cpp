@@ -27,10 +27,9 @@ static void bodytrail(std::istringstream& request_stream, HttpRequest& httpreque
 	size_t bodysize = httprequest.body.size();
 	httprequest.headers.insert({"Content-Length", std::to_string(bodysize)});
 }
-
-static void saveUploadedFile(const HttpRequest& httprequest, const std::string& boundary)
+static void saveFile(const clRequest& httprequest, const std::string& boundary)
 {
-	std::cout << "save file here" << std::endl;
+	std::cout << "save file client" << std::endl;
 	size_t start = httprequest.body.find(boundary);
 	if (start == std::string::npos)
 	{
@@ -86,34 +85,122 @@ static void saveUploadedFile(const HttpRequest& httprequest, const std::string& 
 	std::cout << "File saved: " << fileName << std::endl;
 }
 
-bool	parseRequest(const std::string request, HttpRequest& httprequest, const Server& server)
+// static void saveUploadedFile(const HttpRequest& httprequest, const std::string& boundary)
+// {
+// 	std::cout << "save file here" << std::endl;
+// 	size_t start = httprequest.body.find(boundary);
+// 	if (start == std::string::npos)
+// 	{
+// 		std::cout << "Boundary not found!" << std::endl;
+// 		return;
+// 	}
+// 	start += boundary.length();
+// 	std::cout << "start position: " << start << std::endl;
+
+// 	size_t dispositionPos = httprequest.body.find("Content-Disposition:", start);
+// 	if (dispositionPos ==  std::string::npos)
+// 		return;
+// 	std::cout << "Content-disposition position: " << dispositionPos << std::endl;
+	
+// 	size_t	filenamePos = httprequest.body.find("filename=\"", dispositionPos);
+// 	if (filenamePos == std::string::npos)
+// 		return;
+// 	filenamePos += 10;
+// 	std::cout << "filename position: " << filenamePos << std::endl;
+	
+// 	size_t filenameEnd = httprequest.body.find("\"", filenamePos);
+// 	std::string fileName = httprequest.body.substr(filenamePos, filenameEnd - filenamePos);
+// 	std::cout << "filename: " << fileName << std::endl;
+
+// 	std::string filePath = joinPaths(STATIC_DIR + httprequest.path, fileName);
+// 	std::cout << "registry path: " << filePath << std::endl;
+
+// 	size_t dataStart = httprequest.body.find("\r\n\r\n", filenameEnd);
+// 	if (dataStart == std::string::npos)
+// 		return;
+// 	dataStart += 4;
+// 	std::cout << "data start position: " << dataStart << std::endl;
+
+// 	size_t dataEnd = httprequest.body.find(boundary, dataStart);
+// 	if (dataEnd == std::string::npos)
+// 		return;
+// 	dataEnd -= 2;
+// 	std::cout << "data end position: " << dataEnd << std::endl;
+
+// 	std::string fileData = httprequest.body.substr(dataStart, dataEnd - dataStart);
+// 	std::cout << "file data: \n" << fileData << std::endl;
+
+// 	std::ofstream outFile(filePath.c_str(), std::ios::binary);
+// 	if (!outFile)
+// 	{
+// 		std::cout << "Error opening file for writing: " << fileName << std::endl;
+// 		return;
+// 	}
+
+// 	outFile.write(fileData.c_str(), fileData.size());
+// 	outFile.close();
+
+// 	std::cout << "File saved: " << fileName << std::endl;
+// }
+
+bool	parseRequest(const std::string request, HttpRequest& httprequest, const Server& server, clRequest& cl_request)
 {
 	std::cout << "\n\nPARSE REQUEST:\n" << std::endl;
 	
-	Client		client;
-	clRequest 	cl_request;
+	// Client		client;
+	// clRequest 	cl_request;
 
-	client.readRequest(request, 0);
+	// client.readRequest(request, 0);
 
-	cl_request = client.getClStructRequest(0);
+	// cl_request = client.getClStructRequest(0);
 
 	std::cout << "Method: " << cl_request.method << std::endl;
 	std::cout << "Path: " << cl_request.path << std::endl;
 	for (std::pair<const std::string, std::vector<std::string>> &it : cl_request.headers)
 		std::cout << it.first << ": " << it.second.front() << std::endl;
 
-	if (cl_request.headers.find("priority") != cl_request.headers.end())
+	if (cl_request.headers.find("content-type") != cl_request.headers.end())
 	{
-		std::cout << "priority FOUND!" << std::endl;
-		const std::vector<std::string>& values_vector = cl_request.headers.at("priority");
+		std::cout << "content-type FOUND!" << std::endl;
+		const std::vector<std::string>& values_vector = cl_request.headers.at("content-type");
 		for (size_t i = 0; i < values_vector.size(); i++)
 		{
-			if (values_vector[i].find("i") != std::string::npos)
-				std::cout << "i FOUND!" << std::endl;
+			if (values_vector[i].find("multipart/form-data") != std::string::npos)
+			{
+				std::cout << "multipart/form-data FOUND!" << std::endl;
+				size_t bod = request.find("\r\n\r\n");
+				cl_request.body = request.substr(bod + 4);
+				std::cout << "client request body: \n" << cl_request.body << std::endl;
+
+				const std::vector<std::string>& contentType = cl_request.headers.at("content-type");
+				for (size_t i = 0; i < contentType.size(); i++)
+				{
+					std::string boundary;
+					std::string key = "boundary=";
+					size_t pos = contentType[i].find(key);
+					if (pos != std::string::npos)
+						boundary = contentType[i].substr(pos + key.length());
+					std::string::size_type car;
+					while ((car = boundary.find('\r')) != std::string::npos)
+						boundary.erase(car, 1);
+					std::string closing_boundary = "--" + boundary + "--";
+
+					std::cout << "BOUNDARY: " << boundary << std::endl;
+					std::cout << "CLOSING : " << closing_boundary << std::endl;
+
+					saveFile(cl_request, boundary);
+				}
+			}
 		}
 	}
+	else if (cl_request.headers.find("content-length") != cl_request.headers.end())
+	{
+		std::cout << "CONTENT LENGTH FOUND!" << std::endl;
+		size_t bod = request.find("\r\n\r\n");
+		cl_request.body = request.substr(bod + 4);
+		std::cout << "\nRegular Body: \n" << cl_request.body << std::endl;
+	}
 
-	std::cout << "client request body: " << cl_request.body << std::endl;
 
 
 	std::istringstream	request_stream(request);
@@ -198,7 +285,7 @@ bool	parseRequest(const std::string request, HttpRequest& httprequest, const Ser
 		std::cout << boundary << std::endl;
 		std::cout << closing_boundary << std::endl;
 
-		saveUploadedFile(httprequest, boundary);
+		// saveUploadedFile(httprequest, boundary);
 	}
 	else if (httprequest.headers.find("Content-Length") != httprequest.headers.end()) // Read body if Content-Length is provided
 	{
@@ -228,7 +315,7 @@ bool	parseRequest(const std::string request, HttpRequest& httprequest, const Ser
 	return (true);
 }
 
-std::string	generateHttpResponse(HttpRequest& parsedRequest)
+std::string	generateHttpResponse(HttpRequest& parsedRequest, clRequest& cl_request)
 {
 	std::string response;
 
@@ -236,7 +323,14 @@ std::string	generateHttpResponse(HttpRequest& parsedRequest)
 		parsedRequest.path = "/";
 	if (!parsedRequest.path.empty() && *parsedRequest.path.rbegin() != '/')
 		parsedRequest.path.append("/");
-	response = routeRequest(parsedRequest);
+	if (cl_request.path == "/favicon.ico")
+		cl_request.path = "/";
+	if (!cl_request.path.empty() && *cl_request.path.rbegin() != '/')
+		cl_request.path.append("/");
+
+	std::cout << "generate client request path: " << cl_request.path << std::endl;
+
+	response = routeRequest(parsedRequest, cl_request);
 	return (response);
 }
 
@@ -294,52 +388,78 @@ std::string serveStaticFile(const std::string& filePath)
 	return (response.str());
 }
 
-std::string	handlePostRequest(const HttpRequest &request)
+std::string	handlePostRequest(const HttpRequest &request, clRequest& cl_request)
 {
 	// std::string filePath = STATIC_DIR + request.path + std::string("/index.html");
 	std::ostringstream response;
 
-
-	if (request.headers.find("Content-Type") != request.headers.end())
+	if (cl_request.headers.find("content-type") != cl_request.headers.end())
 	{
-		std::string contentType = request.headers.at("Content-Type");
+		const std::vector<std::string>& values_vector = cl_request.headers.at("content-type");
 
-		if (contentType.find("application/x-www-form-urlencoded") != std::string::npos)
+		for (size_t i = 0; i < values_vector.size(); i++)
 		{
-			std::string filePath = joinPaths((STATIC_DIR + request.path), "index.html");
-			// return (serveStaticFile(filePath));
-			response	<< "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: "
-						<< (request.cgiBody.size()) << "\r\n\r\n"
-						<< request.cgiBody;
-		} 
-		else if (contentType.find("application/json") != std::string::npos)
-		{
-			response	<< "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: "
-						<< (40 + request.body.size()) << "\r\n\r\n"
-						<< "{ \"message\": \"Received JSON\", \"data\": " << request.body << " }";
+			if (values_vector[i].find("text/plain") != std::string::npos)
+			{
+				response	<< "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: "
+							<< (cl_request.body.size()) << "\r\n\r\n"
+							<< cl_request.body;
+			}
+			else if (values_vector[i].find("multipart/form-data") != std::string::npos)
+			{
+				std::string filePath = joinPaths((STATIC_DIR + request.path), "upload.html");
+				std::cout << "filePath: " << filePath << std::endl;
+				return (serveStaticFile(filePath));
+			}
+			else
+				response 	<< "HTTP/1.1 400 Bad Request\r\nContent-Length: 14\r\n\r\nInvalid Format";
 		}
-		else if (contentType.find("text/plain") != std::string::npos)
-		{
-			response	<< "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: "
-						<< (request.body.size()) << "\r\n\r\n"
-						<< request.body;
-		}
-		else if (contentType.find("multipart/form-data") != std::string::npos)
-		{
-			std::string filePath = joinPaths((STATIC_DIR + request.path), "upload.html");
-			std::cout << "filePath: " << filePath << std::endl;
-			return (serveStaticFile(filePath));
-		}
-		else
-			response 	<< "HTTP/1.1 400 Bad Request\r\nContent-Length: 14\r\n\r\nInvalid Format";
 	}
-	else 
+	else
 		response << "HTTP/1.1 400 Bad Request\r\nContent-Length: 15\r\n\r\nNo Content-Type";
-
+	(void)request;
 	return (response.str());
+
+	// if (request.headers.find("Content-Type") != request.headers.end())
+	// {
+	// 	std::string contentType = request.headers.at("Content-Type");
+
+	// 	if (contentType.find("application/x-www-form-urlencoded") != std::string::npos)
+	// 	{
+	// 		std::string filePath = joinPaths((STATIC_DIR + request.path), "index.html");
+	// 		// return (serveStaticFile(filePath));
+	// 		response	<< "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: "
+	// 					<< (request.cgiBody.size()) << "\r\n\r\n"
+	// 					<< request.cgiBody;
+	// 	} 
+	// 	else if (contentType.find("application/json") != std::string::npos)
+	// 	{
+	// 		response	<< "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: "
+	// 					<< (40 + request.body.size()) << "\r\n\r\n"
+	// 					<< "{ \"message\": \"Received JSON\", \"data\": " << request.body << " }";
+	// 	}
+	// 	else if (contentType.find("text/plain") != std::string::npos)
+	// 	{
+	// 		response	<< "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: "
+	// 					<< (request.body.size()) << "\r\n\r\n"
+	// 					<< request.body;
+	// 	}
+	// 	else if (contentType.find("multipart/form-data") != std::string::npos)
+	// 	{
+	// 		std::string filePath = joinPaths((STATIC_DIR + request.path), "upload.html");
+	// 		std::cout << "filePath: " << filePath << std::endl;
+	// 		return (serveStaticFile(filePath));
+	// 	}
+	// 	else
+	// 		response 	<< "HTTP/1.1 400 Bad Request\r\nContent-Length: 14\r\n\r\nInvalid Format";
+	// }
+	// else 
+	// 	response << "HTTP/1.1 400 Bad Request\r\nContent-Length: 15\r\n\r\nNo Content-Type";
+	// (void)cl_request;
+	// return (response.str());
 }
 
-std::string	showDirList(const HttpRequest &request, const std::string& filePath)
+std::string	showDirList(const clRequest cl_request, const std::string& filePath)
 {
 	std::cout << "show directory listing" << std::endl;
 	std::ostringstream response;
@@ -360,7 +480,7 @@ std::string	showDirList(const HttpRequest &request, const std::string& filePath)
 		if (name == "." || name == "..") 
 			continue;
 
-		std::string href = request.path + name;
+		std::string href = cl_request.path + name;
 		if (entry->d_type == DT_DIR)
 		{
 			href = href + "/";
@@ -374,29 +494,29 @@ std::string	showDirList(const HttpRequest &request, const std::string& filePath)
 	std::cout << list.str().size() << std::endl;
 
 	response	<< "HTTP/1.1 200 OK\r\n"
-				<< "Content-Length: " << (113 + request.path.size() + list.str().size()) << "\r\n"
+				<< "Content-Length: " << (113 + cl_request.path.size() + list.str().size()) << "\r\n"
 				<< "\r\n"
 				<< "<!DOCTYPE html><html><head><title>Directory Listing</title></head>"
-				<< "<body><h1>Index of " << request.path << "</h1><ul>"
+				<< "<body><h1>Index of " << cl_request.path << "</h1><ul>"
 				<< list.str();
 	response	<< "</ul></body></html>";
 	closedir(dir);
 	return (response.str());
 }
 
-std::string	deleteFile(const HttpRequest &request)
+std::string	deleteFile(clRequest& cl_request)
 {
 	std::ostringstream response;
 	std::cout << "delete file here" << std::endl;
-	std::cout << request.path << std::endl;
-
-	size_t	filenamePos = request.path.find("filename=");
+	
+	size_t	filenamePos = cl_request.queryStr.find("filename=");
 	if (filenamePos == std::string::npos)
 		return ("HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\nContent-Length: 9\r\n\r\nBad Query");
 	filenamePos += 9;
-	
-	size_t filenameEnd = request.path.find("/", filenamePos);
-	std::string fileName = "/uploads/" + request.path.substr(filenamePos, filenameEnd - filenamePos);
+
+	size_t filenameEnd = cl_request.queryStr.size();
+	std::cout << "querystr end: " << filenameEnd << std::endl;
+	std::string fileName = "/uploads/" + cl_request.queryStr.substr(filenamePos, filenameEnd - filenamePos);
 	std::cout << "filename: " << fileName << std::endl;
 	std::string filePath = STATIC_DIR + fileName;
 	std::cout << "filepath: " << filePath << std::endl;
@@ -408,10 +528,10 @@ std::string	deleteFile(const HttpRequest &request)
 	return (response.str());
 }
 
-std::string routeRequest(const HttpRequest &request)
+std::string routeRequest(const HttpRequest &request, clRequest& cl_request)
 {
-	std::string filePath = STATIC_DIR + request.path;
-	if (request.method == "GET")
+	std::string filePath = STATIC_DIR + cl_request.path;
+	if (cl_request.method == "GET")
 	{
 		// if (request.cgi == true)
 		// {
@@ -436,7 +556,7 @@ std::string routeRequest(const HttpRequest &request)
 				}
 				else
 					std::cout << "no index found" << std::endl;
-				return (showDirList(request, filePath));
+				return (showDirList(cl_request, filePath));
 			}
 		}
 		else
@@ -456,10 +576,10 @@ std::string routeRequest(const HttpRequest &request)
 				return (ER404);
 		}
 	}
-	else if (request.method == "POST")
-		return (handlePostRequest(request));
-	else if (request.method == "DELETE")
-		return (deleteFile(request));
+	else if (cl_request.method == "POST")
+		return (handlePostRequest(request, cl_request));
+	else if (cl_request.method == "DELETE")
+		return (deleteFile(cl_request));
 	return (ER400);
 }
 

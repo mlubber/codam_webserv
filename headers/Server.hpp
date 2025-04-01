@@ -78,13 +78,13 @@ class Server
 
 #include "cgi.hpp"
 
-bool		parseRequest(const std::string request, HttpRequest& httprequest, const Server& server);
+bool		parseRequest(const std::string request, HttpRequest& httprequest, const Server& server, clRequest& cl_request);
 // bool		parseRequest(const char* request, HttpRequest& httprequest, const Server& server);
-std::string	generateHttpResponse(HttpRequest& parsedRequest);
+std::string	generateHttpResponse(HttpRequest& parsedRequest, clRequest& cl_request);
 std::string	getExtType(const std::string& filename);
 std::string	serveStaticFile(const std::string& filePath);
-std::string	handlePostRequest(const HttpRequest &request);
-std::string	routeRequest(const HttpRequest &request);
+std::string	handlePostRequest(const HttpRequest &request, clRequest& cl_request);
+std::string	routeRequest(const HttpRequest &request, clRequest& cl_request);
 void		printRequest(HttpRequest& httprequest);
 std::string dechunk(std::istream& stream, const std::string& input);
 

@@ -149,12 +149,12 @@ int main(int argc, char **argv) {
 	//myconfig.printConfig(myconfig.getConfigData(), 0);
 	std::vector<Serve> serverArray = makeServerArray(myconfig.getConfigData());
 
-// std::string str = 
-//     "GET /index.html?now=hello HTTP/1.1\r\n"
-//     "Host: 127.0.0.2:8081\r\n"
-//     "User-Agent: curl/7.68.0\r\n"
-//     "Accept: text/html\r\n"
-//     "Connection: keep-alive\r\n";
+	// std::string str = 
+    // "GET /index.html?now=hello HTTP/1.1\r\n"
+    // "Host: 127.0.0.2:8081\r\n"
+    // "User-Agent: curl/7.68.0\r\n"
+    // "Accept: text/html\r\n"
+    // "Connection: keep-alive\r\n";
 
 
 	// std::string str =
@@ -226,10 +226,6 @@ int main(int argc, char **argv) {
 	// }
 
 	// serverArray[result].answerRequest(client.getClStructRequest(5));
-
-
-
-
 
 
 	std::vector<std::pair<std::string, std::vector<int>>> configdata(serverArray.size());

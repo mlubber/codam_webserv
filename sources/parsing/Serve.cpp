@@ -35,7 +35,7 @@ bool	fileOrDirectoryExists(std::string path) {
 
 }
 
-void Serve::answerRequest(clRequest& clientRequest) {
+std::string Serve::answerRequest(clRequest& clientRequest) {
 	if (clientRequest.invalidRequest){
 		// return bad request
 	}else {
