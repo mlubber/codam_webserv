@@ -10,11 +10,12 @@ typedef struct s_cgiData
 	char**	envp;			// Environment double array	
 	int		ste_pipe[2];	// pipe for server to executable
 	int		ets_pipe[2];	// pipe for executable to server
-	std::string	data;		// Data read from pipe and saved into string
+	std::string	readData;	// Data read from pipe and saved into string
+	std::string writeData;	// Data to write to the pipe
 }	t_cgiData;
 
 int		cgi_check(HttpRequest& request, const Server& server);
 void	cgi_child_process(t_cgiData& cgi, const HttpRequest& request, const Server& server);
-int		cgi_parent_process(t_cgiData& cgi, HttpRequest& request, const pid_t& pid);
+int		cgi_parent_process(t_cgiData& cgi, HttpRequest& request, const Server& server, const pid_t& pid);
 bool	cgi_setup(t_cgiData& cgi, const HttpRequest& request, const Server& server);
 void	cgi_cleanup(t_cgiData& cgi, bool child);

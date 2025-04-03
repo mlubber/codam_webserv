@@ -10,6 +10,7 @@ void	cgi_cleanup(t_cgiData& cgi, bool child)
 		std::cerr << "CGI ERROR: closing ste_pipe[0] failed" << std::endl;
 	if (cgi.ste_pipe[1] != -1 && close(cgi.ste_pipe[1]))
 		std::cerr << "CGI ERROR: closing ets_pipe[1] failed" << std::endl;
+
 	if (child == true)
 	{
 		if (cgi.path != nullptr)
@@ -29,19 +30,47 @@ void	cgi_cleanup(t_cgiData& cgi, bool child)
 	}
 }
 
-static bool	init_cgi_struct(t_cgiData& cgi, HttpRequest& request)
+static bool	init_cgi_struct(t_cgiData& cgi, HttpRequest& request, Server& server)
 {
 	cgi.path = nullptr;
 	cgi.exe = nullptr;
 	cgi.envp = nullptr;
+	cgi.ets_pipe[0] = -1;
+	cgi.ets_pipe[1] = -1;
+	cgi.ste_pipe[0] = -1;
+	cgi.ste_pipe[1] = -1;
+
 	if (pipe(cgi.ets_pipe) == -1)
 		return (1);
-	if (request.method == "POST" && pipe(cgi.ste_pipe) == -1)
+	server.setNonBlocking(cgi.ets_pipe[0]);
+	struct epoll_event ets_pipe;
+	ets_pipe.events = EPOLLIN | EPOLLET;
+	ets_pipe.data.fd = cgi.ets_pipe[0];
+	if (epoll_ctl(server.getEpollFd(), EPOLL_CTL_ADD, cgi.ets_pipe[0], &ets_pipe) == -1)
 	{
-		if (close(cgi.ste_pipe[0]) == -1 || close(cgi.ste_pipe[0]) == -1)
-			return (1);
+		cgi_cleanup(cgi, false);
 		return (1);
 	}
+
+	if (request.method == "POST")
+	{
+		if (pipe(cgi.ste_pipe) == -1)
+		{
+			if (close(cgi.ets_pipe[0]) == -1 || close(cgi.ets_pipe[0]) == -1)
+				std::cerr << "CGI ERROR: Failed closing ets_pipe in parent" << std::endl;
+			return (1);
+		}
+		server.setNonBlocking(cgi.ste_pipe[1]);
+		struct epoll_event ste_pipe;
+		ste_pipe.events = EPOLLIN | EPOLLET;
+		ste_pipe.data.fd = cgi.ste_pipe[0];
+		if (epoll_ctl(server.getEpollFd(), EPOLL_CTL_ADD, cgi.ste_pipe[1], &ste_pipe) == -1)
+		{
+			cgi_cleanup(cgi, false);
+			return (1);
+		}
+	}
+
 	return (0);
 }
 
@@ -57,22 +86,22 @@ static int	create_cgi_process(t_cgiData& cgi, HttpRequest& request, const Server
 	}
 	if (pid == 0)
 		cgi_child_process(cgi, request, server);
-	return (cgi_parent_process(cgi, request, pid));
+	return (cgi_parent_process(cgi, request, server, pid));
 }
 
-int	cgi_check(HttpRequest& request, const Server& server)
+int	cgi_check(HttpRequest& request, Server& server)
 {
 	t_cgiData	cgi;
-	int			status = -1;
+	int			status;
 
 	if (request.path.compare(0, 9, "/cgi-bin/") == 0)
 	{
 		errno = 0; // temporary, till bug somewhere else is found
 		request.cgi = true;
-		if (init_cgi_struct(cgi, request))
+		if (init_cgi_struct(cgi, request, server))
 			return (errno);
 		status = create_cgi_process(cgi, request, server);
-		std::cout << "STATUS: " << status << std::endl;
+		std::cout << "CGI STATUS: " << status << std::endl;
 		errno = 0;
 		return (status);
 	}

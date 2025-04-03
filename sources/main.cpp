@@ -1,26 +1,7 @@
 #include "../headers/Server.hpp"
-
-
-// int	main()
-// {
-	// Server server;
-// int	main(void)
-// {
-// 	Server server;
-
-// 	if (!server.initialize())
-// 		return (1);
-// 	server.run();
-
-// 	return (0);
-// }
-
-
-
 #include "../headers/Configuration.hpp"
 #include "../headers/ValidationConfigFile.hpp"
 #include "../headers/Serve.hpp"
-
 
 
 int main(int argc, char **argv) {

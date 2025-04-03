@@ -16,7 +16,6 @@
 # include <stdlib.h>
 # include <sys/wait.h>
 
-// # include "cgi.hpp"
 #include "Client.hpp"
 
 # define PORT 8080
@@ -50,14 +49,18 @@ class Server
 	private:
 
 		int							_server_fd;
+		int							_epoll_fd;
 		struct sockaddr_in			_address;
 		socklen_t					_addr_len;
-		std::map<int, std::string>	_client_buffers;
-		std::map<int, std::string>	_responses;
-		int							_epoll_fd;
+
+		std::vector<Client>			_clients;
+		int							_client_count;
+
+		std::map<int, std::string>	_client_buffers;	// Needs to be removed
+		std::map<int, std::string>	_responses;			// Needs to be removed
+
 		const std::string			_name; // for cgi environment var server name - Now temp, but needs to come from config
 		const std::string			_port; // for cgi environment var port - Now temp, but needs to come from config
-
 		const std::string			_root; // temp till Abbas adds his config file code
 };
 
