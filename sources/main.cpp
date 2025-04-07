@@ -20,6 +20,7 @@
 // }
 
 std::vector<Serve>	serverArray;
+
 std::vector<Serve>& makeServerArray(ConfigBlock& configData) {
 	int i = 0;
 	
@@ -146,12 +147,46 @@ int main(int argc, char **argv) {
 
 
 
-
 	ValidationConfigFile	validator(myconfig.getConfigData());
 	std::cout << "printing all server blocks after check and add all base key value!\n\n\n\n" << std::endl;
 	//validator.printConfig(validator.getConfig(), 0);
-	//myconfig.printConfig(myconfig.getConfigData(), 0);
+	// myconfig.printConfig(myconfig.getConfigData(), 0);
+
+	// ConfigBlock serverBlock = myconfig.getServerBlock("127.0.0.2", "8082");
+
+	// for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values) 
+	// {
+	// 	std::cout << value.first <<": ";
+	// 	for (const std::string& str : value.second)
+	// 		std::cout << str << ", ";
+	// 	std::cout << std::endl;
+	// }
+	// for (const std::pair<const std::string, ConfigBlock> &nested : serverBlock.nested) {
+	// 	std::cout << nested.first << " {" << std::endl;
+	// 	for (const std::pair<const std::string, std::vector<std::string>> &value : nested.second.values) {
+	// 		std::cout << value.first <<": ";
+	// 		for (const std::string& str : value.second)
+	// 			std::cout << str << ", ";
+	// 		std::cout << std::endl;
+	// 	}
+	// 	std::cout << "}" << std::endl;
+	// }
+
 	std::vector<Serve> serverArray = makeServerArray(myconfig.getConfigData());
+
+	// std::cout << "print server array: \n\n\n" << std::endl;
+	// for (size_t i = 0; i < serverArray.size(); i++)
+	// {
+	// 	std::cout << "server index : " << i << std::endl;
+	// 	ConfigBlock map = serverArray[i].getServerBlock();
+	// 	for (const std::pair<const std::string, std::vector<std::string>> &value : map.values) {
+	// 		std::cout << value.first <<"  :  ";
+	// 		for (const std::string& str : value.second)
+	// 			std::cout << str << ",  ";
+	// 		std::cout << std::endl;
+	// 	}
+	// 	std::cout << std::endl;
+	// }
 
 	// std::string str = 
     // "GET /index.html?now=hello HTTP/1.1\r\n"
@@ -262,7 +297,7 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	Server server;
+	Server server(myconfig);
 
 	if (!server.initialize(configdata))
 		return (1);

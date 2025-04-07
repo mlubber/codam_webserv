@@ -17,8 +17,24 @@ Configuration::Configuration(const Configuration& other) {
 	this->_configData.values = other._configData.values;
 }
 
-ConfigBlock&		Configuration::getConfigData(){
+ConfigBlock&	Configuration::getConfigData(){
 	return (_configData);
+}
+
+ConfigBlock&	Configuration::getServerBlock(const std::string& host, const std::string& port) {
+	for (std::map<std::string, ConfigBlock>::iterator it = _configData.nested.begin(); it != _configData.nested.end(); ++it) {
+		if (it->first == "server") {
+			ConfigBlock& serverBlock = it->second;
+			std::vector<std::string> serverHosts = serverBlock.values["host"];
+			std::vector<std::string> listenPorts = serverBlock.values["listen"];
+
+			if ((std::find(serverHosts.begin(), serverHosts.end(), host) != serverHosts.end() || host == "localhost") &&
+				std::find(listenPorts.begin(), listenPorts.end(), port) != listenPorts.end()) {
+				return (serverBlock);
+			}
+		}
+	}
+	throw std::runtime_error("No matching server block found for host: " + host + " and port: " + port);
 }
 
 Configuration& Configuration::operator=(const Configuration& other) {
@@ -194,3 +210,12 @@ void Configuration::printConfig(const ConfigBlock &config, int depth) {
         std::cout << indent << "}" << std::endl;
     }
 }
+
+// std::vector<std::string>	Configuration::getConfigValues(ConfigBlock& config, const std::string& key)
+// {
+// 	std::vector<std::string> values;
+// 	std::map<std::string, std::vector<std::string>>::iterator it = config.values.find(key);
+// 	if (it != config.values.end())
+// 		values = it->second;
+// 	return (values);
+// }

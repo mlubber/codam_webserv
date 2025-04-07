@@ -27,6 +27,42 @@ static void bodytrail(std::istringstream& request_stream, HttpRequest& httpreque
 	size_t bodysize = httprequest.body.size();
 	httprequest.headers.insert({"Content-Length", std::to_string(bodysize)});
 }
+
+std::string servError(std::string error_code, const ConfigBlock& serverBlock)
+{
+	std::string root;
+	for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values)
+		if (value.first == "root")
+			root = value.second.front();
+	
+	std::string path;
+    for (const std::pair<const std::string, std::vector<std::string>>& value : serverBlock.values) 
+    {
+        if (value.first == "error_page") 
+        {
+            const std::vector<std::string>& errorValues = value.second;
+            for (std::vector<std::string>::const_iterator it = errorValues.begin(); it != errorValues.end(); ++it) 
+            {
+                if (*it == error_code) 
+                {
+                    std::cout << error_code << " FOUND" << std::endl;
+                    if (++it != errorValues.end()) // Check if the next value exists
+                    {
+                        path = *it; // Save the next value
+                        std::cout << "Path for Error " << error_code << ": " << path << std::endl;
+                    }
+                    break; // Exit the loop after finding the next value
+                }
+            }
+        }
+    }
+	std::cout << root + path << std::endl;
+    if (error_code == "404" && !path.empty())
+        return (serveStaticFile(root + path));
+	else
+		return (ER404); // Return the path for the 404 error page
+    return (ER500); // Default error responses
+}
 // static void saveFile(const clRequest& httprequest, const std::string& boundary)
 // {
 // 	std::cout << "save file client" << std::endl;
@@ -85,8 +121,13 @@ static void bodytrail(std::istringstream& request_stream, HttpRequest& httpreque
 // 	std::cout << "File saved: " << fileName << std::endl;
 // }
 
-static void saveUploadedFile(const HttpRequest& httprequest, const std::string& boundary)
+static void saveUploadedFile(const HttpRequest& httprequest, const std::string& boundary, const ConfigBlock& serverBlock)
 {
+	std::string root;
+	for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values)
+		if (value.first == "root")
+			root = value.second.front();
+
 	std::cout << "save file here" << std::endl;
 	size_t start = httprequest.body.find(boundary);
 	if (start == std::string::npos)
@@ -112,7 +153,7 @@ static void saveUploadedFile(const HttpRequest& httprequest, const std::string& 
 	std::string fileName = httprequest.body.substr(filenamePos, filenameEnd - filenamePos);
 	std::cout << "filename: " << fileName << std::endl;
 
-	std::string filePath = joinPaths(STATIC_DIR + httprequest.path, fileName);
+	std::string filePath = joinPaths(root + httprequest.path, fileName);
 	std::cout << "registry path: " << filePath << std::endl;
 
 	size_t dataStart = httprequest.body.find("\r\n\r\n", filenameEnd);
@@ -143,7 +184,7 @@ static void saveUploadedFile(const HttpRequest& httprequest, const std::string& 
 	std::cout << "File saved: " << fileName << std::endl;
 }
 
-bool	parseRequest(const std::string request, HttpRequest& httprequest, const Server& server, clRequest& cl_request)
+bool	parseRequest(const std::string request, HttpRequest& httprequest, const Server& server, clRequest& cl_request, const ConfigBlock& serverBlock)
 {
 	std::cout << "\n\nPARSE REQUEST:\n" << std::endl;
 	
@@ -285,7 +326,7 @@ bool	parseRequest(const std::string request, HttpRequest& httprequest, const Ser
 		std::cout << boundary << std::endl;
 		std::cout << closing_boundary << std::endl;
 
-		saveUploadedFile(httprequest, boundary);
+		saveUploadedFile(httprequest, boundary, serverBlock);
 	}
 	else if (httprequest.headers.find("Content-Length") != httprequest.headers.end()) // Read body if Content-Length is provided
 	{
@@ -316,24 +357,25 @@ bool	parseRequest(const std::string request, HttpRequest& httprequest, const Ser
 	return (true);
 }
 
-std::string	generateHttpResponse(HttpRequest& parsedRequest, clRequest& cl_request)
-{
-	std::string response;
+// std::string	generateHttpResponse(HttpRequest& parsedRequest, clRequest& cl_request)
+// {
+// 	std::string response;
 
-	if (parsedRequest.path == "/favicon.ico")
-		parsedRequest.path = "/";
-	if (!parsedRequest.path.empty() && *parsedRequest.path.rbegin() != '/')
-		parsedRequest.path.append("/");
-	// if (cl_request.path == "/favicon.ico")
-	// 	cl_request.path = "/";
-	// if (!cl_request.path.empty() && *cl_request.path.rbegin() != '/')
-	// 	cl_request.path.append("/");
+	
+// 	if (parsedRequest.path == "/favicon.ico")
+// 		parsedRequest.path = "/";
+// 	if (!parsedRequest.path.empty() && *parsedRequest.path.rbegin() != '/')
+// 		parsedRequest.path.append("/");
+// 	// if (cl_request.path == "/favicon.ico")
+// 	// 	cl_request.path = "/";
+// 	// if (!cl_request.path.empty() && *cl_request.path.rbegin() != '/')
+// 	// 	cl_request.path.append("/");
 
-	// std::cout << "generate client request path: " << cl_request.path << std::endl;
+// 	// std::cout << "generate client request path: " << cl_request.path << std::endl;
 
-	response = routeRequest(parsedRequest, cl_request);
-	return (response);
-}
+// 	response = routeRequest(parsedRequest, cl_request);
+// 	return (response);
+// }
 
 
 std::string	getExtType(const std::string& filename)
@@ -389,10 +431,15 @@ std::string serveStaticFile(const std::string& filePath)
 	return (response.str());
 }
 
-std::string	handlePostRequest(const HttpRequest &request, clRequest& cl_request)
+std::string	handlePostRequest(const HttpRequest &request, clRequest& cl_request, const ConfigBlock& serverBlock)
 {
 	// std::string filePath = STATIC_DIR + request.path + std::string("/index.html");
 	std::ostringstream response;
+	std::string root;
+	for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values)
+		if (value.first == "root")
+			root = value.second.front();
+
 
 	// if (cl_request.headers.find("content-type") != cl_request.headers.end())
 	// {
@@ -427,7 +474,7 @@ std::string	handlePostRequest(const HttpRequest &request, clRequest& cl_request)
 
 		if (contentType.find("application/x-www-form-urlencoded") != std::string::npos)
 		{
-			std::string filePath = joinPaths((STATIC_DIR + request.path), "index.html");
+			std::string filePath = joinPaths((root + request.path), "index.html");
 			// return (serveStaticFile(filePath));
 			response	<< "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: "
 						<< (request.cgiBody.size()) << "\r\n\r\n"
@@ -447,7 +494,7 @@ std::string	handlePostRequest(const HttpRequest &request, clRequest& cl_request)
 		}
 		else if (contentType.find("multipart/form-data") != std::string::npos)
 		{
-			std::string filePath = joinPaths((STATIC_DIR + request.path), "upload.html");
+			std::string filePath = joinPaths((root + request.path), "upload.html");
 			std::cout << "filePath: " << filePath << std::endl;
 			return (serveStaticFile(filePath));
 		}
@@ -460,8 +507,13 @@ std::string	handlePostRequest(const HttpRequest &request, clRequest& cl_request)
 	return (response.str());
 }
 
-std::string	showDirList(const HttpRequest& request, const std::string& filePath)
+std::string	showDirList(const HttpRequest& request, const std::string& filePath, const ConfigBlock& serverBlock)
 {
+	std::string root;
+	for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values)
+		if (value.first == "root")
+			root = value.second.front();
+	
 	std::cout << "show directory listing" << std::endl;
 	std::ostringstream response;
 	std::ostringstream list;
@@ -469,8 +521,9 @@ std::string	showDirList(const HttpRequest& request, const std::string& filePath)
 	DIR *dir = opendir(filePath.c_str());
 	if (!dir)
 		return ("HTTP/1.1 403 Forbidden\r\nContent-Length: 9\r\n\r\nForbidden");
-	std::string home = STATIC_DIR;
-	home.append("/");
+	std::string home = root;
+	if (!home.empty() && *home.rbegin() != '/')
+		home.append("/");
 	if (filePath != home)
 		list << "<li><a href=\"../\">../</a></li>\n";
 
@@ -502,14 +555,20 @@ std::string	showDirList(const HttpRequest& request, const std::string& filePath)
 				<< list.str();
 	response	<< "</ul></body></html>";
 	closedir(dir);
+	(void)serverBlock;
 	return (response.str());
 }
 
-std::string	deleteFile(const HttpRequest& request)
+std::string	deleteFile(const HttpRequest& request, const ConfigBlock& serverBlock)
 {
 	std::ostringstream response;
 	std::cout << "delete file here" << std::endl;
 	std::cout << request.path << std::endl;
+
+	std::string root;
+	for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values)
+		if (value.first == "root")
+			root = value.second.front();
 	
 	size_t	filenamePos = request.path.find("filename=");
 	if (filenamePos == std::string::npos)
@@ -520,19 +579,61 @@ std::string	deleteFile(const HttpRequest& request)
 	std::cout << "filenameEnd end: " << filenameEnd << std::endl;
 	std::string fileName = "/uploads/" + request.path.substr(filenamePos, filenameEnd - filenamePos);
 	std::cout << "filename: " << fileName << std::endl;
-	std::string filePath = STATIC_DIR + fileName;
+	std::string filePath = root + fileName;
 	std::cout << "filepath: " << filePath << std::endl;
 
 	if (remove(filePath.c_str()) == 0)
 		response	<< "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 12\r\n\r\nFile Deleted";
 	else
 		response	<< "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\nContent-Length: 14\r\n\r\nFile Not Found";
-	return (response.str());
+	(void)serverBlock;
+		return (response.str());
 }
 
-std::string routeRequest(const HttpRequest &request, clRequest& cl_request)
+std::string routeRequest(const HttpRequest &request, clRequest& cl_request, const ConfigBlock& serverBlock)
 {
-	std::string filePath = STATIC_DIR + request.path;
+	std::string root;
+	for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values)
+		if (value.first == "root")
+			root = value.second.front();
+
+	std::string filePath = root + cl_request.path;
+
+	ConfigBlock	locBlock;
+	std::string	locPath;
+	std::cout << "cl_request path: " << cl_request.path << std::endl;
+	for (const std::pair<const std::string, ConfigBlock> &nested : serverBlock.nested)
+	{
+		for (const std::pair<const std::string, std::vector<std::string>> &value : nested.second.values)
+		{
+			if (value.first == "location")
+			{
+				std::string temp = value.second.front();
+				if (!temp.empty() && *temp.rbegin() != '/')
+					temp.append("/");
+				if (temp == cl_request.path)
+				{
+					locPath = value.second.front();
+					locBlock = nested.second;
+				}
+				break;
+			}
+		}
+	}
+	std::string index;
+	for (const std::pair<const std::string, std::vector<std::string>> &value : locBlock.values)
+		if (value.first == "index")
+			index = value.second.front();
+	if (!index.empty())
+		std::cout << "index found in nested block: " << index << std::endl;
+	else
+		index = "index.html";
+
+	std::string autoindex;
+	for (const std::pair<const std::string, std::vector<std::string>> &value : locBlock.values)
+		if (value.first == "autoindex")
+			autoindex = value.second.front();
+
 	if (request.method == "GET")
 	{
 		// if (request.cgi == true)
@@ -545,21 +646,30 @@ std::string routeRequest(const HttpRequest &request, clRequest& cl_request)
 		if (stat(filePath.c_str(), &stats) == 0) //fills stats with metadata from filePath if filePath exists
 		{
 			std::cout << "Size: " << stats.st_size << " bytes" << std::endl;
-			if (S_ISDIR(stats.st_mode)) // checks if filePath is a working directory
+			if (S_ISDIR(stats.st_mode) && !locPath.empty()) // checks if filePath is a working directory
 			{
 				std::cout << filePath << " is a directory!" << std::endl;
-				std::string index = joinPaths(filePath, "index.html");
-				std::cout << "looking for index: " << index << std::endl;
-				if (stat(index.c_str(), &stats) == 0) // checks if the given index is present in the directory
+
+				std::string fullPath = joinPaths(filePath, index);
+
+				std::cout << "looking for index: " << fullPath << std::endl;
+				if (stat(fullPath.c_str(), &stats) == 0) // checks if the given index is present in the directory
 				{
-					std::cout << "index.html found!" << std::endl;
-					std::cout << "filePath: " << index << std::endl;
-					return (serveStaticFile(index));
+					std::cout << "index found!" << std::endl;
+					std::cout << "filePath: " << fullPath << std::endl;
+					return (serveStaticFile(fullPath));
 				}
 				else
+				{
 					std::cout << "no index found" << std::endl;
-				return (showDirList(request, filePath));
+					if (autoindex == "on")
+						return (showDirList(request, filePath, serverBlock));
+					else
+						return (servError("404", serverBlock));
+				}
 			}
+			else
+				return (servError("404", serverBlock));
 		}
 		else
 		{
@@ -575,13 +685,14 @@ std::string routeRequest(const HttpRequest &request, clRequest& cl_request)
 				}
 			}
 			else
-				return (ER404);
+				return (servError("404", serverBlock));
 		}
 	}
 	else if (request.method == "POST")
-		return (handlePostRequest(request, cl_request));
+		return (handlePostRequest(request, cl_request, serverBlock));
 	else if (request.method == "DELETE")
-		return (deleteFile(request));
+		return (deleteFile(request, serverBlock));
+	(void)serverBlock;
 	return (ER400);
 }
 

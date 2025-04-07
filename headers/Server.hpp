@@ -20,6 +20,7 @@
 # include <algorithm>
 
 # include "Request.hpp"
+# include "Configuration.hpp"
 // # include "cgi.hpp"
 
 
@@ -49,45 +50,47 @@ class Server
 {
 	public:
 
-		Server();
+		Server(const Configuration& config);
 		Server(const Server& other);
 		~Server();
 
 		Server&	operator=(const Server& other);
 
+		
 		bool			initialize(const std::vector<std::pair<std::string, std::vector<int> > >& server_configs);
 		void			run();
 		void			connectClient(int epoll_fd, int server_fd);
 		void			handleRead(int epoll_fd, int client_fd, const Server& server);
 		void			handleWrite(int epoll_fd, int client_fd);
 		void			setNonBlocking(int socket);
-
-		const std::string	getServerInfo(int i) const;
-		int					getEpollFd() const;
+		std::string		generateHttpResponse(HttpRequest& parsedRequest, clRequest& cl_request, const ConfigBlock& serverBlock);
+		
+		const std::string		getServerInfo(int i) const;
+		int						getEpollFd() const;
+		const Configuration&	getConfig() const;
 
 	private:
 
 		std::vector<int>			_server_fds;
-		struct sockaddr_in			_address;
-		socklen_t					_addr_len;
+		// struct sockaddr_in			_address;
 		std::map<int, std::string>	_client_buffers;
 		std::map<int, std::string>	_responses;
 		int							_epoll_fd;
+		Configuration				_config;
 		const std::string			_name; // for cgi environment var server name - Now temp, but needs to come from config
 		const std::string			_port; // for cgi environment var port - Now temp, but needs to come from config
-
 		const std::string			_root; // temp till Abbas adds his config file code
 };
 
 #include "cgi.hpp"
 
-bool		parseRequest(const std::string request, HttpRequest& httprequest, const Server& server, clRequest& cl_request);
+bool		parseRequest(const std::string request, HttpRequest& httprequest, const Server& server, clRequest& cl_request, const ConfigBlock& serverBlock);
 // bool		parseRequest(const char* request, HttpRequest& httprequest, const Server& server);
-std::string	generateHttpResponse(HttpRequest& parsedRequest, clRequest& cl_request);
+// std::string	generateHttpResponse(HttpRequest& parsedRequest, clRequest& cl_request);
 std::string	getExtType(const std::string& filename);
 std::string	serveStaticFile(const std::string& filePath);
-std::string	handlePostRequest(const HttpRequest &request, clRequest& cl_request);
-std::string	routeRequest(const HttpRequest &request, clRequest& cl_request);
+std::string	handlePostRequest(const HttpRequest &request, clRequest& cl_request, const ConfigBlock& serverBlock);
+std::string	routeRequest(const HttpRequest &request, clRequest& cl_request,  const ConfigBlock& serverBlock);
 void		printRequest(HttpRequest& httprequest);
 std::string dechunk(std::istream& stream, const std::string& input);
 std::string	deleteFile(const HttpRequest& request);

@@ -1,9 +1,8 @@
 #include "../../headers/Server.hpp"
 
-Server::Server() : _addr_len(sizeof(_address)), _name("localhost"), _port("8080"), _root("/www")
+Server::Server(const Configuration& config) : _config(config), _name("localhost"), _port("8080"), _root("/www")
 {
 	std::cout	<< "Default constructor"
-				<< "\nAddr len: " << _addr_len
 				<< std::endl;
 }
 
@@ -280,13 +279,37 @@ void	Server::handleRead(int _epoll_fd, int client_fd, const Server& server)
 	Client client;
 	client.readRequest(_client_buffers[client_fd], client_fd);
 	clRequest cl_request = client.getClStructRequest(client_fd);
-	if (!parseRequest(_client_buffers[client_fd], httprequest, server, cl_request))
+	
+	std::cout << "client request host: \n" << cl_request.host << std::endl;
+	std::cout << "client request port: \n" << cl_request.port << std::endl;
+	ConfigBlock serverBlock = _config.getServerBlock(cl_request.host, cl_request.port);
+
+	std::cout << "server block that's responsible for this request: \n" << std::endl;
+	for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values) 
+	{
+		std::cout << value.first <<": ";
+		for (const std::string& str : value.second)
+			std::cout << str << ", ";
+		std::cout << std::endl;
+	}
+	for (const std::pair<const std::string, ConfigBlock> &nested : serverBlock.nested) {
+		std::cout << nested.first << " {" << std::endl;
+		for (const std::pair<const std::string, std::vector<std::string>> &value : nested.second.values) {
+			std::cout << value.first <<": ";
+			for (const std::string& str : value.second)
+				std::cout << str << ", ";
+			std::cout << std::endl;
+		}
+		std::cout << "}" << std::endl;
+	}
+	
+	if (!parseRequest(_client_buffers[client_fd], httprequest, server, cl_request, serverBlock))
 	{
 		std::cout << "parse request failed" << std::endl;
 		_responses[client_fd] = ER400;
 	}
 	else
-		_responses[client_fd] = generateHttpResponse(httprequest, cl_request);
+		_responses[client_fd] = generateHttpResponse(httprequest, cl_request, serverBlock);
 
 	struct epoll_event event;
 	event.events = EPOLLIN | EPOLLOUT;
@@ -338,6 +361,25 @@ void	Server::setNonBlocking(int socket)
 	}
 }
 
+std::string	Server::generateHttpResponse(HttpRequest& parsedRequest, clRequest& cl_request, const ConfigBlock& serverBlock)
+{
+	std::string response;
+
+	if (parsedRequest.path == "/favicon.ico")
+		parsedRequest.path = "/";
+	if (!parsedRequest.path.empty() && *parsedRequest.path.rbegin() != '/')
+		parsedRequest.path.append("/");
+	// if (cl_request.path == "/favicon.ico")
+	// 	cl_request.path = "/";
+	if (!cl_request.path.empty() && *cl_request.path.rbegin() != '/')
+		cl_request.path.append("/");
+
+	// std::cout << "generate client request path: " << cl_request.path << std::endl;
+
+	response = routeRequest(parsedRequest, cl_request, serverBlock);
+	return (response);
+}
+
 const std::string	Server::getServerInfo(int i) const
 {
 	if (i == 0)
@@ -351,4 +393,9 @@ const std::string	Server::getServerInfo(int i) const
 int	Server::getEpollFd() const
 {
 	return (_epoll_fd);
+}
+
+const Configuration&	Server::getConfig() const
+{
+	return (_config);
 }

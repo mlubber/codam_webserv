@@ -38,5 +38,6 @@ public:
 	void						parseConfig(const std::string &filename);
 	void						printConfig(const ConfigBlock &config, int depth);
 	ConfigBlock&				getConfigData();
-	std::vector<std::string>	getConfigValues(ConfigBlock& config, const std::string& key);
+	ConfigBlock&				getServerBlock(const std::string& host, const std::string& port);
+	// std::vector<std::string>	getConfigValues(ConfigBlock& config, const std::string& key);
 };

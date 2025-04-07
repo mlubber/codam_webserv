@@ -78,6 +78,12 @@ void	Client::resetStruct(int clientFD) {
 		requestStruct.path.clear();
 		requestStruct.method.clear();
 		requestStruct.headers.clear();
+		requestStruct.host.clear();
+		requestStruct.port.clear();
+	}
+	// Reset the isHeaderAppearTwice map for the new request
+	for (auto &header : isHeaderAppearTwice) {
+		header.second = false;
 	}
 }
 
@@ -108,6 +114,7 @@ int	parseHeaderSingleValue(std::string &headerName ,std::string &line, clRequest
 	if (isHeaderAppearTwice.find(headerName) != isHeaderAppearTwice.end()) {
 		if (isHeaderAppearTwice[headerName]){
 			// header should appears one 
+
 			std::cout << "header should appears one : " << headerName << std::endl;
 			requestStruct.invalidRequest = true;
 			return 1;
