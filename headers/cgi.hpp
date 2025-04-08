@@ -5,12 +5,11 @@
 
 typedef struct s_cgiData
 {
-	char*	path;			// path to executable
+	std::unique_ptr<char[]>	path;			// path to executable
 	char** 	exe;			// executable double array
 	char**	envp;			// Environment double array	
 	int		ste_pipe[2];	// pipe for server to executable
 	int		ets_pipe[2];	// pipe for executable to server
-	std::string	readData;	// Data read from pipe and saved into string
 	std::string writeData;	// Data to write to the pipe
 }	t_cgiData;
 

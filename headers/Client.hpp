@@ -2,6 +2,11 @@
 
 #include "Server.hpp"
 
+# define READSOCKET		0
+# define READCGI		1
+# define WRITESOCKET	2
+# define WRITECGI		3
+
 enum state {
 	reading_request,	// In loop of reading the request from the socket
 	parsing_request,	// Received the full request from the socket and now parsing
@@ -25,13 +30,14 @@ struct HttpRequest
 
 class Client {
 	private:
-		int							_state;				// state of the client
-		std::vector<int>			_fds;				// array of fds (socket en pipes)
-		std::vector<HttpRequest>	_request;			// array of parsed request structs
-		bool						_multi_request;		// 'true' if found that we've received multiple request from reading
-		std::string					_received;			// data received of socket
-		std::string					_temp_rec_buffer;	// data that was read but not part of 1st request
-		std::string					_response;			// the response that is going to be sent to the client
+		int					_state;				// state of the client
+		std::vector<int>	_fds;				// array of fds (socket en pipes)
+		HttpRequest			_request;			// array of parsed request structs
+		bool				_multi_request;		// 'true' if found that we've received multiple request from reading
+		std::string			_received;			// data received of socket
+		std::string			_temp_rec_buffer;	// data that was read but not part of 1st request
+		std::string			_response;			// the response that is going to be sent to the client
+		t_cgiData*			_cgi;
 
 	public:
 		Client(int socket_fd);
@@ -39,6 +45,15 @@ class Client {
 
 		void	handleEvent(int fd);
 
-		int 	getClientFds(int mode);
+		int 		getClientFds(int mode);
+		int			getClientState();
+		t_cgiData*	getCgiStruct();
 		
+		void	setReceivedData(std::string& data);
+		void	setClientState(int state);
+		void	setCgiStruct(t_cgiData* ptr);
+
+		void	readCGI();			// read from cgi	- uses read
+		void	writeCGI();			// write to CGI		- uses write
+
 };

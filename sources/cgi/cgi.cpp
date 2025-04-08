@@ -89,7 +89,7 @@ static int	create_cgi_process(t_cgiData& cgi, HttpRequest& request, const Server
 	return (cgi_parent_process(cgi, request, server, pid));
 }
 
-int	cgi_check(HttpRequest& request, Server& server)
+int	cgi_check(HttpRequest& request, Server& server, Client& client)
 {
 	t_cgiData	cgi;
 	int			status;
@@ -100,6 +100,7 @@ int	cgi_check(HttpRequest& request, Server& server)
 		request.cgi = true;
 		if (init_cgi_struct(cgi, request, server))
 			return (errno);
+		client.setCgiStruct(&cgi);
 		status = create_cgi_process(cgi, request, server);
 		std::cout << "CGI STATUS: " << status << std::endl;
 		errno = 0;

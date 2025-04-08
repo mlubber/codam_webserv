@@ -50,3 +50,60 @@ int Client::getClientFds(int index)
 	else
 		return (_fds[index]);
 }
+
+t_cgiData* Client::getCgiStruct()
+{
+	return (_cgi);
+}
+
+void Client::setCgiStruct(t_cgiData* ptr)
+{
+	_cgi = ptr;
+}
+
+void	Client::setReceivedData(std::string& data)
+{
+	_received += data;
+}
+
+
+void	Client::setClientState(int state)
+{
+	_state = state;
+	switch (_state) // Just for testing
+	{
+		case 0:
+			std::cout << "\nClient state set to: reading_request\n" << std::endl;
+			break;
+		case 1:
+			std::cout << "\nClient state set to: parsing_request\n" << std::endl;
+			break;
+		case 2:
+			std::cout << "\nClient state set to: start_response\n" << std::endl;
+			break;
+		case 3:
+			std::cout << "\nClient state set to: sending_response\n" << std::endl;
+			break;
+		case 4:
+			std::cout << "\nClient state set to: cgi_read\n" << std::endl;
+			break;
+		case 5:
+			std::cout << "\nClient state set to: cgi_write\n" << std::endl;
+			break;
+		default:
+			std::cout << "\nClient state set to: none\n" << std::endl;
+			break;
+	}
+}
+
+
+
+
+class Test {
+	private:
+
+
+
+	public:
+		Test(std::string test);
+};

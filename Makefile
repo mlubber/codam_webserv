@@ -19,9 +19,11 @@ PARSING_DIR			=	$(SRC_DIR)parsing/Configuration.cpp \
 						$(SRC_DIR)parsing/Serve.cpp \
 						$(SRC_DIR)parsing/ValidationConfigFile.cpp
 
-CLASS_DIR			=	$(SRC_DIR)classes/Server.cpp
+CLASS_DIR			=	$(SRC_DIR)classes/Client.cpp \
+						$(SRC_DIR)classes/Server.cpp
 
-REQ_DIR				=	$(SRC_DIR)requests/Requests.cpp
+REQ_DIR				=	$(SRC_DIR)requests/handleEvents.cpp \
+						$(SRC_DIR)requests/Requests.cpp
 
 CGI_DIR				=	$(SRC_DIR)cgi/cgi.cpp \
 						$(SRC_DIR)cgi/cgi_parent.cpp \
