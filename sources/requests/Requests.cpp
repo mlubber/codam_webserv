@@ -1,4 +1,6 @@
+#include "../../headers/headers.hpp"
 #include "../../headers/Server.hpp"
+#include "../../headers/Client.hpp"
 
 static std::string joinPaths(const std::string &path, const std::string &file) 
 {
@@ -86,7 +88,7 @@ static void saveUploadedFile(const HttpRequest& httprequest, const std::string& 
 	std::cout << "File saved: " << fileName << std::endl;
 }
 
-bool	parseRequest(const std::string request, HttpRequest& httprequest, const Server& server)
+bool	parseRequest(const std::string request, HttpRequest& httprequest, const Server& server, Client& client)
 {
 	std::cout << "\n\nPARSE REQUEST:\n" << std::endl;
 	std::istringstream	request_stream(request);
@@ -126,7 +128,7 @@ bool	parseRequest(const std::string request, HttpRequest& httprequest, const Ser
 
 	int cgi_status;
 
-	cgi_status = cgi_check(httprequest, server);
+	cgi_status = cgi_check(httprequest, server, client);
 	if (cgi_status == 0)
 	{
 		std::cout << "YEP CGI STUFF FOUND AND WORKED CORRECTLY" << std::endl;

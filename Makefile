@@ -20,7 +20,7 @@ PARSING_DIR			=	$(SRC_DIR)parsing/Configuration.cpp \
 						$(SRC_DIR)parsing/ValidationConfigFile.cpp
 
 CLASS_DIR			=	$(SRC_DIR)classes/Client.cpp \
-						$(SRC_DIR)classes/Server.cpp
+						$(SRC_DIR)classes/Server2.cpp
 
 REQ_DIR				=	$(SRC_DIR)requests/handleEvents.cpp \
 						$(SRC_DIR)requests/Requests.cpp

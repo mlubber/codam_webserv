@@ -1,11 +1,15 @@
 #pragma once
 
+#include "headers.hpp"
 #include "Server.hpp"
-#define CGIBUFFER 1024
+
+#define CGIBUFFER 8192
+
+struct HttpRequest;
 
 typedef struct s_cgiData
 {
-	std::unique_ptr<char[]>	path;			// path to executable
+	char*	path;			// path to executable
 	char** 	exe;			// executable double array
 	char**	envp;			// Environment double array	
 	int		ste_pipe[2];	// pipe for server to executable
@@ -13,8 +17,10 @@ typedef struct s_cgiData
 	std::string writeData;	// Data to write to the pipe
 }	t_cgiData;
 
-int		cgi_check(HttpRequest& request, const Server& server);
+int		cgi_check(HttpRequest& request, const Server& server, Client& client);
 void	cgi_child_process(t_cgiData& cgi, const HttpRequest& request, const Server& server);
-int		cgi_parent_process(t_cgiData& cgi, HttpRequest& request, const Server& server, const pid_t& pid);
 bool	cgi_setup(t_cgiData& cgi, const HttpRequest& request, const Server& server);
 void	cgi_cleanup(t_cgiData& cgi, bool child);
+int		cgi_parent_process(t_cgiData& cgi, HttpRequest& request, const Server& server, const pid_t& pid);
+void	write_to_pipe(t_cgiData& cgi, const Server& server, bool start);
+void	read_from_pipe(t_cgiData& cgi, const Server& server, std::string& cgiBody);

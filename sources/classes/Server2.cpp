@@ -1,4 +1,6 @@
+#include "../../headers/headers.hpp"
 #include "../../headers/Server.hpp"
+#include "../../headers/Client.hpp"
 
 Server::Server() : _server_fd(-1), _addr_len(sizeof(_address)), _client_count(0), _name("localhost"), _port("8080"), _root("/www")
 {
@@ -109,7 +111,7 @@ void Server::run(void)
 					int client_amount = _clients[i]->getClientFds(-1);
 					for (int o = 0; o < client_amount; ++o)
 						if (_clients[i]->getClientFds(o) == fd)
-							_clients[i]->handleEvent(fd);
+							_clients[i]->handleEvent(*this);
 				}
 			}
 		}
@@ -152,6 +154,31 @@ void Server::connectClient(int _epoll_fd)
 	}
 }
 
+void Server::removeClient(Client* client)
+{
+	int client_fd = client->getClientFds(0);
+
+	if (client->checkCgiPtr())
+	{
+		if (client->getCgiStruct().ets_pipe[1] != -1)
+			if (close(client->getCgiStruct().ets_pipe[1]) == -1)
+				std::cout << "SERVER ERROR: Failed closing cgi_pipe write_end " << std::endl;
+		if (client->getCgiStruct().ste_pipe[0] != -1)
+			if (close(client->getCgiStruct().ste_pipe[0]) == -1)
+				std::cout << "SERVER ERROR: Failed closing cgi_pipe read_end " << std::endl;
+	}
+
+	int status = epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, client_fd, NULL);
+	if (status == -1)
+		std::cout << "SERVER ERROR: Failed deleting client fd " << client_fd << " from epoll!" << std::endl;
+	if (close(client_fd) == -1)
+		std::cout << "SERVER ERROR: Failed closing client_fd " << client_fd << std::endl;
+
+	
+	delete client;
+	std::cout << "Client disconnected: " << client_fd << std::endl;
+	return ;
+}
 
 
 
@@ -184,85 +211,34 @@ int	Server::recvFromSocket(Client& client)
 	return (1);
 }
 
-void	Server::removeClient(Client* client)
+int	Server::sendToSocket(Client& client)
 {
-	int client_fd = client->getClientFds(0);
+	std::string response = client.getClientResponse();
+	if (response.empty())
+		return;
 
-	// Current situation could lead to dangling ptr
-	t_cgiData* temp = client->getCgiStruct();
-	if (temp != NULL)
+	int	socket_fd = client.getClientFds(0);
+	int bytes_sent = send(socket_fd, response.c_str(), response.size(), 0);
+	if (bytes_sent <= 0) 
 	{
-		if (temp->ets_pipe[1] != -1)
-			if (close(temp->ets_pipe[1]) == -1)
-				std::cout << "SERVER ERROR: Failed closing cgi_pipe write_end " << std::endl;
-		if (temp->ste_pipe[0] != -1)
-			if (close(temp->ste_pipe[0]) == -1)
-				std::cout << "SERVER ERROR: Failed closing cgi_pipe read_end " << std::endl;
-		client->setCgiStruct(nullptr);
+		std::cout << "Error writing to client: " << socket_fd << std::endl;
+		epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, socket_fd, NULL);
+		close(socket_fd);
+		_client_buffers.erase(socket_fd);
+		_responses.erase(socket_fd);
+		return;
 	}
-	// End of clean up
 
+	_responses[socket_fd] = _responses[socket_fd].substr(bytes_sent); 
 
-	int status = epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, client_fd, NULL);
-	if (status == -1)
-		std::cout << "SERVER ERROR: Failed deleting client fd " << client_fd << " from epoll!" << std::endl;
-	if (close(client_fd) == -1);
-		std::cout << "SERVER ERROR: Failed closing client_fd " << client_fd << std::endl;
-
-	
-	delete client;
-	std::cout << "Client disconnected: " << client_fd << std::endl;
-	return ;
+	if (_responses[socket_fd].empty()) 
+	{
+		struct epoll_event event;
+		event.events = EPOLLIN;
+		event.data.fd = socket_fd;
+		epoll_ctl(_epoll_fd, EPOLL_CTL_MOD, socket_fd, &event);
+	}
 }
-
-
-
-// void	Server::handleRead(int _epoll_fd, int client_fd, const Server& server)
-// {
-// 	std::vector<char> vbuffer(BUFFER_SIZE);
-// 	std::string full_request;
-// 	ssize_t bytes_received;
-// 	do
-// 	{
-// 		bytes_received = recv(client_fd, vbuffer.data(), BUFFER_SIZE, 0);
-// 		if (bytes_received > 0)
-// 		{
-// 			std::cout << "bytes_received: " << bytes_received << std::endl;
-// 			_client_buffers[client_fd].append(vbuffer.data(), bytes_received);
-// 		}
-// 		else if (bytes_received == 0)
-// 		{
-// 			std::cout << "Client disconnected: " << client_fd << std::endl;
-// 			epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, client_fd, NULL);
-// 			close(client_fd);
-// 			_client_buffers.erase(client_fd);
-// 			return ;
-// 		}
-// 		else
-// 			break;
-// 	} while (bytes_received > 0);
-	
-// 	std::cout << "\n\nClient [" << client_fd << "] full request: \n\n"<< _client_buffers[client_fd] << std::endl;
-// 	std::cout << "\n\n\nend of buffer..." << std::endl;
-
-// 	HttpRequest httprequest;
-// 	Client client;
-// 	client.readRequest(_client_buffers[client_fd], client_fd);
-// 	clRequest cl_request = client.getClStructRequest(client_fd);
-// 	if (!parseRequest(_client_buffers[client_fd], httprequest, server, cl_request))
-// 	{
-// 		std::cout << "parse request failed" << std::endl;
-// 		_responses[client_fd] = ER400;
-// 	}
-// 	else
-// 		_responses[client_fd] = generateHttpResponse(httprequest, cl_request);
-
-// 	struct epoll_event event;
-// 	event.events = EPOLLIN | EPOLLOUT;
-// 	event.data.fd = client_fd;
-// 	epoll_ctl(_epoll_fd, EPOLL_CTL_MOD, client_fd, &event);
-// 	_client_buffers.erase(client_fd);
-// }
 
 
 

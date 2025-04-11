@@ -2,6 +2,7 @@
 #include "../headers/Configuration.hpp"
 #include "../headers/ValidationConfigFile.hpp"
 #include "../headers/Serve.hpp"
+#include "../headers/headers.hpp"
 
 
 int main(int argc, char **argv) {

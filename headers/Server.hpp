@@ -1,23 +1,7 @@
 #ifndef SERVER_HPP
 # define SERVER_HPP
 
-# include <iostream>
-# include <arpa/inet.h>
-# include <cstring>
-# include <unistd.h>
-# include <fcntl.h>
-# include <vector>
-# include <map>
-# include <sstream>
-# include <fstream>
-# include <sys/stat.h>
-# include <sys/epoll.h>
-# include <dirent.h>
-# include <stdlib.h>
-# include <sys/wait.h>
-# include <memory>
-
-#include "Client.hpp"
+#include "headers.hpp"
 
 # define PORT 8080
 # define SOCKET_BUFFER 8192 // 8kb
@@ -26,6 +10,9 @@
 # define ER400 "HTTP/1.1 400 Bad Request\r\nContent-Length: 143\r\n\r\n<html><head><title>400 Bad Request</title></head><body><center><h1>400 Bad Request</h1></center><hr><center>webserv</center></hr></body></html>"
 # define ER404 "HTTP/1.1 404 Not Found\r\nContent-Length: 139\r\n\r\n<html><head><title>404 Not Found</title></head><body><center><h1>404 Not Found</h1></center><hr><center>webserv</center></hr></body></html>"
 # define ER405 "HTTP/1.1 405 Method Not Allowed\r\nContent-Length: 157\r\n\r\n<html><head><title>405 Method Not Allowed</title></head><body><center><h1>405 Method Not Allowed</h1></center><hr><center>webserv</center></hr></body></html>"
+
+class Client;
+struct HttpRequest;
 
 class Server
 {
@@ -46,7 +33,7 @@ class Server
 
 
 		int		recvFromSocket(Client& client);
-		// void	sendToSocket(Client& client);	
+		int		sendToSocket(Client& client);	
 		void	removeClient(Client* client);	
 
 
@@ -70,8 +57,6 @@ class Server
 		const std::string			_port; // for cgi environment var port - Now temp, but needs to come from config
 		const std::string			_root; // temp till Abbas adds his config file code
 };
-
-#include "cgi.hpp"
 
 bool		parseRequest(const std::string request, HttpRequest& httprequest, const Server& server);
 // bool		parseRequest(const char* request, HttpRequest& httprequest, const Server& server);

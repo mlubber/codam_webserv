@@ -1,6 +1,7 @@
 #pragma once
 
-#include "Server.hpp"
+#include "headers.hpp"
+#include "cgi.hpp"
 
 # define READSOCKET		0
 # define READCGI		1
@@ -37,23 +38,25 @@ class Client {
 		std::string			_received;			// data received of socket
 		std::string			_temp_rec_buffer;	// data that was read but not part of 1st request
 		std::string			_response;			// the response that is going to be sent to the client
-		t_cgiData*			_cgi;
+		std::unique_ptr<t_cgiData>	_cgi;
 
 	public:
 		Client(int socket_fd);
 		~Client();
 
-		void	handleEvent(int fd);
-
-		int 		getClientFds(int mode);
-		int			getClientState();
-		t_cgiData*	getCgiStruct();
-		
-		void	setReceivedData(std::string& data);
-		void	setClientState(int state);
-		void	setCgiStruct(t_cgiData* ptr);
+		void	handleEvent(const Server& server);
 
 		void	readCGI();			// read from cgi	- uses read
 		void	writeCGI();			// write to CGI		- uses write
+
+		int 			getClientFds(int mode);
+		int				getClientState();
+		std::string&	getClientResponse();
+		t_cgiData&		getCgiStruct();
+		bool			checkCgiPtr();
+		
+		void	setReceivedData(std::string& data);
+		void	setClientState(int state);
+		void	setCgiStruct(std::unique_ptr<t_cgiData> cgi);
 
 };

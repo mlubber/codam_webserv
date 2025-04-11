@@ -1,6 +1,6 @@
 #include "../../headers/Client.hpp"
 
-Client::Client(int socket_fd) : _state(reading_request)
+Client::Client(int socket_fd) : _state(reading_request), _cgi(nullptr)
 {
 	_fds.push_back(socket_fd);
 }
@@ -11,7 +11,7 @@ Client::~Client()
 }
 
 
-void	Client::handleEvent(int fd)
+void	Client::handleEvent(const Server& server)
 {
 	if (_state == reading_request)
 	{
@@ -35,14 +35,14 @@ void	Client::handleEvent(int fd)
 	}
 	else if (_state == cgi_write)
 	{
-		// go to write to cgi loop
+		write_to_pipe(this->getCgiStruct(), server, false);
 	}
 	else if (_state == none)
 		return ;
 }
 
 
-
+/* GETTERS */
 int Client::getClientFds(int index)
 {
 	if (index == -1)
@@ -51,14 +51,35 @@ int Client::getClientFds(int index)
 		return (_fds[index]);
 }
 
-t_cgiData* Client::getCgiStruct()
+int	Client::getClientState()
 {
-	return (_cgi);
+	return (_state);
 }
 
-void Client::setCgiStruct(t_cgiData* ptr)
+std::string& Client::getClientResponse()
 {
-	_cgi = ptr;
+	return (_response);
+}
+
+t_cgiData& Client::getCgiStruct()
+{
+	return (*_cgi);
+}
+
+bool	Client::checkCgiPtr()
+{
+	if (_cgi != nullptr)
+		return (true);
+	return (false);
+}
+
+
+
+
+/* SETTERS */
+void Client::setCgiStruct(std::unique_ptr<t_cgiData> cgi)
+{
+	_cgi = std::move(cgi);
 }
 
 void	Client::setReceivedData(std::string& data)
@@ -95,15 +116,3 @@ void	Client::setClientState(int state)
 			break;
 	}
 }
-
-
-
-
-class Test {
-	private:
-
-
-
-	public:
-		Test(std::string test);
-};

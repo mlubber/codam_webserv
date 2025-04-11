@@ -1,11 +1,14 @@
+#include "../../headers/headers.hpp"
 #include "../../headers/Server.hpp"
+#include "../../headers/cgi.hpp"
+#include "../../headers/Client.hpp"
 
-static void	read_from_pipe(t_cgiData& cgi, const Server& server, std::string& cgiBody)
+void	read_from_pipe(t_cgiData& cgi, const Server& server, std::string& cgiBody, bool start)
 {
 	char	buffer[CGIBUFFER];
 	int		bytes_read = 0;
 
-	if (close(cgi.ets_pipe[1]) == -1)
+	if (start == true && close(cgi.ets_pipe[1]) == -1)
 	{
 		std::cerr << "CGI ERROR: Failed closing write-end pipe in parent" << std::endl;
 		if (close(cgi.ets_pipe[0]) == -1)
@@ -34,16 +37,20 @@ static void	read_from_pipe(t_cgiData& cgi, const Server& server, std::string& cg
 	}
 	if (close(cgi.ets_pipe[0]) == -1)
 		std::cerr << "CGI ERROR: Failed closing read-end pipe in parent" << std::endl;
+
+
+	// This is missing some checks to see if reading was completed 
+	// and if we already closed the ets_pipe[0] at the end
 }
 
-static void	write_to_pipe(t_cgiData& cgi, const Server& server)
+void	write_to_pipe(t_cgiData& cgi, const Server& server, bool start)
 {
 	int dataSize = cgi.writeData.size();
 	int bytesToWrite = 0;
 	int	writtenBytes = 0;
 	int	written = 0;
 
-	if (close(cgi.ste_pipe[0]) == -1)
+	if (start == true && close(cgi.ste_pipe[0]) == -1)
 		std::cerr << "CGI ERROR: Failed closing write-end pipe in parent" << std::endl;
 	while (writtenBytes < dataSize)
 	{
@@ -72,7 +79,7 @@ int	cgi_parent_process(t_cgiData& cgi, HttpRequest& request, const Server& serve
 	int		exit_code = 0;
 
 	if (request.method == "POST")
-		write_to_pipe(cgi, server);
+		write_to_pipe(cgi, server, true);
 	read_from_pipe(cgi, server, request.cgiBody);
 	if (errno != 0)
 		return (errno);
