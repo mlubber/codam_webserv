@@ -211,11 +211,3 @@ void Configuration::printConfig(const ConfigBlock &config, int depth) {
     }
 }
 
-// std::vector<std::string>	Configuration::getConfigValues(ConfigBlock& config, const std::string& key)
-// {
-// 	std::vector<std::string> values;
-// 	std::map<std::string, std::vector<std::string>>::iterator it = config.values.find(key);
-// 	if (it != config.values.end())
-// 		values = it->second;
-// 	return (values);
-// }

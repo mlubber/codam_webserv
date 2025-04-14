@@ -465,6 +465,7 @@ int	parseChunkedBody(std::string &body, clRequest &requestStruct) {
 		chunkText = chunkText + line;
 	}
 	std::cout << "chunked body : " << chunkText << std::endl;
+	requestStruct.body = chunkText;
 	return 0;
 }
 
@@ -504,8 +505,9 @@ int	parseBody(std::string &body, clRequest &requestStruct) {
 		}
 		bodyHasToRead = body.substr(0, bodyLength);
 		if (requestStruct.hundredContinue)
-		requestStruct.hundredContinue = false;
-		//std::cout << "body : " << bodyHasToRead << std::endl;
+			requestStruct.hundredContinue = false;
+		// std::cout << "body : " << bodyHasToRead << std::endl;
+		requestStruct.body = bodyHasToRead;
 	} // chunk or not found content length and chunk
 	else {
 		if (parseChunkedBody(body, requestStruct))
@@ -567,7 +569,7 @@ void Client::readRequest(std::string strClRequest, int clientFD) {
 			}
 			if (strClRequest.size() > 2) {
 				std::string body = strClRequest.substr(pos + 1);
-				//std::cout << "read request printing body: (" << body << ")" << std::endl;
+				// std::cout << "read request printing body: (" << body << ")" << std::endl;
 				parseBody(body, requestStruct);
 					//std::cout << "return 2" << std::endl;
 				return ;
@@ -605,5 +607,4 @@ void Client::readRequest(std::string strClRequest, int clientFD) {
 	if (!foundEndOfHeaders)
 		requestStruct.invalidRequest = true;
 	
-
 }

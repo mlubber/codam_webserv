@@ -3,9 +3,6 @@
 #include <map>
 #include <vector>
 
-
-// class Serve;
-
 enum state {
 	none,
 	cgi_Read,
@@ -25,7 +22,6 @@ struct clRequest {
     std::string body;
 	std::string port;
 	std::string host;
-
 };
 
 
@@ -34,6 +30,8 @@ class Client
 	private:
 		std::map<int, clRequest>	_clientRequests;
 		// int							_state;
+		
+
 	public:
 		Client();
 		void 		readRequest(std::string strclRequest, int clientFD);

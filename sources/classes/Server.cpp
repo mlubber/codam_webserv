@@ -123,62 +123,6 @@ bool Server::initialize(const std::vector<std::pair<std::string, std::vector<int
     return !_server_fds.empty();
 }
 
-// bool	Server::initialize(std::vector<int> ports)
-// {
-// 	_epoll_fd = epoll_create1(0);
-// 	if (_epoll_fd == -1)
-// 	{
-// 		std::cerr << "Failed to create epoll instance" << std::endl;
-// 		return (false);
-// 	}
-
-
-// 	for (size_t i = 0; i < ports.size(); i++)
-// 	{
-// 		int server_fd = socket(AF_INET, SOCK_STREAM, 0);
-// 		if (server_fd == -1)
-// 		{
-// 			std::cerr << "Socket creation failed for port: " << ports[i] << std::endl;
-// 			continue;
-// 		}
-
-// 		int opt = 1;
-// 		setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)); // Makes sure the server can bind to the same port immediately after restarting.
-		
-// 		memset(&_address, 0, sizeof(_address)); // Sets all bytes to 0 in address struct
-// 		_address.sin_family = AF_INET; // Sets Adress Family to IPv4
-// 		_address.sin_addr.s_addr = INADDR_ANY; // Assigns the address to INADDR_ANY (which is 0.0.0.0)
-// 		_address.sin_port = htons(ports[i]); // Converts port number from host byte order to network byte order.
-// 		if (bind(server_fd, (struct sockaddr*)&_address, sizeof(_address)) < 0)
-// 		{
-// 			std::cerr << "Binding failed on port: " << ports[i] << std::endl;
-// 			close(server_fd);
-// 			continue;
-// 		}
-// 		if (listen(server_fd, 10) < 0)
-// 		{
-// 			std::cerr << "Listening failed on port: " << ports[i] << std::endl;
-// 			close(server_fd);
-// 			continue;
-// 		}
-// 		std::cout << "Listening on port " << ports[i] << std::endl;
-//         _server_fds.push_back(server_fd);
-
-// 		struct epoll_event event;
-// 		event.events = EPOLLIN;
-// 		event.data.fd = server_fd;
-
-// 		if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, server_fd, &event) == -1)
-// 		{
-// 			std::cerr << "Failed to add server socket to epoll" << std::endl;
-// 			close(server_fd);
-// 			continue;
-// 		}
-// 	}
-
-// 	return (!_server_fds.empty());
-// }
-
 void Server::run(void)
 {
 	struct epoll_event ready_events[MAX_EVENTS];
@@ -210,7 +154,7 @@ void Server::run(void)
 				// else if (client._state == request_sent)
 				// 	parserequest();
 				if (ready_events[i].events & EPOLLIN)
-					handleRead(_epoll_fd, fd, *this);
+					handleRead(_epoll_fd, fd);
 				if (ready_events[i].events & EPOLLOUT)
 					handleWrite(_epoll_fd, fd);
 			}
@@ -247,7 +191,7 @@ void Server::connectClient(int _epoll_fd, int server_fd)
 	std::cout << "Client connected on socket: " << new_client << std::endl;
 }
 
-void	Server::handleRead(int _epoll_fd, int client_fd, const Server& server)
+void	Server::handleRead(int _epoll_fd, int client_fd)
 {
 	std::vector<char> vbuffer(BUFFER_SIZE);
 	std::string full_request;
@@ -282,6 +226,7 @@ void	Server::handleRead(int _epoll_fd, int client_fd, const Server& server)
 	
 	std::cout << "client request host: \n" << cl_request.host << std::endl;
 	std::cout << "client request port: \n" << cl_request.port << std::endl;
+
 	ConfigBlock serverBlock = _config.getServerBlock(cl_request.host, cl_request.port);
 
 	std::cout << "server block that's responsible for this request: \n" << std::endl;
@@ -303,13 +248,21 @@ void	Server::handleRead(int _epoll_fd, int client_fd, const Server& server)
 		std::cout << "}" << std::endl;
 	}
 	
-	if (!parseRequest(_client_buffers[client_fd], httprequest, server, cl_request, serverBlock))
+	if (cl_request.invalidRequest == true)
 	{
 		std::cout << "parse request failed" << std::endl;
-		_responses[client_fd] = ER400;
+		_responses[client_fd] = serveError("400", serverBlock);
 	}
 	else
-		_responses[client_fd] = generateHttpResponse(httprequest, cl_request, serverBlock);
+		_responses[client_fd] = generateHttpResponse(cl_request, serverBlock);
+
+	// if (!parseRequest(_client_buffers[client_fd], httprequest, server, cl_request, serverBlock))
+	// {
+	// 	std::cout << "parse request failed" << std::endl;
+	// 	_responses[client_fd] = ER400;
+	// }
+	// else
+	// 	_responses[client_fd] = generateHttpResponse(cl_request, serverBlock);
 
 	struct epoll_event event;
 	event.events = EPOLLIN | EPOLLOUT;
@@ -361,22 +314,22 @@ void	Server::setNonBlocking(int socket)
 	}
 }
 
-std::string	Server::generateHttpResponse(HttpRequest& parsedRequest, clRequest& cl_request, const ConfigBlock& serverBlock)
+std::string	Server::generateHttpResponse(clRequest& cl_request, const ConfigBlock& serverBlock)
 {
 	std::string response;
 
-	if (parsedRequest.path == "/favicon.ico")
-		parsedRequest.path = "/";
-	if (!parsedRequest.path.empty() && *parsedRequest.path.rbegin() != '/')
-		parsedRequest.path.append("/");
-	// if (cl_request.path == "/favicon.ico")
-	// 	cl_request.path = "/";
+	// if (parsedRequest.path == "/favicon.ico")
+	// 	parsedRequest.path = "/";
+	// if (!parsedRequest.path.empty() && *parsedRequest.path.rbegin() != '/')
+	// 	parsedRequest.path.append("/");
+	if (cl_request.path == "/favicon.ico")
+		cl_request.path = "/";
 	if (!cl_request.path.empty() && *cl_request.path.rbegin() != '/')
 		cl_request.path.append("/");
 
 	// std::cout << "generate client request path: " << cl_request.path << std::endl;
 
-	response = routeRequest(parsedRequest, cl_request, serverBlock);
+	response = routeRequest(cl_request, serverBlock);
 	return (response);
 }
 
