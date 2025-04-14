@@ -11,11 +11,11 @@ Client::~Client()
 }
 
 
-void	Client::handleEvent(const Server& server)
+void	Client::handleEvent(Server& server)
 {
 	if (_state == reading_request)
 	{
-		// go to reading from socket loop
+		server.recvFromSocket(*this);
 	}
 	else if (_state == parsing_request)
 	{

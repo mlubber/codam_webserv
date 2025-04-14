@@ -44,7 +44,7 @@ class Client {
 		Client(int socket_fd);
 		~Client();
 
-		void	handleEvent(const Server& server);
+		void	handleEvent(Server& server);
 
 		void	readCGI();			// read from cgi	- uses read
 		void	writeCGI();			// write to CGI		- uses write
