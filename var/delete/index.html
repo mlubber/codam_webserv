@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webserv</title>
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+			margin: 0;
+			padding: 0;
+			background-color: #121212;
+			color: #e0e0e0;
+			text-align: center;
+		}
+		.container {
+			max-width: 800px;
+			margin: 50px auto;
+			padding: 20px;
+			background: #1e1e1e;
+			box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.5);
+			border-radius: 8px;
+		}
+		h1 {
+			color: #ffffff;
+		}
+		p {
+			color: #cccccc;
+			font-size: 18px;
+		}
+		.btn {
+			display: inline-block;
+			padding: 10px 20px;
+			margin-top: 20px;
+			font-size: 18px;
+			color: white;
+			background: #2196f3;
+			border: none;
+			border-radius: 5px;
+			text-decoration: none;
+			transition: background 0.3s;
+		}
+		.btn:hover {
+			background: #1976d2;
+		}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Delete</h2>
+        <p>Remove files here</p>
+		<input type="text" id="filename" placeholder="Enter filename">
+		<button onclick="deleteFile()">Delete</button>
+
+		<p id="result"></p>
+
+		<script>
+			function deleteFile() {
+				const filename = document.getElementById("filename").value;
+				if (!filename) {
+					document.getElementById("result").textContent = "Please enter a filename.";
+					return;
+				}
+
+				fetch(`/delete?filename=${encodeURIComponent(filename)}`, {
+					method: "DELETE",
+				})
+				.then(response => response.text())
+				.then(data => {
+					document.getElementById("result").textContent = data;
+				})
+				.catch(error => {
+					document.getElementById("result").textContent = "Error deleting file.";
+				});
+			}
+		</script>
+		<a href="/upload" class="btn">Go Back</a>
+		<a href="/" class="btn">Home</a>
+    </div>
+</body>
+</html>
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete Files</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin: 40px; }
+        input, button { padding: 10px; margin: 10px; }
+        button { cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <h1>Delete a File</h1>
+
+    <input type="text" id="filename" placeholder="Enter filename">
+    <button onclick="deleteFile()">Delete</button>
+
+    <p id="result"></p>
+
+    <script>
+        function deleteFile() {
+            const filename = document.getElementById("filename").value;
+            if (!filename) {
+                document.getElementById("result").textContent = "Please enter a filename.";
+                return;
+            }
+
+            fetch(`/delete?filename=${encodeURIComponent(filename)}`, {
+                method: "DELETE",
+            })
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById("result").textContent = data;
+            })
+            .catch(error => {
+                document.getElementById("result").textContent = "Error deleting file.";
+            });
+        }
+    </script>
+
+</body>
+</html> -->

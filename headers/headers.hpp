@@ -7,6 +7,8 @@
 # include <fcntl.h>
 # include <vector>
 # include <map>
+# include <set>
+# include <netdb.h>
 # include <sstream>
 # include <fstream>
 # include <sys/stat.h>
@@ -15,5 +17,13 @@
 # include <stdlib.h>
 # include <sys/wait.h>
 # include <memory>
+# include <algorithm>
 
-void	setNonBlocking(int fd);
+class Client;
+class Server;
+struct clRequest;
+struct ConfigBlock;
+
+void		setNonBlocking(int fd);
+void		parsingRequest(Server& server, Client& client);
+std::string	generateHttpResponse(clRequest& cl_request, const ConfigBlock& serverBlock);

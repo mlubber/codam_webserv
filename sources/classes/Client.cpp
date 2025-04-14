@@ -37,7 +37,7 @@ void	Client::handleEvent(Server& server)
 	{
 		write_to_pipe(this->getCgiStruct(), server, false);
 	}
-	else if (_state == none)
+	else if (_state == done)
 		return ;
 }
 
@@ -54,6 +54,11 @@ int Client::getClientFds(int index)
 int	Client::getClientState()
 {
 	return (_state);
+}
+
+std::string&	Client::getClientReceived()
+{
+	return (_received);
 }
 
 std::string& Client::getClientResponse()
@@ -73,6 +78,11 @@ bool	Client::checkCgiPtr()
 	return (false);
 }
 
+clRequest&	Client::getClStructRequest()
+{
+    return (_request);
+}
+
 
 
 
@@ -85,6 +95,11 @@ void Client::setCgiStruct(std::unique_ptr<t_cgiData> cgi)
 void	Client::setReceivedData(std::string& data)
 {
 	_received += data;
+}
+
+void	Client::setResponseData(std::string data)
+{
+	_response = data;
 }
 
 

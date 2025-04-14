@@ -1,0 +1,90 @@
+<!-- <h1>THIS IS A TEST PAGE</h1> -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webserv</title>
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+			margin: 0;
+			padding: 0;
+			background-color: #121212;
+			color: #e0e0e0;
+			text-align: center;
+		}
+		.container {
+			max-width: 800px;
+			margin: 50px auto;
+			padding: 20px;
+			background: #1e1e1e;
+			box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.5);
+			border-radius: 8px;
+		}
+		h1 {
+			color: #ffffff;
+		}
+		p {
+			color: #cccccc;
+			font-size: 18px;
+		}
+		.btn {
+			display: inline-block;
+			padding: 10px 20px;
+			margin-top: 20px;
+			font-size: 18px;
+			color: white;
+			background: #2196f3;
+			border: none;
+			border-radius: 5px;
+			text-decoration: none;
+			transition: background 0.3s;
+		}
+		.btn:hover {
+			background: #1976d2;
+		}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Test</h2>
+		<p>Methods:</p>
+		<form id="headRequestForm">
+			<button type="button" onclick="sendHeadRequest()">Send HEAD Request</button>
+		</form>
+
+		<script>
+		function sendHeadRequest() {
+			fetch("/test", { method: "BLA" })
+			.then(response => console.log(response.status, response.headers))
+			.catch(error => console.error(error));
+		}
+		</script>
+
+        <a href="/" class="btn">Go Back</a>
+    </div>
+</body>
+</html>
+
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HEAD Request Test</title>
+    <script>
+        window.onload = function() {
+            fetch(window.location.href, { method: "HEAD" })
+                .then(response => console.log("HEAD Response:", response))
+                .catch(error => console.error("Error:", error));
+        };
+    </script>
+</head>
+<body>
+    <h1>Testing HEAD Request</h1>
+    <p>Check the console (F12 > Console) to see the HEAD request response.</p>
+</body>
+</html> -->

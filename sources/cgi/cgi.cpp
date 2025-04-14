@@ -1,3 +1,5 @@
+#include "../../headers/headers.hpp"
+#include "../../headers/Client.hpp"
 #include "../../headers/Server.hpp"
 
 void	cgi_cleanup(t_cgiData& cgi, bool child)
@@ -30,7 +32,7 @@ void	cgi_cleanup(t_cgiData& cgi, bool child)
 	}
 }
 
-static bool	init_cgi_struct(Client& client, HttpRequest& request, Server& server)
+static bool	init_cgi_struct(Client& client, clRequest& request, Server& server)
 {
 	std::unique_ptr<t_cgiData> cgi = std::make_unique<t_cgiData>();
 
@@ -76,7 +78,7 @@ static bool	init_cgi_struct(Client& client, HttpRequest& request, Server& server
 	return (0);
 }
 
-static int	create_cgi_process(t_cgiData& cgi, HttpRequest& request, const Server& server)
+static int	create_cgi_process(t_cgiData& cgi, clRequest& request, const Server& server)
 {
 	pid_t	pid;
 
@@ -91,7 +93,7 @@ static int	create_cgi_process(t_cgiData& cgi, HttpRequest& request, const Server
 	return (cgi_parent_process(cgi, request, server, pid));
 }
 
-int	cgi_check(HttpRequest& request, Server& server, Client& client)
+int	cgi_check(clRequest& request, Server& server, Client& client)
 {
 	int	status;
 

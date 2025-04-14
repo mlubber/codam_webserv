@@ -72,7 +72,7 @@ void	write_to_pipe(t_cgiData& cgi, const Server& server, bool start)
 	errno = 0;
 }
 
-int	cgi_parent_process(t_cgiData& cgi, HttpRequest& request, const Server& server, const pid_t& pid)
+int	cgi_parent_process(t_cgiData& cgi, clRequest& request, const Server& server, const pid_t& pid)
 {
 	pid_t	wpid;
 	int		status;
@@ -80,7 +80,7 @@ int	cgi_parent_process(t_cgiData& cgi, HttpRequest& request, const Server& serve
 
 	if (request.method == "POST")
 		write_to_pipe(cgi, server, true);
-	read_from_pipe(cgi, server, request.cgiBody);
+	read_from_pipe(cgi, server, request.cgiBody, true);
 	if (errno != 0)
 		return (errno);
 	wpid = waitpid(pid, &status, 0);

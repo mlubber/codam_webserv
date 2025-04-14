@@ -1,50 +1,93 @@
 #include "../../headers/Serve.hpp"
 
+Serve::Serve(std::string host, std::vector<std::string> port, std::string root, std::string server_name) 
+	: _host(host), _port(port), _root(root), _server_name(server_name) {}
 
-Serve::~Serve(){}
-
-Serve::Serve(ConfigBlock &config) : _configData(config) {}
-
-Serve::Serve(const Serve& other) : _configData(other._configData) {}
-
-Serve& Serve::operator=(const Serve& other){
-	if (this != &other) {
-		this->_configData.nested.clear();
-		this->_configData.values.clear();
-		this->_configData.nested = other._configData.nested;
-		this->_configData.values = other._configData.values;
-	}
-	return (*this);
+Serve::~Serve()
+{
 }
 
-
-void	Serve::answerRequest(std::string host, std::string port, std::string error_page, std::string index) {
-	error_page = "";
-	index = "";
-	
-	// which server block
-	std::string configHost;
-	std::string configPort;
-	int i = 1;
-	int serverNumber = 0;
-	for (const std::pair<const std::string, ConfigBlock> &server : _configData.nested) {
-		bool	isHost = false;
-		bool	isPort = false;
-		for (const std::pair<const std::string, std::vector<std::string>> &value : server.second.values) {
-			if (value.first == "host") {
-				configHost = value.second.front();
-				if (configHost.compare(host) == 0) { isHost = true; }
-			}
-			if (value.first == "listen") {
-				configPort = value.second.front();
-				if (configPort.compare(port) == 0) { isPort = true; }
-			}
-		}
-		if (isHost && isPort) { 
-			std::cout << "server block: " << i << " has to respond to the request." << std::endl;
-			serverNumber = i;
-		}
-		++i;
-
-	}
+ConfigBlock& Serve::getServerBlock() {
+	return _serverBlock;
 }
+
+std::string&	Serve::getHost(){
+	return _host;
+}
+std::vector<std::string>&	Serve::getPort(){
+	return _port;
+}
+std::string&	Serve::getRoot(){
+	return _root;
+}
+std::string& 	Serve::getServer_name(){
+	return _server_name;
+}
+
+std::string resolvePath(const std::string& userPath) {
+    return std::filesystem::absolute(userPath).string();
+}
+
+bool	fileOrDirectoryExists(std::string path) {
+	std::string filepath = resolvePath(path);
+	bool res = std::filesystem::exists(filepath);
+	return res;
+
+}
+
+std::string	Serve::answerRequest(clRequest& clientRequest) 
+{
+	if (clientRequest.invalidRequest){
+		return (ER400); // return bad request
+	}
+	if (clientRequest.methodNotAllowd){
+		return (ER405); // return	method not allowed
+	} else {
+		if (clientRequest.hundredContinue){
+			// check if content lenght is less than max body size return 100 continue else return 413 payload
+			std::string clContentLengthStr;
+			std::string serverMaxBodySizeStr = "1048576";
+			int	clContentLengthInt;
+			int	serverMaxBodySizeInt;
+			if (clientRequest.headers.find("content-length") != clientRequest.headers.end()) {
+				clContentLengthStr = clientRequest.headers["content-length"].front();
+				if (_serverBlock.values.find("client_max_body_size") != _serverBlock.values.end()) {
+					serverMaxBodySizeStr = _serverBlock.values["client_max_body_size"].front();
+				}
+				try{
+					serverMaxBodySizeInt = std::stoi(serverMaxBodySizeStr);
+					clContentLengthInt  = std::stoi(clContentLengthStr);
+				}catch(const std::exception &e) {
+					std::cerr << "Error : conversion failed! " << e.what() << std::endl;
+					return (ER500); // internal error 500
+				}
+				if (clContentLengthInt > serverMaxBodySizeInt) {
+					return (ER413); // return 413 payload
+				} else {
+					return (ER100);// return 100 continue
+				}
+
+			} else {
+				return (ER400); // return bad request no content length exist
+			}
+		}else{
+			if (clientRequest.method == "GET" ){
+				if (fileOrDirectoryExists(_root + clientRequest.path)){
+					// path exist
+					std::cout << "file found " << std::endl;
+				}else {
+					std::cout << "file NOT found " << std::endl;
+					return (ER404); // 404 
+				}
+			}
+			if (clientRequest.method == "POST" ){
+
+			}
+			if (clientRequest.method == "DELETE" ){
+
+			}
+		}
+	}
+	return ("blij");
+}
+

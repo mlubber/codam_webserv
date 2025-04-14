@@ -1,6 +1,8 @@
+#include "../../headers/headers.hpp"
+#include "../../headers/Client.hpp"
 #include "../../headers/Server.hpp"
 
-void	cgi_child_process(t_cgiData& cgi, const HttpRequest& request, const Server& server)
+void	cgi_child_process(t_cgiData& cgi, const clRequest& request, const Server& server)
 {
 	// setup
 	cgi_setup(cgi, request, server);

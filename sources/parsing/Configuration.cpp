@@ -17,8 +17,24 @@ Configuration::Configuration(const Configuration& other) {
 	this->_configData.values = other._configData.values;
 }
 
-ConfigBlock&		Configuration::getConfigData(){
+ConfigBlock&	Configuration::getConfigData(){
 	return (_configData);
+}
+
+ConfigBlock&	Configuration::getServerBlock(const std::string& host, const std::string& port) {
+	for (std::map<std::string, ConfigBlock>::iterator it = _configData.nested.begin(); it != _configData.nested.end(); ++it) {
+		if (it->first == "server") {
+			ConfigBlock& serverBlock = it->second;
+			std::vector<std::string> serverHosts = serverBlock.values["host"];
+			std::vector<std::string> listenPorts = serverBlock.values["listen"];
+
+			if ((std::find(serverHosts.begin(), serverHosts.end(), host) != serverHosts.end() || host == "localhost") &&
+				std::find(listenPorts.begin(), listenPorts.end(), port) != listenPorts.end()) {
+				return (serverBlock);
+			}
+		}
+	}
+	throw std::runtime_error("No matching server block found for host: " + host + " and port: " + port);
 }
 
 Configuration& Configuration::operator=(const Configuration& other) {
@@ -78,52 +94,30 @@ std::vector<Token> Configuration::tokenize(std::ifstream &file) {
 	return (tokens);
 }
 
-bool	errorNumberIsDigit(std::string errorNum) {
-	for (size_t i = 0;  i < errorNum.size(); ++i) {
-		if (isdigit(errorNum[i]) == 0)
-			return false;
-	}
-	return true;
-}
-
-
-void	checkErrorValuePath(std::vector<Token> &chunkTokens) {
-	std::string tempv1, tempv2;
-	if (chunkTokens.size() != 4) {
-		std::cerr << "Error: Invalid number of value for (error_page) in config file." << std::endl;
+void	checkErrorPage(std::vector<std::string> values) {
+	if (values.size() != 2){
+		std::cerr << "Error: Invalid syntax in config file.(error_page has to have page number and path)!" << std::endl;
 		std::exit(1);
-	}
-	tempv1 = chunkTokens[1].value;
-	if (tempv1.size() != 3 || !errorNumberIsDigit(tempv1)) {
-		std::cerr << "Error: Invalid error_page number in config file. => " << tempv1 << std::endl;
-		std::exit(1);
-	}
-	tempv2 = chunkTokens[2].value;
-	if (tempv2.find_first_of('.') == std::string::npos) {
-		std::cerr << "Error: Invalid error_page path in config file. => " << tempv2 << std::endl;
-		std::exit(1);
+	} else {
+		if (values[0].size() != 3 || !isdigit(values[0][0]) || !isdigit(values[0][1]) || !isdigit(values[0][2])) {
+			std::cerr << "Error: Invalid syntax, (page number should be 3 digits)!" << std::endl;
+			std::exit(1);
+		}
 	}
 }
 
 
 void	callectAllValuesForAKeyPushToVector(std::vector<Token> &chunkTokens, std::stack<std::pair<std::string, ConfigBlock>> &blockStack) {
 	std::string key = chunkTokens[0].value;
-	
 
 	if ( std::find(validKeywords.begin(), validKeywords.end(), key) == validKeywords.end() ) {
 		std::cerr << "Error: Using invalid keyword in configuration file: " << key << std::endl;
 		std::exit(1);
 	}
 
-	if (key.compare("error_page") == 0) {
-		checkErrorValuePath(chunkTokens);
-		
-	}
-
 	std::vector<std::string> values;
 	
 	for (size_t i = 1; i < chunkTokens.size() - 1; ++i) { // Collect all values before ;
-
 		if (chunkTokens[i].type == VALUE)
 			values.push_back(chunkTokens[i].value);
 		else {
@@ -131,34 +125,10 @@ void	callectAllValuesForAKeyPushToVector(std::vector<Token> &chunkTokens, std::s
 			std::exit(1);
 		}
 	}
+	if (key == "error_page")
+		checkErrorPage(values);
 	std::vector<std::string> &existingValues = blockStack.top().second.values[key];
 	existingValues.insert(existingValues.end(), values.begin(), values.end());
-}
-
-void	checkKeyOpeningBlock(std::vector<Token> &chunkTokens) {
-
-	if (chunkTokens.size() == 2) {
-		// server
-		if (chunkTokens.front().value.compare("location") == 0) {
-			std::cerr << "Error: invalid number of value! => " << chunkTokens.front().value << std::endl; 
-			std::exit(1);
-		} else if (chunkTokens.front().value.compare("server") != 0) {
-			std::cerr << "Error: using invalid key! => " << chunkTokens.front().value << std::endl;
-			std::exit(1);
-		}
-	} else if (chunkTokens.size() == 3) {
-		// location
-
-		if (chunkTokens.front().value.compare("location") != 0) {
-			std::cerr << "Error: using invalid key! => " << chunkTokens.front().value << std::endl; 
-			std::exit(1);
-		}
-	} else {
-		// invalid
-		std::cerr << "Error: invalid number of value! => " << chunkTokens.front().value << std::endl; 
-		std::exit(1);
-	}
-
 }
 
 
@@ -185,7 +155,6 @@ void Configuration::parseConfig(const std::string &filename) {
 			if (itFinder->type == BLOCK_START) {
 				++itFinder;
 				std::vector<Token> chunkTokens(itb, itFinder);
-				checkKeyOpeningBlock(chunkTokens);
 				if (!chunkTokens.empty()) {
 					blockStack.push({chunkTokens[0].value, ConfigBlock()});
 					if (chunkTokens.size() > 2)
@@ -203,11 +172,6 @@ void Configuration::parseConfig(const std::string &filename) {
 				
 				break;}	
 			else if (itFinder->type == BLOCK_END) {
-				std::vector<Token> chunkTokens(itb, itFinder);
-				if (chunkTokens.size() != 0) {
-					std::cerr << "Error: Invalid syntax unclosed line => ' ; ' in config file." << std::endl;
-					std::exit(1);
-				}
 
 				if (blockStack.size() > 1) {
 					std::pair<std::string, ConfigBlock> nestedBlock = blockStack.top();

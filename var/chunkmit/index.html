@@ -1,0 +1,117 @@
+<!-- <h1>THIS IS A TEST PAGE</h1> -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webserv</title>
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+			margin: 0;
+			padding: 0;
+			background-color: #121212;
+			color: #e0e0e0;
+			text-align: center;
+		}
+		.container {
+			max-width: 800px;
+			margin: 50px auto;
+			padding: 20px;
+			background: #1e1e1e;
+			box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.5);
+			border-radius: 8px;
+		}
+		h1 {
+			color: #ffffff;
+		}
+		p {
+			color: #cccccc;
+			font-size: 18px;
+		}
+		.btn {
+			display: inline-block;
+			padding: 10px 20px;
+			margin-top: 20px;
+			font-size: 18px;
+			color: white;
+			background: #2196f3;
+			border: none;
+			border-radius: 5px;
+			text-decoration: none;
+			transition: background 0.3s;
+		}
+		.btn:hover {
+			background: #1976d2;
+		}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Submit a chunked message:</h1>
+		<form id="messageForm">
+			<label for="message">Enter your message:</label><br>
+			<textarea id="message" name="message" rows="4" cols="50" required></textarea><br><br>
+			<button type="submit">Submit</button>
+		</form>
+		<script>
+			document.getElementById("messageForm").addEventListener("submit", function (event) {
+				event.preventDefault(); // Stop default form behavior
+		
+				const message = document.getElementById("message").value;
+				const chunks = message.match(/.{1,5}/g) || []; // Split into 5-character chunks
+				const encoder = new TextEncoder();
+		
+				const stream = new ReadableStream({
+					start(controller) {
+						function sendChunks(index) {
+							if (index < chunks.length) {
+								const chunkSize = chunks[index].length.toString(16); // Convert chunk size to hex
+								controller.enqueue(encoder.encode(chunkSize + "\r\n")); // Send size
+								controller.enqueue(encoder.encode(chunks[index] + "\r\n")); // Send chunk data
+								setTimeout(() => sendChunks(index + 1), 500); // Simulated delay
+							} else {
+								controller.enqueue(encoder.encode("0\r\n\r\n")); // End chunked message
+								controller.close();
+							}
+						}
+						sendChunks(0);
+					}
+				});
+
+				fetch("/chunkmit", {
+					method: "POST",
+					headers: {
+						"Transfer-Encoding": "chunked",
+						"Blelgkali": "flafla",
+						"Content-Type": "text/plain"
+					},
+					body: stream
+				})
+					.then(response => response.text()) // <-- This reads the stream response correctly!
+					.then(data => alert("Response: " + data))
+					.catch(error => console.error("Error:", error));
+			});
+		</script>
+    	<a href="/" class="btn">Go Back</a>
+    </div>
+</body>
+</html>
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POST Request Form</title>
+</head>
+<body>
+    <h2>Submit a Message</h2>
+    <form action="/submit" method="POST">
+        <label for="message">Enter your message:</label><br>
+        <textarea id="message" name="message" rows="4" cols="50" required></textarea><br><br>
+        <button type="submit">Submit</button>
+    </form>
+</body>
+</html> -->

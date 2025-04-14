@@ -36,27 +36,27 @@
 
 
 
-// header 1
-class Server {
-	bool	initialize();
-	void	run();
-	void	connectClient();
-	void	recvFromSocket(Client& client);
-	void	sendToSocket(Client& client);
-};
+// // header 1
+// class Server {
+// 	bool	initialize();
+// 	void	run();
+// 	void	connectClient();
+// 	void	recvFromSocket(Client& client);
+// 	void	sendToSocket(Client& client);
+// };
 
-// header 2
-class Client {
-	void	parseRequest();
-	void	createResponse();
-	void	readCGI();
-	void	writeCGI();
-};
+// // header 2
+// class Client {
+// 	void	parseRequest();
+// 	void	createResponse();
+// 	void	readCGI();
+// 	void	writeCGI();
+// };
 
-// header 3
-struct cgi {
-	//things
-};
+// // header 3
+// struct cgi {
+// 	//things
+// };
 
 // header 3
 // All needed headers and shared functions

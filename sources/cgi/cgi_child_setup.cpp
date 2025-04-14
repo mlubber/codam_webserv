@@ -1,6 +1,8 @@
+#include "../../headers/headers.hpp"
+#include "../../headers/Client.hpp"
 #include "../../headers/Server.hpp"
 
-void	get_exe_path(t_cgiData& cgi, const HttpRequest& request, const Server& server)
+void	get_exe_path(t_cgiData& cgi, const clRequest& request, const Server& server)
 {
 	std::string path;
 	const std::string& root = server.getServerInfo(2);
@@ -12,7 +14,7 @@ void	get_exe_path(t_cgiData& cgi, const HttpRequest& request, const Server& serv
 	std::strcpy(cgi.path, path.c_str());
 }
 
-void	get_exe(t_cgiData& cgi, const HttpRequest& request)
+void	get_exe(t_cgiData& cgi, const clRequest& request)
 {
 	cgi.exe = new char*[2](); // Need to be in try/catch block  OR new(std::nothrow_t) to check for nullptrs
 	int i = request.path.find_last_of('/'); 
@@ -30,18 +32,18 @@ char* create_env_ptr(std::string key, std::string value)
 	return (str);
 }
 
-std::string	get_header_data(const HttpRequest& request, std::string header, int i)
-{
-	auto it = request.headers.find(header);
-	if (it != request.headers.end())
-		return (it->second);
-	else if (i == 0)
-		return ("0");
-	else
-		return ("\"\"");
-}
+// std::string	get_header_data(const clRequest& request, std::string header, int i)
+// {
+// 	// auto it = request.headers.find(header);
+// 	// if (it != request.headers.end()) 		// Go through map in clRequest struct
+// 	// 	return (it->second);
+// 	// else if (i == 0)
+// 	// 	return ("0");
+// 	// else
+// 		return ("\"\"");
+// }
 
-std::string get_path_info(const HttpRequest& request, const Server& server)
+std::string get_path_info(const clRequest& request, const Server& server)
 {
 	std::string root = server.getServerInfo(2);
 	if (root[0] != '/')
@@ -65,7 +67,7 @@ std::string get_path_info(const HttpRequest& request, const Server& server)
 	return (path_info);
 }
 
-void	setup_environment(t_cgiData& cgi, const HttpRequest& request, const Server& server)
+void	setup_environment(t_cgiData& cgi, const clRequest& request, const Server& server)
 {
 	cgi.envp = new char*[11](); // Need to be in try/catch block  OR new(std::nothrow_t) to check for nullptrs
 
@@ -75,9 +77,9 @@ void	setup_environment(t_cgiData& cgi, const HttpRequest& request, const Server&
 	cgi.envp[3] = create_env_ptr("SERVER_PORT", server.getServerInfo(1));
 	cgi.envp[4] = create_env_ptr("SERVER_PROTOCOL", "HTTP/1.1");
 	cgi.envp[5] = create_env_ptr("GATEWAY_INTERFACE", "CGI/1.1");
-	cgi.envp[6] = create_env_ptr("CONTENT_LENGTH", get_header_data(request, "Content-Length", 0));
-	cgi.envp[7] = create_env_ptr("CONTENT_TYPE", get_header_data(request, "Content-Type", 1));
-	cgi.envp[8] = create_env_ptr("QUERY_STRING", get_header_data(request, "Query-String", 1));
+	// cgi.envp[6] = create_env_ptr("CONTENT_LENGTH", get_header_data(request, "Content-Length", 0));
+	// cgi.envp[7] = create_env_ptr("CONTENT_TYPE", get_header_data(request, "Content-Type", 1));
+	// cgi.envp[8] = create_env_ptr("QUERY_STRING", get_header_data(request, "Query-String", 1));
 	cgi.envp[9] = create_env_ptr("PATH_INFO", get_path_info(request, server));
 
 
@@ -93,7 +95,7 @@ void	setup_environment(t_cgiData& cgi, const HttpRequest& request, const Server&
 	//  End test printing environment
 }
 
-bool	cgi_setup(t_cgiData& cgi, const HttpRequest& request, const Server& server)
+bool	cgi_setup(t_cgiData& cgi, const clRequest& request, const Server& server)
 {
 	setup_environment(cgi, request, server);
 	get_exe_path(cgi, request, server);

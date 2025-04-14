@@ -119,11 +119,11 @@ void Server::run(void)
 	close(_epoll_fd);
 }
 
-void Server::connectClient(int _epoll_fd)
+void Server::connectClient(int _epoll_fd, int server_fd)
 {
 	try
 	{
-		int new_client_fd = accept(_server_fd, (struct sockaddr *)&_address, &_addr_len);
+		int new_client_fd = accept(server_fd, (struct sockaddr *)&_address, &_addr_len);
 		if (new_client_fd < 0)
 		{
 			std::cerr << "Failed to accept connection" << std::endl;

@@ -6,6 +6,7 @@
 #include <map>
 #include <stack>
 #include <set>
+#include <filesystem>
 
 
 enum TokenType { KEYWORD, VALUE, BLOCK_START, BLOCK_END, SEMICOLON };
@@ -33,8 +34,10 @@ public:
 	Configuration& operator=(const Configuration& other);
 	Configuration(const Configuration& other);
 
-	std::vector<Token> tokenize(std::ifstream &line);
-	void parseConfig(const std::string &filename);
-	void printConfig(const ConfigBlock &config, int depth);
-	ConfigBlock		&getConfigData();
+	std::vector<Token>			tokenize(std::ifstream &line);
+	void						parseConfig(const std::string &filename);
+	void						printConfig(const ConfigBlock &config, int depth);
+	ConfigBlock&				getConfigData();
+	ConfigBlock&				getServerBlock(const std::string& host, const std::string& port);
+	// std::vector<std::string>	getConfigValues(ConfigBlock& config, const std::string& key);
 };
