@@ -22,9 +22,12 @@ ConfigBlock&	Configuration::getConfigData(){
 }
 
 ConfigBlock&	Configuration::getServerBlock(const std::string& host, const std::string& port) {
+	ConfigBlock* fallbackServerBlock = nullptr;
 	for (std::map<std::string, ConfigBlock>::iterator it = _configData.nested.begin(); it != _configData.nested.end(); ++it) {
 		if (it->first == "server") {
 			ConfigBlock& serverBlock = it->second;
+			if (!fallbackServerBlock)
+				fallbackServerBlock = &serverBlock;
 			std::vector<std::string> serverHosts = serverBlock.values["host"];
 			std::vector<std::string> listenPorts = serverBlock.values["listen"];
 
@@ -34,7 +37,9 @@ ConfigBlock&	Configuration::getServerBlock(const std::string& host, const std::s
 			}
 		}
 	}
-	throw std::runtime_error("No matching server block found for host: " + host + " and port: " + port);
+	if (fallbackServerBlock)
+		return (*fallbackServerBlock);
+	throw std::runtime_error("No server blocks found in the configuration.");
 }
 
 Configuration& Configuration::operator=(const Configuration& other) {

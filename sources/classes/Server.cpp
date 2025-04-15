@@ -327,7 +327,7 @@ std::string	Server::generateHttpResponse(clRequest& cl_request, const ConfigBloc
 	if (!cl_request.path.empty() && *cl_request.path.rbegin() != '/')
 		cl_request.path.append("/");
 
-	// std::cout << "generate client request path: " << cl_request.path << std::endl;
+	// std::cout << "CLIENT REQUEST PATH: " << cl_request.path << std::endl;
 
 	response = routeRequest(cl_request, serverBlock);
 	return (response);

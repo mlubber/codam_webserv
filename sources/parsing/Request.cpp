@@ -606,5 +606,4 @@ void Client::readRequest(std::string strClRequest, int clientFD) {
 	std::cout << "end read  request" << std::endl;
 	if (!foundEndOfHeaders)
 		requestStruct.invalidRequest = true;
-	
 }

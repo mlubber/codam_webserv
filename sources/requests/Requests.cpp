@@ -322,25 +322,50 @@ std::string	showDirList(clRequest& cl_request, const std::string& filePath, cons
 	return (response.str());
 }
 
+std::string urlDecode(const std::string& encoded)
+{
+	std::ostringstream decoded;
+	for (size_t i = 0; i < encoded.length(); ++i)
+	{
+		if (encoded[i] == '%' && i + 2 < encoded.length())
+		{
+			std::istringstream hexStream(encoded.substr(i + 1, 2));
+            int hexValue;
+            hexStream >> std::hex >> hexValue;
+            decoded << static_cast<char>(hexValue);
+            i += 2;
+		}
+		else if (encoded[i] == '+')
+			decoded << ' ';
+		else
+			decoded << encoded[i];
+	}
+	std::cout << "decoded filename: " << decoded.str() << std::endl;
+	return(decoded.str());
+}
+
 std::string	deleteFile(clRequest& cl_request, const ConfigBlock& serverBlock)
 {
 	std::ostringstream response;
 	std::cout << "delete file here" << std::endl;
 	std::cout << cl_request.path << std::endl;
 	std::cout << cl_request.queryStr << std::endl;
-
+	
 	std::string root;
 	for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values)
-		if (value.first == "root")
-			root = value.second.front();
+	if (value.first == "root")
+	root = value.second.front();
 	
 	size_t	filenamePos = cl_request.queryStr.find("filename=");
 	std::cout << "filenamepos: " << filenamePos << std::endl;
 	if (filenamePos == std::string::npos)
-		return ("HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\nContent-Length: 9\r\n\r\nBad Query");
+	return ("HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\nContent-Length: 9\r\n\r\nBad Query");
 	filenamePos += 9;
+	std::cout << urlDecode(cl_request.queryStr.substr(filenamePos)) << std::endl;
 
-	std::string fileName = "/uploads/" + cl_request.queryStr.substr(filenamePos);
+
+	// std::string fileName = "/uploads/" + cl_request.queryStr.substr(filenamePos);
+	std::string fileName = "/uploads/" + urlDecode(cl_request.queryStr.substr(filenamePos));
 
 	std::cout << "filename: " << fileName << std::endl;
 	std::string filePath = root + fileName;
@@ -359,6 +384,7 @@ std::string routeRequest(clRequest& cl_request, const ConfigBlock& serverBlock)
 	for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values)
 		if (value.first == "root")
 			root = value.second.front();
+	cl_request.path = urlDecode(cl_request.path);
 
 	std::string filePath = root + cl_request.path;
 
