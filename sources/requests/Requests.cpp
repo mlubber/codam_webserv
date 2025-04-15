@@ -340,7 +340,7 @@ std::string urlDecode(const std::string& encoded)
 		else
 			decoded << encoded[i];
 	}
-	std::cout << "decoded filename: " << decoded.str() << std::endl;
+	// std::cout << "decoded filename: " << decoded.str() << std::endl;
 	return(decoded.str());
 }
 
@@ -386,8 +386,6 @@ std::string routeRequest(clRequest& cl_request, const ConfigBlock& serverBlock)
 			root = value.second.front();
 	cl_request.path = urlDecode(cl_request.path);
 
-	std::string filePath = root + cl_request.path;
-
 	ConfigBlock	locBlock;
 	std::string	locPath;
 	std::cout << "cl_request path: " << cl_request.path << std::endl;
@@ -422,6 +420,21 @@ std::string routeRequest(clRequest& cl_request, const ConfigBlock& serverBlock)
 	for (const std::pair<const std::string, std::vector<std::string>> &value : locBlock.values)
 		if (value.first == "autoindex")
 			autoindex = value.second.front();
+
+	std::string filePath;
+
+	std::string rootOverride;
+	for (const std::pair<const std::string, std::vector<std::string>> &value : locBlock.values)
+		if (value.first == "root")
+			rootOverride = value.second.front();
+	if (!rootOverride.empty())
+	{
+		std::cout << "root found in nested block: " << rootOverride << std::endl;
+		filePath = rootOverride;
+	}
+	else
+		filePath = root + cl_request.path;
+
 	
 	if (cl_request.method == "GET")
 	{
