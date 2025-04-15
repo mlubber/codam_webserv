@@ -3,17 +3,21 @@
 #include "../../headers/cgi.hpp"
 #include "../../headers/Client.hpp"
 
-void	read_from_pipe(t_cgiData& cgi, const Server& server, std::string& cgiBody, bool start)
+void	read_from_pipe(t_cgiData& cgi, const Server& server, std::string& cgiBody)
 {
 	char	buffer[CGIBUFFER];
 	int		bytes_read = 0;
 
-	if (start == true && close(cgi.ets_pipe[1]) == -1)
+	if (cgi.started_reading == false)
 	{
-		std::cerr << "CGI ERROR: Failed closing write-end pipe in parent" << std::endl;
-		if (close(cgi.ets_pipe[0]) == -1)
-			std::cerr << "CGI ERROR: Failed closing read-end pipe in parent" << std::endl;
-		return ;
+		if (close(cgi.ets_pipe[1]) == -1)
+		{
+			std::cerr << "CGI ERROR: Failed closing write-end pipe in parent" << std::endl;
+			if (close(cgi.ets_pipe[0]) == -1)
+				std::cerr << "CGI ERROR: Failed closing read-end pipe in parent" << std::endl;
+			return ;
+		}
+		cgi.started_reading = true;
 	}
 	do
 	{
@@ -29,6 +33,7 @@ void	read_from_pipe(t_cgiData& cgi, const Server& server, std::string& cgiBody, 
 			cgiBody += buffer;
 		}
 	} while (bytes_read > 0);
+
 	if (bytes_read == -1)
 	{
 		epoll_ctl(server.getEpollFd(), EPOLL_CTL_DEL, cgi.ste_pipe[1], NULL);
@@ -80,7 +85,7 @@ int	cgi_parent_process(t_cgiData& cgi, clRequest& request, const Server& server,
 
 	if (request.method == "POST")
 		write_to_pipe(cgi, server, true);
-	read_from_pipe(cgi, server, request.cgiBody, true);
+	read_from_pipe(cgi, server, request.cgiBody);
 	if (errno != 0)
 		return (errno);
 	wpid = waitpid(pid, &status, 0);

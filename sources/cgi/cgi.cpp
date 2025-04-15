@@ -43,6 +43,7 @@ static bool	init_cgi_struct(Client& client, clRequest& request, Server& server)
 	cgi->ets_pipe[1] = -1;
 	cgi->ste_pipe[0] = -1;
 	cgi->ste_pipe[1] = -1;
+	cgi->started_reading = false;
 
 	if (pipe(cgi->ets_pipe) == -1)
 		return (1);

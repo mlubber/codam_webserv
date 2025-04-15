@@ -10,34 +10,39 @@ Client::~Client()
 
 }
 
-void	Client::handleEvent(Server& server)
+int	Client::handleEvent(Server& server)
 {
+	int status;
+
 	if (_state == reading_request)
 	{
-		server.recvFromSocket(*this);
+		status = server.recvFromSocket(*this);
+		if (status > 0)
+			return (status);
 	}
-	else if (_state == parsing_request)
+	if (_state == parsing_request)
 	{
-		// parse request
+		parsingRequest(server, *this);
 	}
-	else if (_state == start_response)
+	if (_state == start_response)
 	{
 		// Readying everything and start sending response
 	}
-	else if (_state == sending_response)
-	{
-		server.sendToSocket(*this);
-	}
-	else if (_state == cgi_read)
-	{
-		// Go to read from cgi loop
-	}
-	else if (_state == cgi_write)
+	if (_state == cgi_write)
 	{
 		write_to_pipe(this->getCgiStruct(), server, false);
 	}
-	else if (_state == done)
-		return ;
+	if (_state == cgi_read)
+	{
+		read_from_pipe(*this->_cgi, server, _request.cgiBody);
+	}
+	if (_state == sending_response)
+	{
+		status = server.sendToSocket(*this);
+		if (status > 0)
+			return (status);
+	}
+	return (0);
 }
 
 
@@ -96,10 +101,6 @@ void	Client::setReceivedData(std::string& data)
 	_received += data;
 }
 
-void	Client::clearReceivedData()
-{
-	_received.clear();
-}
 
 void	Client::setResponseData(std::string data)
 {
@@ -134,4 +135,23 @@ void	Client::setClientState(int state)
 			std::cout << "\nClient state set to: none\n" << std::endl;
 			break;
 	}
+}
+
+/* Update client object data */
+// Pass 0 to clear _received data, and pass 1 or bigger to clear _reponse
+void	Client::clearData(int i)
+{
+	if (i == 0)
+		_received.clear();
+	else
+	{
+		_response.clear();
+		_response_size = 0;
+		_bytes_sent = 0;
+	}
+}
+
+void	Client::updateBytesSent(size_t bytes_sent)
+{
+	this->_bytes_sent  += bytes_sent;
 }

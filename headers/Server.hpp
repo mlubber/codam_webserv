@@ -39,7 +39,7 @@ class Server
 
 
 		int		recvFromSocket(Client& client);
-		void	sendToSocket(Client& client);	
+		int		sendToSocket(Client& client);	
 		void	removeClient(Client* client);	
 
 

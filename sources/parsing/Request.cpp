@@ -717,7 +717,7 @@ void	parsingRequest(Server& server, Client& client)
 	event.events = EPOLLIN | EPOLLOUT;
 	event.data.fd = client_fd;
 	epoll_ctl(server.getEpollFd(), EPOLL_CTL_MOD, client_fd, &event);
-	client.clearReceivedData();
+	client.clearData(0);
 	// client.setReceivedData()			// Needs to erase() client._received
 	client.setClientState(sending_response);
 }

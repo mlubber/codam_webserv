@@ -16,7 +16,6 @@ enum state
 	sending_response,	// In loop of sending response to the socket
 	cgi_read,			// In loop of reading data from the cgi_pipe
 	cgi_write,			// In loop of writing data to the cgi_pipe
-	done,				// All events handled
 };
 
 struct clRequest 
@@ -35,25 +34,26 @@ struct clRequest
 	std::string	cgiBody;
 };
 
+
 class Client 
 {
 	private:
 
-		int					_state;				// state of the client
-		std::vector<int>	_fds;				// array of fds (socket en pipes)
-		clRequest			_request;			// array of parsed request structs
-		bool				_multi_request;		// 'true' if found that we've received multiple request from reading
-		std::string			_received;			// data received of socket
-		std::string			_temp_rec_buffer;	// data that was read but not part of 1st request
-		std::string			_response;			// the response that is going to be sent to the client
-		std::unique_ptr<t_cgiData>	_cgi;
+		int							_state;				// state of the client
+		std::vector<int>			_fds;				// array of fds (socket en pipes)
+		clRequest					_request;			// array of parsed request structs
+		std::string					_received;			// data received of socket
+		std::string					_response;			// the response that is going to be sent to the client
+		size_t						_response_size;		// size of response to compare with _bytes_sent to client
+		size_t						_bytes_sent;		// Amount of bytes_sent to compare with _response_size
+		std::unique_ptr<t_cgiData>	_cgi;				// unique ptr to cgi struct that handles data for cgi requests
 
 	public:
 
 		Client(int socket_fd);
 		~Client();
 
-		void	handleEvent(Server& server);
+		int		handleEvent(Server& server);
 
 		void	readCGI();			// read from cgi	- uses read
 		void	writeCGI();			// write to CGI		- uses write
@@ -67,8 +67,10 @@ class Client
 		bool			checkCgiPtr();
 		
 		void	setReceivedData(std::string& data);
-		void	clearReceivedData();
 		void	setResponseData(std::string data);
 		void	setClientState(int state);
 		void	setCgiStruct(std::unique_ptr<t_cgiData> cgi);
-};
+
+		void	clearData(int i);
+		void	updateBytesSent(size_t bytes_sent);
+	};

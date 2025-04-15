@@ -139,6 +139,7 @@ void Server::run(void)
 
 	while (true)
 	{
+		std::cout << "Yep ----------------------------------------" << std::endl;
 		int event_count = epoll_wait(_epoll_fd, ready_events, MAX_EVENTS, -1);
 		if (event_count == -1)
 		{
@@ -149,6 +150,7 @@ void Server::run(void)
 		{
 			int fd = ready_events[i].data.fd;
 
+			std::cout << "Event count: " << event_count << " , current event fd: " << fd << std::endl;
 			for (int i = 0; i < _server_fds_amount; ++i)
 				if (fd == _server_fds[i])
 					connectClient(_epoll_fd, fd);
@@ -156,8 +158,12 @@ void Server::run(void)
 			{
 				int client_amount = _clients[i]->getClientFds(-1);
 				for (int o = 0; o < client_amount; ++o)
+				{
+					std::cout << "current event fd: " << fd << " , client fd: " << _clients[i]->getClientFds(o) << std::endl;
 					if (_clients[i]->getClientFds(o) == fd)
-						_clients[i]->handleEvent(*this);
+						if (_clients[i]->handleEvent(*this) == 2)
+							removeClient(_clients[i]);
+				}
 			}
 		}
 	}
@@ -227,267 +233,113 @@ void Server::removeClient(Client* client)
 
 int	Server::recvFromSocket(Client& client)
 {
-	char 			buffer[SOCKET_BUFFER];
-    ssize_t 		bytes_received;
-    std::string& 	receivedData = client.getClientReceived();
-
-	do
-	{
-		bytes_received = recv(client.getClientFds(0), buffer, SOCKET_BUFFER, 0);
-		if (bytes_received > 0)
-		{
-			std::cout << "bytes received: " << bytes_received << std::endl;
-			receivedData.append(buffer, bytes_received);
-		}
-		else if (bytes_received == 0)
-		{
-			// Client disconnected
-			removeClient(&client);
-			return 0;
-		}
-	} while (bytes_received > 0);
-
-	std::cout <<  "\nDATA: \n" << receivedData << std::endl;
-
-	std::cout <<  "\nDATA IN CLIENT: \n" << client.getClientReceived() << std::endl;
-	// char		buffer[SOCKET_BUFFER];
-	// std::string	data;
-	// ssize_t		bytes_received;
-	// int			client_fd = client.getClientFds(0);
+	// char 			buffer[SOCKET_BUFFER];
+    // ssize_t 		bytes_received;
+    // std::string& 	receivedData = client.getClientReceived();
 
 	// do
 	// {
-	// 	bytes_received = recv(client_fd, buffer, SOCKET_BUFFER, 0);
-	// 	if (bytes_received <= 0)
-	// 		break ;
-	// 	std::cout << "bytes_received: " << bytes_received << std::endl;
-	// 	data += buffer;
-	// 	if (bytes_received == 0) // Not sure if correct, because we could just be at the end of what to read, without needing to close the connection to the client
+	// 	bytes_received = recv(client.getClientFds(0), buffer, SOCKET_BUFFER, 0);
+	// 	if (bytes_received > 0)
 	// 	{
-	// 		removeClient(&client);
-	// 		return (0);
+	// 		std::cout << "bytes received: " << bytes_received << std::endl;
+	// 		receivedData.append(buffer, bytes_received);
+	// 	}
+	// 	else if (bytes_received == 0)
+	// 	{
+	// 		return (2);
 	// 	}
 	// } while (bytes_received > 0);
-	// client.setReceivedData(data);
-	// std::cout << data << std::endl;
+	// std::cout <<  "\nDATA: \n" << receivedData << std::endl;
 
-	// // if (bytes_received == -1)
-	// // 	return (-1);
+	// std::cout <<  "\nDATA IN CLIENT: \n" << client.getClientReceived() << std::endl;
+
+	// client.setClientState(parsing_request);
+	// parsingRequest(*this, client);
+	// return (0);
+
+	char		buffer[SOCKET_BUFFER];
+	std::string	data;
+	ssize_t		bytes_received;
+	int			client_fd = client.getClientFds(0);
+
+	do
+	{
+		bytes_received = recv(client_fd, buffer, SOCKET_BUFFER, 0);
+		if (bytes_received <= 0)
+			break ;
+		std::cout << "bytes_received: " << bytes_received << std::endl;
+		data += buffer;
+		if (bytes_received == 0) // Not sure if correct, because we could just be at the end of what to read, without needing to close the connection to the client
+		{
+			return (2);
+		}
+	} while (bytes_received > 0);
+	client.setReceivedData(data);
 	client.setClientState(parsing_request);
-	parsingRequest(*this, client);
-	return (1);
+	return (0);
 }
 
-
-
-// void	Server::handleRead(int _epoll_fd, int client_fd, const Server& server)
-// {
-	// std::vector<char> vbuffer(BUFFER_SIZE);
-	// std::string full_request;
-
-	// ssize_t	bytes_received = recv(client_fd, vbuffer.data(), BUFFER_SIZE, 0);
-	// std::cout << "bytes read: " << bytes_received << std::endl;
-	// if (bytes_received <= 0)
-	// {
-	// 	std::cout << "Client disconnected: " << client_fd << std::endl;
-	// 	epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, client_fd, NULL);
-	// 	close(client_fd);
-	// 	_client_buffers.erase(client_fd);
-	// 	_client_count--;
-	// 	return;
-	// }
-	// else
-	// 	_client_buffers[client_fd].append(vbuffer.data(), bytes_received);
-
-// 	while ((bytes_received = recv(client_fd, vbuffer.data(), BUFFER_SIZE, 0)) > 0)
-// 	{
-// 		std::cout << "bytes_received: " << bytes_received << std::endl;
-// 		_client_buffers[client_fd].append(vbuffer.data(), bytes_received);
-// 	}
-
-// 	// ssize_t	bytes_received = 0;
-// 	// do
-// 	// {
-// 	// 	bytes_received = recv(client_fd, vbuffer.data(), BUFFER_SIZE, 0);
-// 	// 	std::cout << "bytes_received: " << bytes_received << std::endl;
-// 	// 	if (bytes_received > 0)
-// 	// 	{
-// 	// 		_client_buffers[client_fd].append(vbuffer.data(), bytes_received);
-// 	// 	}
-// 	// 	else
-// 	// 	{
-// 	// 		epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, client_fd, NULL);
-// 	// 		close(client_fd);
-// 	// 		std::cout << "Client disconnected: " << client_fd << std::endl;
-// 	// 		_client_buffers.erase(client_fd);
-// 	// 		return ;
-// 	// 	}
-// 	// } while (bytes_received == BUFFER_SIZE);
-
-// 	std::cout << "\n\nClient [" << client_fd << "] full request: \n\n"<< _client_buffers[client_fd] << std::endl;
-// 	std::cout << "\n\n\nend of buffer..." << std::endl;
-
-// 	HttpRequest httprequest;
-// 	if (!parseRequest(_client_buffers[client_fd], httprequest, server))
-// 	{
-// 		std::cout << "parse request failed" << std::endl;
-// 		_responses[client_fd] = ER400;
-// 	}
-// 	else
-// 		_responses[client_fd] = generateHttpResponse(httprequest);
-
-// 	struct epoll_event event;
-// 	event.events = EPOLLIN | EPOLLOUT;
-// 	event.data.fd = client_fd;
-// 	epoll_ctl(_epoll_fd, EPOLL_CTL_MOD, client_fd, &event);
-// 	_client_buffers.erase(client_fd);
-// }
-
-
-
-// int	Server::recvFromSocket(Client& client)
-// {
-// 	// std::vector<char>	vbuffer(BUFFER_SIZE);
-// 	char		buffer[SOCKET_BUFFER];
-// 	std::string	data;
-// 	ssize_t		bytes_received;
-// 	int			client_fd = client.getClientFds(0);
-
-// 	do
-// 	{
-// 		bytes_received = recv(client_fd, buffer, SOCKET_BUFFER, 0);
-// 		if (bytes_received > 0)
-// 		{
-// 			std::cout << "bytes_received: " << bytes_received << std::endl;
-// 			data += buffer;
-// 		}
-// 		else if (bytes_received == 0)
-// 		{
-// 			std::cout << "Client disconnected: " << client_fd << std::endl;
-// 			epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, client_fd, NULL);
-// 			close(client_fd);
-// 			_client_buffers.erase(client_fd);
-// 			return ;
-// 		}
-// 		else
-// 			break;
-// 	} while (bytes_received > 0);
-// 	client.setReceivedData(data);
-
-
-// 	if (bytes_received == -1)
-// 		return (-1);
-// 	else if (bytes_received == 0)
-// 	{
-// 		// tell server to remove client
-// 		return (0);
-// 	}
-// 	client.setClientState(parsing_request);
-// 	return (1);
-// }
-
-
-
-// void	Server::parsingRequest(int _epoll_fd, int client_fd)
-// {
-// 	HttpRequest httprequest;
-// 	client.readRequest(_client_buffers[client_fd], client_fd);
-// 	clRequest cl_request = client.getClStructRequest(client_fd);
-
-// 	std::cout << "client request host: \n" << cl_request.host << std::endl;
-// 	std::cout << "client request port: \n" << cl_request.port << std::endl;
-
-// 	ConfigBlock serverBlock = _config.getServerBlock(cl_request.host, cl_request.port);
-
-// 	std::cout << "server block that's responsible for this request: \n" << std::endl;
-// 	for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values) 
-// 	{
-// 		std::cout << value.first <<": ";
-// 		for (const std::string& str : value.second)
-// 			std::cout << str << ", ";
-// 		std::cout << std::endl;
-// 	}
-// 	for (const std::pair<const std::string, ConfigBlock> &nested : serverBlock.nested) {
-// 		std::cout << nested.first << " {" << std::endl;
-// 		for (const std::pair<const std::string, std::vector<std::string>> &value : nested.second.values) {
-// 			std::cout << value.first <<": ";
-// 			for (const std::string& str : value.second)
-// 				std::cout << str << ", ";
-// 			std::cout << std::endl;
-// 		}
-// 		std::cout << "}" << std::endl;
-// 	}
-	
-// 	if (cl_request.invalidRequest == true)
-// 	{
-// 		std::cout << "parse request failed" << std::endl;
-// 		_responses[client_fd] = serveError("400", serverBlock);
-// 	}
-// 	else
-// 		_responses[client_fd] = generateHttpResponse(cl_request, serverBlock);
-
-
-// 	struct epoll_event event;
-// 	event.events = EPOLLIN | EPOLLOUT;
-// 	event.data.fd = client_fd;
-// 	epoll_ctl(_epoll_fd, EPOLL_CTL_MOD, client_fd, &event);
-// 	_client_buffers.erase(client_fd);
-// }
-
-void	Server::sendToSocket(Client& client)
+int	Server::sendToSocket(Client& client)
 {
 	std::string response = client.getClientResponse();
-	if (response.empty())
-		return;
 
 	int	socket_fd = client.getClientFds(0);
-	unsigned long bytes_sent = send(socket_fd, response.c_str(), response.size(), 0);
+	size_t bytes_sent = send(socket_fd, response.c_str(), response.size(), 0);
 	if (bytes_sent <= 0) 
 	{
 		std::cout << "Error writing to client: " << socket_fd << std::endl;
-		epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, socket_fd, NULL);
-		close(socket_fd);
-		return;
+		return (2);
 	}
 	if (bytes_sent != response.size())
-		client.setResponseData(response.substr(bytes_sent));
-
-	if (bytes_sent == response.size()) 
 	{
-		struct epoll_event event;
-		event.events = EPOLLIN;
-		event.data.fd = socket_fd;
-		epoll_ctl(_epoll_fd, EPOLL_CTL_MOD, socket_fd, &event);
-		client.setClientState(reading_request);
+		client.setResponseData(response.substr(bytes_sent));
+		client.updateBytesSent(bytes_sent);
+		return (1);
 	}
+	struct epoll_event event;
+	event.events = EPOLLIN;
+	event.data.fd = socket_fd;
+	epoll_ctl(_epoll_fd, EPOLL_CTL_MOD, socket_fd, &event);
+	client.setClientState(reading_request);
+
+	return (0);
 }
 
-// void	Server::handleWrite(int _epoll_fd, int client_fd)
+
+
+// int	Server::sendToSocket(Client& client)
 // {
-// 	if (_responses[client_fd].empty())
+// 	std::string response = client.getClientResponse();
+// 	if (response.empty())
 // 		return;
 
-// 	int bytes_sent = send(client_fd, _responses[client_fd].c_str(), _responses[client_fd].size(), 0);
+// 	int	socket_fd = client.getClientFds(0);
+// 	unsigned long bytes_sent = send(socket_fd, response.c_str(), response.size(), 0);
 // 	if (bytes_sent <= 0) 
 // 	{
-// 		std::cout << "Error writing to client: " << client_fd << std::endl;
-// 		epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, client_fd, NULL);
-// 		close(client_fd);
-// 		_client_buffers.erase(client_fd);
-// 		_responses.erase(client_fd);
-// 		return;
+// 		std::cout << "Error writing to client: " << socket_fd << std::endl;
+// 		epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, socket_fd, NULL);
+// 		close(socket_fd);
+// 		return ;
+// 	}
+// 	if (bytes_sent != response.size())
+// 	{
+// 		client.setResponseData(response.substr(bytes_sent));
+// 		return (1);
 // 	}
 
-// 	_responses[client_fd] = _responses[client_fd].substr(bytes_sent);
-
-// 	if (_responses[client_fd].empty())
+// 	if (bytes_sent == response.size()) 
 // 	{
 // 		struct epoll_event event;
 // 		event.events = EPOLLIN;
-// 		event.data.fd = client_fd;
-// 		epoll_ctl(_epoll_fd, EPOLL_CTL_MOD, client_fd, &event);
+// 		event.data.fd = socket_fd;
+// 		epoll_ctl(_epoll_fd, EPOLL_CTL_MOD, socket_fd, &event);
+// 		client.setClientState(reading_request);
 // 	}
+// 	return (0);
 // }
+
 
 void	Server::setNonBlocking(int fd)
 {
