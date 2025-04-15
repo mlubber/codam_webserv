@@ -20,31 +20,32 @@
 
 std::vector<Serve>	serverArray;
 
-std::vector<Serve>& makeServerArray(ConfigBlock& configData) {
+std::vector<Serve>& makeServerArray(ConfigBlock& configData)
+{
 	int i = 0;
 	
-	for(std::pair<const std::string, ConfigBlock> &serverBlock : configData.nested) { 
-	std::string  tHost, tRoot, tServerName;
-	std::vector<std::string> tPort;
-	
-	//std::cout << "i is : " << i << std::endl;
-	std::string n = serverBlock.first;
-	if (serverBlock.second.values.find("root") !=  serverBlock.second.values.end())
-		tRoot = serverBlock.second.values["root"].front();
-	if (serverBlock.second.values.find("listen") !=  serverBlock.second.values.end())
-		tPort = serverBlock.second.values["listen"];
-	if (serverBlock.second.values.find("host") !=  serverBlock.second.values.end())
-		tHost = serverBlock.second.values["host"].front();
-	if (serverBlock.second.values.find("server_name") !=  serverBlock.second.values.end())
-		tServerName = serverBlock.second.values["server_name"].front();
+	for(std::pair<const std::string, ConfigBlock> &serverBlock : configData.nested)
+	{ 
+		std::string  tHost, tRoot, tServerName;
+		std::vector<std::string> tPort;
+		
+		//std::cout << "i is : " << i << std::endl;
+		std::string n = serverBlock.first;
+		if (serverBlock.second.values.find("root") !=  serverBlock.second.values.end())
+			tRoot = serverBlock.second.values["root"].front();
+		if (serverBlock.second.values.find("listen") !=  serverBlock.second.values.end())
+			tPort = serverBlock.second.values["listen"];
+		if (serverBlock.second.values.find("host") !=  serverBlock.second.values.end())
+			tHost = serverBlock.second.values["host"].front();
+		if (serverBlock.second.values.find("server_name") !=  serverBlock.second.values.end())
+			tServerName = serverBlock.second.values["server_name"].front();
 
-	serverArray.emplace_back(tHost, tPort, tRoot, tServerName);
-	Serve& lastServer = serverArray.back();
+		serverArray.emplace_back(tHost, tPort, tRoot, tServerName);
+		Serve& lastServer = serverArray.back();
 
-	lastServer.getServerBlock().nested = serverBlock.second.nested;
-	lastServer.getServerBlock().values = serverBlock.second.values;
-	++i;
-
+		lastServer.getServerBlock().nested = serverBlock.second.nested;
+		lastServer.getServerBlock().values = serverBlock.second.values;
+		++i;
 	}
 	// i = 0;
 	// for (Server &data : serverArray) {
@@ -108,35 +109,43 @@ std::vector<Serve>& makeServerArray(ConfigBlock& configData) {
 // 		handle_event();
 // 	}
 // }
-std::vector<int> convertTo_int(std::vector<std::string> &portsStr) {
+
+std::vector<int> convertTo_int(std::vector<std::string> &portsStr)
+{
 
 	std::vector<int> portsInt;
-	for (size_t i = 0; i <portsStr.size(); ++i){
-		try{
+	for (size_t i = 0; i <portsStr.size(); ++i)
+	{
+		try
+		{
 			portsInt.push_back(std::stoi(portsStr[i]));
-
-		}catch(const std::exception &e) {
+		}
+		catch(const std::exception &e) 
+		{
 			std::cerr << "Error : Conversion failed!" << e.what() << std::endl;
 		}
 	}
 	return (portsInt);
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
 
 	std::string confFile;
-	if (argc > 2) {
+	if (argc > 2) 
+	{
 		std::cerr << "you can only pass one argument to program." << std::endl;
-		return 1;
-	} else if (argc < 2) {
+		return (1);
+	} 
+	else if (argc < 2)
 		confFile = "configFile2.conf";
-	} else {
+	else 
 		confFile = argv[1];
-	}
 	std::ifstream configFile(confFile);
-	if (!configFile) {
+	if (!configFile) 
+	{
 		std::cerr << "Error: Could not open configuration file: " << confFile << std::endl;
-		return 1;
+		return (1);
 	}
 
 	Configuration myconfig;
@@ -301,8 +310,6 @@ int main(int argc, char **argv) {
 	if (!server.initialize(configdata))
 		return (1);
 	server.run();
-
 	
-	return 0;
-
+	return (0);
 }

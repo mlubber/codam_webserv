@@ -35,11 +35,6 @@ Server&	Server::operator=(const Server& other)
 	return (*this);
 }
 
-
-
-
-
-
 bool Server::initialize(const std::vector<std::pair<std::string, std::vector<int> > >& server_configs)
 {
     _epoll_fd = epoll_create1(0);
@@ -138,8 +133,6 @@ bool Server::initialize(const std::vector<std::pair<std::string, std::vector<int
     return !_server_fds.empty();
 }
 
-
-
 void Server::run(void)
 {
 	struct epoll_event ready_events[MAX_EVENTS];
@@ -152,7 +145,6 @@ void Server::run(void)
 			std::cerr << "Epoll wait error" << std::endl;
 			continue;
 		}
-
 		for (int i = 0; i < event_count; i++)
 		{
 			int fd = ready_events[i].data.fd;
@@ -232,7 +224,6 @@ void Server::removeClient(Client* client)
 	std::cout << "Client disconnected: " << client_fd << std::endl;
 	return ;
 }
-
 
 int	Server::recvFromSocket(Client& client)
 {
@@ -419,14 +410,6 @@ int	Server::recvFromSocket(Client& client)
 // 	_client_buffers.erase(client_fd);
 // }
 
-
-
-
-
-
-
-
-
 void	Server::sendToSocket(Client& client)
 {
 	std::string response = client.getClientResponse();
@@ -453,10 +436,6 @@ void	Server::sendToSocket(Client& client)
 		epoll_ctl(_epoll_fd, EPOLL_CTL_MOD, socket_fd, &event);
 	}
 }
-
-
-
-
 
 // void	Server::handleWrite(int _epoll_fd, int client_fd)
 // {

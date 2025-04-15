@@ -19,7 +19,6 @@
 class Client;
 struct clRequest;
 
-
 class Server
 {
 	public:

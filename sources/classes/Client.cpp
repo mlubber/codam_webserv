@@ -10,7 +10,6 @@ Client::~Client()
 
 }
 
-
 void	Client::handleEvent(Server& server)
 {
 	if (_state == reading_request)

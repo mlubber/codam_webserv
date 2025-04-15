@@ -8,7 +8,8 @@
 # define WRITESOCKET	2
 # define WRITECGI		3
 
-enum state {
+enum state 
+{
 	reading_request,	// In loop of reading the request from the socket
 	parsing_request,	// Received the full request from the socket and now parsing
 	start_response,		// Readying everything and start sending response
@@ -18,10 +19,11 @@ enum state {
 	done,				// All events handled
 };
 
-struct clRequest {
-	bool	invalidRequest = false;
-	bool	methodNotAllowd = false;
-	bool	hundredContinue = false;
+struct clRequest 
+{
+	bool		invalidRequest = false;
+	bool		methodNotAllowd = false;
+	bool		hundredContinue = false;
     std::string method;
     std::string path;
 	std::string	queryStr;
@@ -33,8 +35,10 @@ struct clRequest {
 	std::string	cgiBody;
 };
 
-class Client {
+class Client 
+{
 	private:
+
 		int					_state;				// state of the client
 		std::vector<int>	_fds;				// array of fds (socket en pipes)
 		clRequest			_request;			// array of parsed request structs
@@ -45,6 +49,7 @@ class Client {
 		std::unique_ptr<t_cgiData>	_cgi;
 
 	public:
+
 		Client(int socket_fd);
 		~Client();
 
@@ -65,5 +70,4 @@ class Client {
 		void	setResponseData(std::string data);
 		void	setClientState(int state);
 		void	setCgiStruct(std::unique_ptr<t_cgiData> cgi);
-
 };
