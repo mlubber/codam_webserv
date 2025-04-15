@@ -67,6 +67,7 @@ class Client
 		bool			checkCgiPtr();
 		
 		void	setReceivedData(std::string& data);
+		void	clearReceivedData();
 		void	setResponseData(std::string data);
 		void	setClientState(int state);
 		void	setCgiStruct(std::unique_ptr<t_cgiData> cgi);

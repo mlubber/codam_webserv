@@ -26,7 +26,7 @@ void	Client::handleEvent(Server& server)
 	}
 	else if (_state == sending_response)
 	{
-		// go to send loop
+		server.sendToSocket(*this);
 	}
 	else if (_state == cgi_read)
 	{
@@ -94,6 +94,11 @@ void Client::setCgiStruct(std::unique_ptr<t_cgiData> cgi)
 void	Client::setReceivedData(std::string& data)
 {
 	_received += data;
+}
+
+void	Client::clearReceivedData()
+{
+	_received.clear();
 }
 
 void	Client::setResponseData(std::string data)

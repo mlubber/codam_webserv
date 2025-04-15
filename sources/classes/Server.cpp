@@ -227,28 +227,52 @@ void Server::removeClient(Client* client)
 
 int	Server::recvFromSocket(Client& client)
 {
-	char		buffer[SOCKET_BUFFER];
-	std::string	data;
-	ssize_t		bytes_received;
-	int			client_fd = client.getClientFds(0);
+	char 			buffer[SOCKET_BUFFER];
+    ssize_t 		bytes_received;
+    std::string& 	receivedData = client.getClientReceived();
 
 	do
 	{
-		bytes_received = recv(client_fd, buffer, SOCKET_BUFFER, 0);
-		if (bytes_received <= 0)
-			break ;
-		std::cout << "bytes_received: " << bytes_received << std::endl;
-		data += buffer;
+		bytes_received = recv(client.getClientFds(0), buffer, SOCKET_BUFFER, 0);
+		if (bytes_received > 0)
+		{
+			std::cout << "bytes received: " << bytes_received << std::endl;
+			receivedData.append(buffer, bytes_received);
+		}
+		else if (bytes_received == 0)
+		{
+			// Client disconnected
+			removeClient(&client);
+			return 0;
+		}
 	} while (bytes_received > 0);
-	client.setReceivedData(data);
 
-	if (bytes_received == -1)
-		return (-1);
-	else if (bytes_received == 0) // Not sure if correct, because we could just be at the end of what to read, without needing to close the connection to the client
-	{
-		removeClient(&client);
-		return (0);
-	}
+	std::cout <<  "\nDATA: \n" << receivedData << std::endl;
+
+	std::cout <<  "\nDATA IN CLIENT: \n" << client.getClientReceived() << std::endl;
+	// char		buffer[SOCKET_BUFFER];
+	// std::string	data;
+	// ssize_t		bytes_received;
+	// int			client_fd = client.getClientFds(0);
+
+	// do
+	// {
+	// 	bytes_received = recv(client_fd, buffer, SOCKET_BUFFER, 0);
+	// 	if (bytes_received <= 0)
+	// 		break ;
+	// 	std::cout << "bytes_received: " << bytes_received << std::endl;
+	// 	data += buffer;
+	// 	if (bytes_received == 0) // Not sure if correct, because we could just be at the end of what to read, without needing to close the connection to the client
+	// 	{
+	// 		removeClient(&client);
+	// 		return (0);
+	// 	}
+	// } while (bytes_received > 0);
+	// client.setReceivedData(data);
+	// std::cout << data << std::endl;
+
+	// // if (bytes_received == -1)
+	// // 	return (-1);
 	client.setClientState(parsing_request);
 	parsingRequest(*this, client);
 	return (1);
@@ -434,6 +458,7 @@ void	Server::sendToSocket(Client& client)
 		event.events = EPOLLIN;
 		event.data.fd = socket_fd;
 		epoll_ctl(_epoll_fd, EPOLL_CTL_MOD, socket_fd, &event);
+		client.setClientState(reading_request);
 	}
 }
 
