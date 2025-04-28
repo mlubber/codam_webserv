@@ -52,11 +52,14 @@ std::string serveError(std::string error_code, const ConfigBlock& serverBlock)
 	if (!path.empty() && stat(filePath.c_str(), &stats) == 0)
 		return (serveStaticFile(filePath)); // Serve the custom error page
 
+	std::cout << "after serve static file: " << std::endl;
 	// Return the default error response if no custom page is found
 	auto it = defaultErrors.find(error_code);
 	if (it != defaultErrors.end())
+	{
+		std::cout << "found error and return it: " << std::endl;
 		return (it->second);
-
+	}
     return (ER500); // Fallback to 500 Internal Server Error
 }
 
@@ -186,6 +189,18 @@ std::string	handlePostRequest(clRequest& cl_request, const ConfigBlock& serverBl
 		if (value.first == "root")
 			root = value.second.front();
 
+	size_t maxBody = 1048576; // MAX 1MB;
+	for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values)
+		if (value.first == "client_max_body_size")
+			maxBody = std::stoul(value.second.front());
+
+	std::cout << "client_max_body_size: " << maxBody << std::endl;
+	std::cout << "cl_request.body.size: " << cl_request.body.size() << std::endl;
+	if (cl_request.body.size() > maxBody)
+	{
+		std::cout << "body too big!" << std::endl;
+		return(serveError("413", serverBlock));
+	}
 
 	if (cl_request.headers.find("content-type") != cl_request.headers.end())
 	{
@@ -288,8 +303,17 @@ std::string	showDirList(clRequest& cl_request, const std::string& filePath, cons
 	std::string home = root;
 	if (!home.empty() && *home.rbegin() != '/')
 		home.append("/");
+
+	std::string cutPath;
+	if (!cl_request.path.empty() && cl_request.path[cl_request.path.size() - 1] == '/')
+		cutPath = cl_request.path.substr(0, cl_request.path.size() - 1);
+	cutPath = cutPath.substr(0, cutPath.find_last_of('/'));
+	if (cutPath.empty())
+		cutPath = "../";
+	std::cout << "cut client request: " << cutPath << std::endl;
+
 	if (filePath != home)
-		list << "<li><a href=\"../\">../</a></li>\n";
+		list << "<li><a href=\"" << cutPath << "\">../</a></li>\n";
 
 	struct dirent *entry;
 	while ((entry = readdir(dir)))
@@ -381,6 +405,7 @@ std::string	deleteFile(clRequest& cl_request, const ConfigBlock& serverBlock)
 std::string routeRequest(clRequest& cl_request, const ConfigBlock& serverBlock)
 {
 	std::string root;
+
 	for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values)
 		if (value.first == "root")
 			root = value.second.front();
@@ -398,15 +423,31 @@ std::string routeRequest(clRequest& cl_request, const ConfigBlock& serverBlock)
 				std::string temp = value.second.front();
 				if (!temp.empty() && *temp.rbegin() != '/')
 					temp.append("/");
-				if (temp == cl_request.path)
+				if (cl_request.path.find(temp) == 0)
 				{
 					locPath = value.second.front();
+					std::cout << "locationPath: " << locPath << std::endl;
 					locBlock = nested.second;
 				}
 				break;
 			}
 		}
 	}
+
+	for (const std::pair<const std::string, std::vector<std::string>> &value : locBlock.values)
+    {
+        if (value.first == "return" && value.second.size() >= 2)
+        {
+			std::ostringstream response;
+			response << "HTTP/1.1 " << value.second[0] << " Moved Permanently\r\n"
+					<< "Location: " << value.second[1] << "\r\n"
+					<< "Content-Length: 0\r\n"
+					<< "Connection: close\r\n"
+					<< "\r\n";
+            return (response.str());
+        }
+    }
+
 	std::string index;
 	for (const std::pair<const std::string, std::vector<std::string>> &value : locBlock.values)
 		if (value.first == "index")
@@ -430,7 +471,7 @@ std::string routeRequest(clRequest& cl_request, const ConfigBlock& serverBlock)
 	if (!rootOverride.empty())
 	{
 		std::cout << "root found in nested block: " << rootOverride << std::endl;
-		filePath = rootOverride;
+		filePath = rootOverride + cl_request.path.substr(locPath.size());
 	}
 	else
 		filePath = root + cl_request.path;
@@ -494,7 +535,7 @@ std::string routeRequest(clRequest& cl_request, const ConfigBlock& serverBlock)
 		return (handlePostRequest(cl_request, serverBlock));
 	else if (cl_request.method == "DELETE")
 		return (deleteFile(cl_request, serverBlock));
-	return (ER400);
+	return (serveError("400", serverBlock));
 }
 
 void	printRequest(HttpRequest& httprequest)

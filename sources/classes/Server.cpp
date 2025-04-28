@@ -201,7 +201,7 @@ void	Server::handleRead(int _epoll_fd, int client_fd)
 		bytes_received = recv(client_fd, vbuffer.data(), BUFFER_SIZE, 0);
 		if (bytes_received > 0)
 		{
-			std::cout << "bytes_received: " << bytes_received << std::endl;
+			// std::cout << "bytes_received: " << bytes_received << std::endl;
 			_client_buffers[client_fd].append(vbuffer.data(), bytes_received);
 		}
 		else if (bytes_received == 0)
@@ -216,7 +216,7 @@ void	Server::handleRead(int _epoll_fd, int client_fd)
 			break;
 	} while (bytes_received > 0);
 	
-	std::cout << "\n\nClient [" << client_fd << "] full request: \n\n"<< _client_buffers[client_fd] << std::endl;
+	// std::cout << "\n\nClient [" << client_fd << "] full request: \n\n"<< _client_buffers[client_fd] << std::endl;
 	std::cout << "\n\n\nend of buffer..." << std::endl;
 
 	HttpRequest httprequest;
