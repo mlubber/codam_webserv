@@ -12,6 +12,7 @@ Client::~Client()
 
 int	Client::handleEvent(Server& server)
 {
+	server.setCurrentClient(_fds[0]);
 	int status;
 
 	if (_state == reading_request)
@@ -130,9 +131,6 @@ void	Client::setClientState(int state)
 			break;
 		case 5:
 			std::cout << "\nClient state set to: cgi_write\n" << std::endl;
-			break;
-		default:
-			std::cout << "\nClient state set to: none\n" << std::endl;
 			break;
 	}
 }

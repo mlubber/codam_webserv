@@ -3,7 +3,33 @@
 #include "../../headers/cgi.hpp"
 #include "../../headers/Client.hpp"
 
-void	read_from_pipe(t_cgiData& cgi, const Server& server, std::string& cgiBody)
+int	wait_for_child(t_cgiData& cgi)
+{
+	pid_t	wpid;
+	int		status;
+	int		exit_code = 0;
+
+	if (errno != 0)
+		return (errno);
+	wpid = waitpid(cgi.child_pid, &status, 0);
+	if (wpid == -1)
+		exit_code = errno;
+	else if (exit_code == 0 && WIFSIGNALED(status))
+	{
+		int signal_number = WTERMSIG(status);
+		std::cerr << "CGI ERROR: Child terminated by signal: " << signal_number << std::endl;
+		if (signal_number == SIGINT)
+			exit_code = 130;
+		else
+			exit_code = 128 + signal_number;
+	}
+	else if (exit_code == 0 && WIFEXITED(status))
+		exit_code = WEXITSTATUS(status);
+	return (exit_code);
+}
+
+
+int	read_from_pipe(t_cgiData& cgi, const Server& server, std::string& cgiBody)
 {
 	char	buffer[CGIBUFFER];
 	int		bytes_read = 0;
@@ -15,7 +41,7 @@ void	read_from_pipe(t_cgiData& cgi, const Server& server, std::string& cgiBody)
 			std::cerr << "CGI ERROR: Failed closing write-end pipe in parent" << std::endl;
 			if (close(cgi.ets_pipe[0]) == -1)
 				std::cerr << "CGI ERROR: Failed closing read-end pipe in parent" << std::endl;
-			return ;
+			return (1);
 		}
 		cgi.started_reading = true;
 	}
@@ -40,13 +66,15 @@ void	read_from_pipe(t_cgiData& cgi, const Server& server, std::string& cgiBody)
 		close(cgi.ste_pipe[1]);
 		// client._state = cgi_read; // Needs to set state if not finished reading
 	}
-	if (close(cgi.ets_pipe[0]) == -1)
+	if (cgi.ets_pipe[0] != -1 && close(cgi.ets_pipe[0]) == -1)
 		std::cerr << "CGI ERROR: Failed closing read-end pipe in parent" << std::endl;
 
-
+	return (wait_for_child(cgi));
+	
 	// This is missing some checks to see if reading was completed 
 	// and if we already closed the ets_pipe[0] at the end
 }
+
 
 void	write_to_pipe(t_cgiData& cgi, const Server& server, bool start)
 {
@@ -77,30 +105,9 @@ void	write_to_pipe(t_cgiData& cgi, const Server& server, bool start)
 	errno = 0;
 }
 
-int	cgi_parent_process(t_cgiData& cgi, clRequest& request, const Server& server, const pid_t& pid)
+int	cgi_parent_process(t_cgiData& cgi, clRequest& request, const Server& server)
 {
-	pid_t	wpid;
-	int		status;
-	int		exit_code = 0;
-
 	if (request.method == "POST")
 		write_to_pipe(cgi, server, true);
-	read_from_pipe(cgi, server, request.cgiBody);
-	if (errno != 0)
-		return (errno);
-	wpid = waitpid(pid, &status, 0);
-	if (wpid == -1)
-		exit_code = errno;
-	else if (exit_code == 0 && WIFSIGNALED(status))
-	{
-		int signal_number = WTERMSIG(status);
-		std::cerr << "CGI ERROR: Child terminated by signal: " << signal_number << std::endl;
-		if (signal_number == SIGINT)
-			exit_code = 130;
-		else
-			exit_code = 128 + signal_number;
-	}
-	else if (exit_code == 0 && WIFEXITED(status))
-		exit_code = WEXITSTATUS(status);
-	return (exit_code);
+	return (read_from_pipe(cgi, server, request.cgiBody));
 }

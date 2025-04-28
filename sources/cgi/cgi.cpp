@@ -43,11 +43,12 @@ static bool	init_cgi_struct(Client& client, clRequest& request, Server& server)
 	cgi->ets_pipe[1] = -1;
 	cgi->ste_pipe[0] = -1;
 	cgi->ste_pipe[1] = -1;
+	cgi->child_pid = -1;
 	cgi->started_reading = false;
 
 	if (pipe(cgi->ets_pipe) == -1)
 		return (1);
-	server.setNonBlocking(cgi->ets_pipe[0]);
+	setNonBlocking(cgi->ets_pipe[0]);
 	struct epoll_event ets_pipe;
 	ets_pipe.events = EPOLLIN | EPOLLET;
 	ets_pipe.data.fd = cgi->ets_pipe[0];
@@ -65,7 +66,7 @@ static bool	init_cgi_struct(Client& client, clRequest& request, Server& server)
 				std::cerr << "CGI ERROR: Failed closing ets_pipe in parent" << std::endl;
 			return (1);
 		}
-		server.setNonBlocking(cgi->ste_pipe[1]);
+		setNonBlocking(cgi->ste_pipe[1]);
 		struct epoll_event ste_pipe;
 		ste_pipe.events = EPOLLIN | EPOLLET;
 		ste_pipe.data.fd = cgi->ste_pipe[0];
@@ -81,17 +82,15 @@ static bool	init_cgi_struct(Client& client, clRequest& request, Server& server)
 
 static int	create_cgi_process(t_cgiData& cgi, clRequest& request, const Server& server)
 {
-	pid_t	pid;
-
-	pid = fork();
-	if (pid == -1)
+	cgi.child_pid = fork();
+	if (cgi.child_pid == -1)
 	{
 		cgi_cleanup(cgi, false);
 		return (-1);
 	}
-	if (pid == 0)
+	if (cgi.child_pid == 0)
 		cgi_child_process(cgi, request, server);
-	return (cgi_parent_process(cgi, request, server, pid));
+	return (cgi_parent_process(cgi, request, server));
 }
 
 int	cgi_check(clRequest& request, Server& server, Client& client)

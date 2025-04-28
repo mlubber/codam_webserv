@@ -13,7 +13,9 @@ CPPFLAGS			=	-Wall -Wextra -Werror -std=c++20
 RM					=	rm -f
 
 # Source Files
-MAIN_DIR			=	$(SRC_DIR)main.cpp
+MAIN_DIR			=	$(SRC_DIR)main.cpp \
+						$(SRC_DIR)signals.cpp \
+						$(SRC_DIR)utils.cpp
 
 PARSING_DIR			=	$(SRC_DIR)parsing/Configuration.cpp \
 						$(SRC_DIR)parsing/Serve.cpp \

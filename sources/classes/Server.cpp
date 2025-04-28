@@ -9,13 +9,11 @@ Server::Server(const Configuration& config) : _server_fds_amount(0), _addr_len(s
 				<< std::endl;
 }
 
-/* COPY CONSTRUCTOR */
 Server::Server(const Server& other)
 {
 	std::cout << "Copy constructor" << std::endl;
 	(void)other;
 }
-
 
 Server::~Server()
 {
@@ -27,7 +25,6 @@ Server::~Server()
 			std::cerr << "CLOSING ERROR: Failed closing server_fd: " << _server_fds[i] << std::endl;
 }
 
-
 Server&	Server::operator=(const Server& other)
 {
 	std::cout << "Copy assignment operator" << std::endl;
@@ -35,14 +32,37 @@ Server&	Server::operator=(const Server& other)
 	return (*this);
 }
 
+
 bool Server::initialize(const std::vector<std::pair<std::string, std::vector<int> > >& server_configs)
 {
+	std::cout << "START SERVER INITIALIZATION ---------------------" << std::endl;
+	if (pipe(signal_pipe) == -1)
+		return (false);
+	if (setNonBlocking(signal_pipe[0]) == -1)
+	{
+		close_signal_pipe(1);
+		return (false);
+	}
+	if (initialize_signals() == -1)
+	{
+		close_signal_pipe(2);
+		return (false);
+	}
+
+	struct epoll_event event;
+	event.events = EPOLLIN;
+
     _epoll_fd = epoll_create1(0);
     if (_epoll_fd == -1)
     {
         std::cerr << "Failed to create epoll instance" << std::endl;
-        return false;
+        return (false);
     }
+	if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, signal_pipe[0], &event) == -1)
+	{
+		close_signal_pipe(3);
+		return (false);
+	}
 
     std::set<std::pair<std::string, int> > bound_servers;
 
@@ -57,7 +77,7 @@ bool Server::initialize(const std::vector<std::pair<std::string, std::vector<int
             if (bound_servers.find(host_port_pair) != bound_servers.end())
             {
                 std::cerr << "Skipping duplicate binding: " << host << ":" << ports[j] << std::endl;
-                continue;
+                continue ;
             }
             bound_servers.insert(host_port_pair);
 
@@ -65,7 +85,7 @@ bool Server::initialize(const std::vector<std::pair<std::string, std::vector<int
             if (socket_fd == -1)
             {
                 std::cerr << "Socket creation failed for " << host << ":" << ports[j] << std::endl;
-                continue;
+                continue ;
             }
 
             int opt = 1;
@@ -92,7 +112,7 @@ bool Server::initialize(const std::vector<std::pair<std::string, std::vector<int
                 {
                     std::cerr << "Failed to resolve hostname: " << host << std::endl;
                     close(socket_fd);
-                    continue;
+                    continue ;
                 }
                 struct sockaddr_in *addr = (struct sockaddr_in *)res->ai_addr;
                 address.sin_addr = addr->sin_addr;
@@ -103,35 +123,34 @@ bool Server::initialize(const std::vector<std::pair<std::string, std::vector<int
             {
                 std::cerr << "Binding failed on " << host << ":" << ports[j] << std::endl;
                 close(socket_fd);
-                continue;
+                continue ;
             }
 
             if (listen(socket_fd, 10) < 0)
             {
                 std::cerr << "Listening failed on " << host << ":" << ports[j] << std::endl;
                 close(socket_fd);
-                continue;
+                continue ;
             }
 
             std::cout << "Listening on " << host << ":" << ports[j] << std::endl;
 
-            struct epoll_event event;
-            event.events = EPOLLIN;
             event.data.fd = socket_fd;
-
             if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, socket_fd, &event) == -1)
             {
                 std::cerr << "Failed to add server socket to epoll" << std::endl;
                 close(socket_fd);
-                continue;
+                continue ;
             }
 			_server_fds.push_back(socket_fd);
 			_server_fds_amount++;
         }
     }
 
-    return !_server_fds.empty();
+    return (!_server_fds.empty());
+	std::cout << "END SERVER INITIALIZATION ---------------------" << std::endl;
 }
+
 
 void Server::run(void)
 {
@@ -140,12 +159,16 @@ void Server::run(void)
 	while (true)
 	{
 		std::cout << "Yep ----------------------------------------" << std::endl;
+		got_signal = 0;
 		int event_count = epoll_wait(_epoll_fd, ready_events, MAX_EVENTS, -1);
 		if (event_count == -1)
 		{
 			std::cerr << "Epoll wait error" << std::endl;
 			continue;
 		}
+		else if (check_if_signal() == SIGINT)
+			close_webserv();
+
 		for (int i = 0; i < event_count; i++)
 		{
 			int fd = ready_events[i].data.fd;
@@ -162,13 +185,33 @@ void Server::run(void)
 					std::cout << "current event fd: " << fd << " , client fd: " << _clients[i]->getClientFds(o) << std::endl;
 					if (_clients[i]->getClientFds(o) == fd)
 						if (_clients[i]->handleEvent(*this) == 2)
-							removeClient(_clients[i]);
+							removeClient(_clients[i], i);
 				}
 			}
+			if (got_signal != 0)
+				handleReceivedSignal();
+			setCurrentClient(-1);
 		}
 	}
 	close(_epoll_fd);
 }
+
+void	Server::handleReceivedSignal()
+{
+	if (got_signal == SIGINT)
+	{
+		std::cout << "SIGNAL: Received SIGINT, closing webserv.." << std::endl;
+		close_webserv();
+	}
+	if (got_signal == SIGPIPE)
+	{
+		std::cout << "SIGNAL: Received SIGPIPE, disconnecting client now.." << std::endl;
+		for (int i = 0; i < _client_count; ++i)
+			if (_server_fds[i] == _current_client)
+				removeClient(_clients[i], i);
+	}
+}
+
 
 void Server::connectClient(int _epoll_fd, int server_fd)
 {
@@ -177,16 +220,21 @@ void Server::connectClient(int _epoll_fd, int server_fd)
 		int new_client_fd = accept(server_fd, (struct sockaddr *)&_address, &_addr_len);
 		if (new_client_fd < 0)
 		{
-			std::cerr << "Failed to accept connection" << std::endl;
-			return;
+			std::cerr << "ERROR: Failed to accept connection" << std::endl;
+			return ;
 		}
-	
-		setNonBlocking(new_client_fd);
-	
+
+		if (setNonBlocking(new_client_fd) == -1)
+		{
+			if (close(new_client_fd) == -1)
+				std::cerr << "ERROR: Closing new_client_fd failed" << std::endl;
+			return ;
+		}
+
 		struct epoll_event event;
 		event.events = EPOLLIN | EPOLLOUT | EPOLLET;
 		event.data.fd = new_client_fd;
-	
+
 		if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, new_client_fd, &event) == -1)
 		{
 			std::cerr << "Failed to add client to epoll" << std::endl;
@@ -194,7 +242,7 @@ void Server::connectClient(int _epoll_fd, int server_fd)
 			return;
 		}
 		std::cout << "Client connected: " << new_client_fd << std::endl;
-	
+
 		Client* new_client = new Client(new_client_fd);
 		this->_clients.push_back(new_client);
 		this->_client_count++;
@@ -206,7 +254,7 @@ void Server::connectClient(int _epoll_fd, int server_fd)
 
 }
 
-void Server::removeClient(Client* client)
+void Server::removeClient(Client* client, int index)
 {
 	int client_fd = client->getClientFds(0);
 
@@ -226,41 +274,41 @@ void Server::removeClient(Client* client)
 	if (close(client_fd) == -1)
 		std::cout << "SERVER ERROR: Failed closing client_fd " << client_fd << std::endl;
 
+	_clients.erase(_clients.begin() + index);
 	delete client;
+	_client_count--;
+
 	std::cout << "Client disconnected: " << client_fd << std::endl;
+
 	return ;
+}
+
+void Server::close_webserv()
+{
+	// remove clients
+	while (_client_count > 0)
+		removeClient(_clients[_client_count - 1], _client_count - 1);
+
+
+	// close signal pipe
+	close_signal_pipe(0);
+
+	// close epoll fd
+	epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, _epoll_fd, NULL);
+
+	// remove configuration stuff ??
+
+
+
+	exit(0);
+	exit(errno); // IF we want to quit and return errno set to last error
 }
 
 int	Server::recvFromSocket(Client& client)
 {
-	// char 			buffer[SOCKET_BUFFER];
-    // ssize_t 		bytes_received;
-    // std::string& 	receivedData = client.getClientReceived();
-
-	// do
-	// {
-	// 	bytes_received = recv(client.getClientFds(0), buffer, SOCKET_BUFFER, 0);
-	// 	if (bytes_received > 0)
-	// 	{
-	// 		std::cout << "bytes received: " << bytes_received << std::endl;
-	// 		receivedData.append(buffer, bytes_received);
-	// 	}
-	// 	else if (bytes_received == 0)
-	// 	{
-	// 		return (2);
-	// 	}
-	// } while (bytes_received > 0);
-	// std::cout <<  "\nDATA: \n" << receivedData << std::endl;
-
-	// std::cout <<  "\nDATA IN CLIENT: \n" << client.getClientReceived() << std::endl;
-
-	// client.setClientState(parsing_request);
-	// parsingRequest(*this, client);
-	// return (0);
-
 	char		buffer[SOCKET_BUFFER];
 	std::string	data;
-	ssize_t		bytes_received;
+	size_t		bytes_received;
 	int			client_fd = client.getClientFds(0);
 
 	do
@@ -307,56 +355,6 @@ int	Server::sendToSocket(Client& client)
 }
 
 
-
-// int	Server::sendToSocket(Client& client)
-// {
-// 	std::string response = client.getClientResponse();
-// 	if (response.empty())
-// 		return;
-
-// 	int	socket_fd = client.getClientFds(0);
-// 	unsigned long bytes_sent = send(socket_fd, response.c_str(), response.size(), 0);
-// 	if (bytes_sent <= 0) 
-// 	{
-// 		std::cout << "Error writing to client: " << socket_fd << std::endl;
-// 		epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, socket_fd, NULL);
-// 		close(socket_fd);
-// 		return ;
-// 	}
-// 	if (bytes_sent != response.size())
-// 	{
-// 		client.setResponseData(response.substr(bytes_sent));
-// 		return (1);
-// 	}
-
-// 	if (bytes_sent == response.size()) 
-// 	{
-// 		struct epoll_event event;
-// 		event.events = EPOLLIN;
-// 		event.data.fd = socket_fd;
-// 		epoll_ctl(_epoll_fd, EPOLL_CTL_MOD, socket_fd, &event);
-// 		client.setClientState(reading_request);
-// 	}
-// 	return (0);
-// }
-
-
-void	Server::setNonBlocking(int fd)
-{
-	std::cout << "Setting non-blocking mode for fd: " << fd << std::endl;
-	int flag = fcntl(fd, F_GETFL, 0);
-	if (flag == -1)
-	{
-		std::cerr << flag << " fcntl get failed\n";
-		return ;
-	}
-	if (fcntl(fd, F_SETFL, flag | O_NONBLOCK) == -1)
-	{
-		std::cerr << "fcntl set failed\n";
-		return ;
-	}
-}
-
 const std::string	Server::getServerInfo(int i) const
 {
 	if (i == 0)
@@ -375,4 +373,10 @@ int	Server::getEpollFd() const
 const Configuration&	Server::getConfig() const
 {
 	return (_config);
+}
+
+
+void Server::setCurrentClient(int client_fd)
+{
+	_current_client = client_fd;
 }

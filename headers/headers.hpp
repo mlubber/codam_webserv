@@ -18,12 +18,24 @@
 # include <sys/wait.h>
 # include <memory>
 # include <algorithm>
+# include <csignal>
 
 class Client;
 class Server;
 struct clRequest;
 struct ConfigBlock;
 
-void		setNonBlocking(int fd);
+extern int	signal_pipe[2]; // To wake up epoll_wait for signals
+extern int	got_signal;		// To check the received signal
+
+int			initialize_signals();
+int			check_if_signal();
+void		handleReceivedSignal(Server& server);
+void		close_signal_pipe(int message);
+
+
+int			setNonBlocking(int fd);
 void		parsingRequest(Server& server, Client& client);
 std::string	generateHttpResponse(clRequest& cl_request, const ConfigBlock& serverBlock);
+
+void		close_webserv(Server& server);

@@ -29,23 +29,25 @@ class Server
 
 		Server&	operator=(const Server& other);
 
-		bool			initialize(const std::vector<std::pair<std::string, std::vector<int> > >& server_configs);
-		void			run();
-		void			connectClient(int epoll_fd, int server_fd);
-		// void	handleRead(int epoll_fd, int client_fd);
-		// void	handleWrite(int epoll_fd, int client_fd);
-		void			setNonBlocking(int socket);
-		// std::string		generateHttpResponse(clRequest& cl_request, const ConfigBlock& serverBlock);
-
-
+		bool	initialize(const std::vector<std::pair<std::string, std::vector<int> > >& server_configs);
+		void	run();
+		
+		void	connectClient(int epoll_fd, int server_fd);
+		void	removeClient(Client* client, int index);	
+		
 		int		recvFromSocket(Client& client);
 		int		sendToSocket(Client& client);	
-		void	removeClient(Client* client);	
+		
+		void	handleReceivedSignal();
+
+		void	close_webserv();
 
 
 		const std::string		getServerInfo(int i) const;
 		int						getEpollFd() const;
 		const Configuration&	getConfig() const;
+
+		void					setCurrentClient(int client_fd);
 
 	private:
 
@@ -57,6 +59,7 @@ class Server
 
 		std::vector<Client*>		_clients;
 		int							_client_count;
+		int							_current_client;
 
 		Configuration				_config;
 		const std::string			_name; // for cgi environment var server name - Now temp, but needs to come from config
