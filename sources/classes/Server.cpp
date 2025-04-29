@@ -167,7 +167,10 @@ void Server::run(void)
 			continue;
 		}
 		else if (check_if_signal() == SIGINT)
+		{
+			std::cout << "RECEIVEd CTRL + C" << std::endl;
 			close_webserv();
+		}
 
 		for (int i = 0; i < event_count; i++)
 		{
@@ -308,7 +311,7 @@ int	Server::recvFromSocket(Client& client)
 {
 	char		buffer[SOCKET_BUFFER];
 	std::string	data;
-	size_t		bytes_received;
+	long		bytes_received;
 	int			client_fd = client.getClientFds(0);
 
 	do
@@ -333,13 +336,13 @@ int	Server::sendToSocket(Client& client)
 	std::string response = client.getClientResponse();
 
 	int	socket_fd = client.getClientFds(0);
-	size_t bytes_sent = send(socket_fd, response.c_str(), response.size(), 0);
-	if (bytes_sent <= 0) 
+	ssize_t bytes_sent = send(socket_fd, response.c_str(), response.size(), 0);
+	if (bytes_sent <= 0)
 	{
 		std::cout << "Error writing to client: " << socket_fd << std::endl;
 		return (2);
 	}
-	if (bytes_sent != response.size())
+	if (bytes_sent != static_cast<ssize_t>(response.size()))
 	{
 		client.setResponseData(response.substr(bytes_sent));
 		client.updateBytesSent(bytes_sent);
