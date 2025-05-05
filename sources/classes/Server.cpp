@@ -229,24 +229,24 @@ void	Server::handleRead(int _epoll_fd, int client_fd)
 
 	ConfigBlock serverBlock = _config.getServerBlock(cl_request.host, cl_request.port);
 
-	std::cout << "server block that's responsible for this request: \n" << std::endl;
-	for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values) 
-	{
-		std::cout << value.first <<": ";
-		for (const std::string& str : value.second)
-			std::cout << str << ", ";
-		std::cout << std::endl;
-	}
-	for (const std::pair<const std::string, ConfigBlock> &nested : serverBlock.nested) {
-		std::cout << nested.first << " {" << std::endl;
-		for (const std::pair<const std::string, std::vector<std::string>> &value : nested.second.values) {
-			std::cout << value.first <<": ";
-			for (const std::string& str : value.second)
-				std::cout << str << ", ";
-			std::cout << std::endl;
-		}
-		std::cout << "}" << std::endl;
-	}
+	// std::cout << "server block that's responsible for this request: \n" << std::endl;
+	// for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values) 
+	// {
+	// 	std::cout << value.first <<": ";
+	// 	for (const std::string& str : value.second)
+	// 		std::cout << str << ", ";
+	// 	std::cout << std::endl;
+	// }
+	// for (const std::pair<const std::string, ConfigBlock> &nested : serverBlock.nested) {
+	// 	std::cout << nested.first << " {" << std::endl;
+	// 	for (const std::pair<const std::string, std::vector<std::string>> &value : nested.second.values) {
+	// 		std::cout << value.first <<": ";
+	// 		for (const std::string& str : value.second)
+	// 			std::cout << str << ", ";
+	// 		std::cout << std::endl;
+	// 	}
+	// 	std::cout << "}" << std::endl;
+	// }
 	
 	if (cl_request.invalidRequest == true)
 	{
@@ -255,14 +255,6 @@ void	Server::handleRead(int _epoll_fd, int client_fd)
 	}
 	else
 		_responses[client_fd] = generateHttpResponse(cl_request, serverBlock);
-
-	// if (!parseRequest(_client_buffers[client_fd], httprequest, server, cl_request, serverBlock))
-	// {
-	// 	std::cout << "parse request failed" << std::endl;
-	// 	_responses[client_fd] = ER400;
-	// }
-	// else
-	// 	_responses[client_fd] = generateHttpResponse(cl_request, serverBlock);
 
 	struct epoll_event event;
 	event.events = EPOLLIN | EPOLLOUT;

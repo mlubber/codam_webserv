@@ -111,7 +111,7 @@ static void saveFile(const clRequest& cl_request, const std::string& boundary, c
 	std::cout << "data end position: " << dataEnd << std::endl;
 
 	std::string fileData = cl_request.body.substr(dataStart, dataEnd - dataStart);
-	std::cout << "file data: \n" << fileData << std::endl;
+	// std::cout << "file data: \n" << fileData << std::endl;
 
 	std::ofstream outFile(filePath.c_str(), std::ios::binary);
 	if (!outFile)
@@ -476,6 +476,22 @@ std::string routeRequest(clRequest& cl_request, const ConfigBlock& serverBlock)
 	else
 		filePath = root + cl_request.path;
 
+	std::vector<std::string> methods;
+	for (const std::pair<const std::string, std::vector<std::string>> &value : locBlock.values)
+	{
+		if (value.first == "methods")
+		{
+			methods = value.second;
+			for (const std::string& method : methods)
+            	std::cout << method << " ";
+        	std::cout << std::endl;
+		}
+	}
+	if (std::find(methods.begin(), methods.end(), cl_request.method) == methods.end())
+	{
+		std::cout << "Method not allowed: " << cl_request.method << std::endl;
+    	return (serveError("405", serverBlock));
+	}
 	
 	if (cl_request.method == "GET")
 	{
