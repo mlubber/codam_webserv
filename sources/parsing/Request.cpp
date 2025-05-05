@@ -563,7 +563,17 @@ void readRequest(Client& client)
 		resetStruct(clRequest);
 		//std::cout << "inside else" << std::endl;
 	}
+	size_t headerEndPos = strClRequest.find("\r\n\r\n");
+    if (headerEndPos == std::string::npos) 
+	{
+        std::cerr << "Headers not complete" << std::endl;
+        clRequest.invalidRequest = true;
+        return;
+    }
+	std::string headers = strClRequest.substr(0, headerEndPos + 4);
+    std::string body = strClRequest.substr(headerEndPos + 4);
 
+	std::cout << "headers extracted: \n" << headers << std::endl;
 
 	size_t	pos = 0;
 	size_t	i = 0;
@@ -686,24 +696,24 @@ void	parsingRequest(Server& server, Client& client)
 
 	// ConfigBlock serverBlock = _config.getServerBlock(cl_request.host, cl_request.port);
 
-	std::cout << "server block that's responsible for this request: \n" << std::endl;
-	for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values) 
-	{
-		std::cout << value.first <<": ";
-		for (const std::string& str : value.second)
-			std::cout << str << ", ";
-		std::cout << std::endl;
-	}
-	for (const std::pair<const std::string, ConfigBlock> &nested : serverBlock.nested) {
-		std::cout << nested.first << " {" << std::endl;
-		for (const std::pair<const std::string, std::vector<std::string>> &value : nested.second.values) {
-			std::cout << value.first <<": ";
-			for (const std::string& str : value.second)
-				std::cout << str << ", ";
-			std::cout << std::endl;
-		}
-		std::cout << "}" << std::endl;
-	}
+	// std::cout << "server block that's responsible for this request: \n" << std::endl;
+	// for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values) 
+	// {
+	// 	std::cout << value.first <<": ";
+	// 	for (const std::string& str : value.second)
+	// 		std::cout << str << ", ";
+	// 	std::cout << std::endl;
+	// }
+	// for (const std::pair<const std::string, ConfigBlock> &nested : serverBlock.nested) {
+	// 	std::cout << nested.first << " {" << std::endl;
+	// 	for (const std::pair<const std::string, std::vector<std::string>> &value : nested.second.values) {
+	// 		std::cout << value.first <<": ";
+	// 		for (const std::string& str : value.second)
+	// 			std::cout << str << ", ";
+	// 		std::cout << std::endl;
+	// 	}
+	// 	std::cout << "}" << std::endl;
+	// }
 	
 	if (cl_request.invalidRequest == true)
 	{

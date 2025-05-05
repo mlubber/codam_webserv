@@ -147,8 +147,8 @@ bool Server::initialize(const std::vector<std::pair<std::string, std::vector<int
         }
     }
 
-    return (!_server_fds.empty());
 	std::cout << "END SERVER INITIALIZATION ---------------------" << std::endl;
+    return (!_server_fds.empty());
 }
 
 
@@ -317,15 +317,16 @@ int	Server::recvFromSocket(Client& client)
 	do
 	{
 		bytes_received = recv(client_fd, buffer, SOCKET_BUFFER, 0);
+		std::cout << "bytes_received: " << bytes_received << std::endl;
 		if (bytes_received <= 0)
 			break ;
-		std::cout << "bytes_received: " << bytes_received << std::endl;
 		data += buffer;
 		if (bytes_received == 0) // Not sure if correct, because we could just be at the end of what to read, without needing to close the connection to the client
 		{
 			return (2);
 		}
 	} while (bytes_received > 0);
+	std::cout << "\n\nDATA RECEIVED: \n\n" << data << std::endl;
 	client.setReceivedData(data);
 	client.setClientState(parsing_request);
 	return (0);
