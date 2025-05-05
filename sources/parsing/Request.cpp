@@ -585,10 +585,10 @@ void readRequest(Client& client)
 		return;
 
 	}
-	while ((pos = strClRequest.find_first_of('\n')) != std::string::npos)
+	while ((pos = headers.find_first_of('\n')) != std::string::npos)
 	{
-
-		if (pos == 0 || (pos > 0 && strClRequest[pos - 1] != '\r'))
+		// std::cout << "reading headers request..." << std::endl;
+		if (pos == 0 || (pos > 0 && headers[pos - 1] != '\r'))
 		{
 			clRequest.invalidRequest = true;
 			std::cout << "return 1" << std::endl;
@@ -602,7 +602,7 @@ void readRequest(Client& client)
 			if (clRequest.hundredContinue)
 			{
 				//std::cout << "strClRequest.size() here is : " << strClRequest.size() << std::endl;
-				if (strClRequest.size() > 2)
+				if (body.size() > 2)
 				{
 					// it shouldn't has any 
 					clRequest.invalidRequest = true;
@@ -610,9 +610,9 @@ void readRequest(Client& client)
 					return;
 				}
 			}
-			if (strClRequest.size() > 2)
+			if (body.size() > 2)
 			{
-				std::string body = strClRequest.substr(pos + 1);
+				// std::string body = strClRequest.substr(pos + 1);
 				// std::cout << "read request printing body: (" << body << ")" << std::endl;
 				parseBody(body, clRequest);
 					//std::cout << "return 2" << std::endl;
@@ -622,7 +622,7 @@ void readRequest(Client& client)
 		}
 		else
 		{
-			std::string line = (pos > 1) ? strClRequest.substr(0, pos - 1) : "";
+			std::string line = (pos > 1) ? headers.substr(0, pos - 1) : "";
 			if (i == 0)
 			{
 				if (parseRequestLine(line, clRequest) != 0 )
@@ -649,7 +649,7 @@ void readRequest(Client& client)
 				}
 			}
 		}
-		strClRequest = strClRequest.substr(pos + 1);
+		headers = headers.substr(pos + 1);
 		++i;
 	}
 	// std::cout << "printing  request\n\n\n" << std::endl;

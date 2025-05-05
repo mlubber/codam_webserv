@@ -307,29 +307,92 @@ void Server::close_webserv()
 	exit(errno); // IF we want to quit and return errno set to last error
 }
 
-int	Server::recvFromSocket(Client& client)
+// int	Server::recvFromSocket(Client& client)
+// {
+// 	char			buffer[SOCKET_BUFFER];
+// 	std::string&	receivedData = client.getClientReceived();
+// 	long			bytes_received;
+// 	int				client_fd = client.getClientFds(0);
+
+// 	do
+// 	{
+// 		bytes_received = recv(client_fd, buffer, SOCKET_BUFFER, 0);
+// 		std::cout << "bytes_received: " << bytes_received << std::endl;
+// 		if (bytes_received <= 0)
+// 			break ;
+// 		// data += buffer;
+// 		receivedData.append(buffer, bytes_received);
+// 		if (bytes_received == 0) // Not sure if correct, because we could just be at the end of what to read, without needing to close the connection to the client
+// 		{
+// 			return (2);
+// 		}
+// 	} while (bytes_received > 0);
+// 	std::cout << "\n\nDATA RECEIVED: \n\n" << receivedData << std::endl;
+// 	// client.setReceivedData(data);
+// 	client.setClientState(parsing_request);
+// 	return (0);
+// }
+
+// int Server::recvFromSocket(Client& client)
+// {
+// 	char			buffer[SOCKET_BUFFER];
+// 	std::string&	receivedData = client.getClientReceived();
+// 	long			bytes_received;
+// 	int				client_fd = client.getClientFds(0);
+
+// 	while (true)
+// 	{
+// 		bytes_received = recv(client_fd, buffer, SOCKET_BUFFER, 0);
+// 		std::cout << "bytes_received: " << bytes_received << std::endl;
+
+// 		if (bytes_received < 0)
+// 			break ;
+// 		else if (bytes_received == 0)
+// 		{
+// 			std::cout << "Client disconnected: " << client_fd << std::endl;
+// 			return (2);
+// 		}
+// 		receivedData.append(buffer, bytes_received);
+
+// 		size_t headerEnd = receivedData.find("\r\n\r\n");
+// 		if (headerEnd != std::string::npos)
+// 		{
+// 			client.setClientState(parsing_request);
+// 			return (0);
+// 		}
+// 	}
+// 	return (1);
+// }
+
+int Server::recvFromSocket(Client& client)
 {
-	char		buffer[SOCKET_BUFFER];
-	std::string	data;
-	long		bytes_received;
-	int			client_fd = client.getClientFds(0);
+	char			buffer[SOCKET_BUFFER];
+	std::string&	receivedData = client.getClientReceived();
+	long			bytes_received;
+	int				client_fd = client.getClientFds(0);
 
 	do
 	{
 		bytes_received = recv(client_fd, buffer, SOCKET_BUFFER, 0);
 		std::cout << "bytes_received: " << bytes_received << std::endl;
-		if (bytes_received <= 0)
+
+		if (bytes_received < 0)
 			break ;
-		data += buffer;
-		if (bytes_received == 0) // Not sure if correct, because we could just be at the end of what to read, without needing to close the connection to the client
+		else if (bytes_received == 0)
 		{
+			std::cout << "Client disconnected: " << client_fd << std::endl;
 			return (2);
 		}
+		receivedData.append(buffer, bytes_received);
 	} while (bytes_received > 0);
-	std::cout << "\n\nDATA RECEIVED: \n\n" << data << std::endl;
-	client.setReceivedData(data);
-	client.setClientState(parsing_request);
-	return (0);
+	
+	size_t headerEnd = receivedData.find("\r\n\r\n");
+	if (headerEnd != std::string::npos)
+	{
+		client.setClientState(parsing_request);
+		return (0);
+	}
+	return (1);
 }
 
 int	Server::sendToSocket(Client& client)

@@ -49,6 +49,7 @@ std::string serveError(std::string error_code, const ConfigBlock& serverBlock)
 
 	std::string filePath = root + path;
 	std::cout << "filePath for error: " << filePath << std::endl;
+	std::cout << "error_code: " << error_code << std::endl;
 
 	struct stat stats;
 	if (!path.empty() && stat(filePath.c_str(), &stats) == 0)
@@ -110,7 +111,7 @@ static void saveFile(const clRequest& cl_request, const std::string& boundary, c
 	std::cout << "data end position: " << dataEnd << std::endl;
 
 	std::string fileData = cl_request.body.substr(dataStart, dataEnd - dataStart);
-	std::cout << "file data: \n" << fileData << std::endl;
+	// std::cout << "file data: \n" << fileData << std::endl;
 
 	std::ofstream outFile(filePath.c_str(), std::ios::binary);
 	if (!outFile)
@@ -188,6 +189,19 @@ std::string	handlePostRequest(clRequest& cl_request, const ConfigBlock& serverBl
 		if (value.first == "root")
 			root = value.second.front();
 
+
+	size_t maxBody = MAX_BODY_SIZE;
+	for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values)
+		if (value.first == "client_max_body_size")
+			maxBody = std::stoul(value.second.front());
+
+	std::cout << "client_max_body_size: " << maxBody << std::endl;
+	std::cout << "cl_request.body.size: " << cl_request.body.size() << std::endl;
+	if (cl_request.body.size() > maxBody)
+	{
+		std::cout << "body too big!" << std::endl;
+		return (serveError("413", serverBlock));
+	}
 
 	if (cl_request.headers.find("content-type") != cl_request.headers.end())
 	{
@@ -324,6 +338,28 @@ std::string	showDirList(clRequest& cl_request, const std::string& filePath, cons
 	return (response.str());
 }
 
+std::string urlDecode(const std::string& encoded)
+{
+	std::ostringstream decoded;
+	for (size_t i = 0; i < encoded.length(); ++i)
+	{
+		if (encoded[i] == '%' && i + 2 < encoded.length())
+		{
+			std::istringstream hexStream(encoded.substr(i + 1, 2));
+            int hexValue;
+            hexStream >> std::hex >> hexValue;
+            decoded << static_cast<char>(hexValue);
+            i += 2;
+		}
+		else if (encoded[i] == '+')
+			decoded << ' ';
+		else
+			decoded << encoded[i];
+	}
+	std::cout << "decoded filename: " << decoded.str() << std::endl;
+	return(decoded.str());
+}
+
 std::string	deleteFile(clRequest& cl_request, const ConfigBlock& serverBlock)
 {
 	std::ostringstream response;
@@ -362,7 +398,7 @@ std::string routeRequest(clRequest& cl_request, const ConfigBlock& serverBlock)
 		if (value.first == "root")
 			root = value.second.front();
 
-	std::string filePath = root + cl_request.path;
+	cl_request.queryStr = urlDecode(cl_request.queryStr);
 
 	ConfigBlock	locBlock;
 	std::string	locPath;
@@ -376,15 +412,30 @@ std::string routeRequest(clRequest& cl_request, const ConfigBlock& serverBlock)
 				std::string temp = value.second.front();
 				if (!temp.empty() && *temp.rbegin() != '/')
 					temp.append("/");
-				if (temp == cl_request.path)
+				if (cl_request.path.find(temp) == 0)
 				{
 					locPath = value.second.front();
+					std::cout << "locationPath: " << locPath << std::endl;
 					locBlock = nested.second;
 				}
 				break;
 			}
 		}
 	}
+	for (const std::pair<const std::string, std::vector<std::string>> &value : locBlock.values)
+    {
+        if (value.first == "return" && value.second.size() >= 2)
+        {
+			std::ostringstream response;
+			response << "HTTP/1.1 " << value.second[0] << " Moved Permanently\r\n"
+					<< "Location: " << value.second[1] << "\r\n"
+					<< "Content-Length: 0\r\n"
+					<< "Connection: close\r\n"
+					<< "\r\n";
+            return (response.str());
+        }
+    }
+
 	std::string index;
 	for (const std::pair<const std::string, std::vector<std::string>> &value : locBlock.values)
 		if (value.first == "index")
@@ -398,6 +449,37 @@ std::string routeRequest(clRequest& cl_request, const ConfigBlock& serverBlock)
 	for (const std::pair<const std::string, std::vector<std::string>> &value : locBlock.values)
 		if (value.first == "autoindex")
 			autoindex = value.second.front();
+	
+	std::string filePath;
+
+	std::string rootOverride;
+	for (const std::pair<const std::string, std::vector<std::string>> &value : locBlock.values)
+		if (value.first == "root")
+			rootOverride = value.second.front();
+	if (!rootOverride.empty())
+	{
+		std::cout << "root found in nested block: " << rootOverride << std::endl;
+		filePath = rootOverride + cl_request.path.substr(locPath.size());
+	}
+	else
+		filePath = root + cl_request.path;
+
+	std::vector<std::string> methods;
+	for (const std::pair<const std::string, std::vector<std::string>> &value : locBlock.values)
+	{
+		if (value.first == "methods")
+		{
+			methods = value.second;
+			for (const std::string& method : methods)
+				std::cout << method << " ";
+			std::cout << std::endl;
+		}
+	}
+	if (std::find(methods.begin(), methods.end(), cl_request.method) == methods.end())
+	{
+		std::cout << "Method not allowed: " << cl_request.method << std::endl;
+		return (serveError("405", serverBlock));
+	}
 	
 	if (cl_request.method == "GET")
 	{
