@@ -95,6 +95,7 @@ static void saveFile(const clRequest& cl_request, const std::string& boundary, c
 	std::string fileName = cl_request.body.substr(filenamePos, filenameEnd - filenamePos);
 	std::cout << "filename: " << fileName << std::endl;
 
+	std::cout << "client request path: " << cl_request.path << std::endl;
 	std::string filePath = joinPaths(root + cl_request.path, fileName);
 	std::cout << "registry path: " << filePath << std::endl;
 
@@ -157,7 +158,7 @@ std::string serveStaticFile(const std::string& filePath)
 	
 	std::ifstream file(filePath.c_str(), std::ios::binary);
 	if (!file)
-		return ("\r\n\r\nHTTP/1.1 404 Not Found\r\nContent-Length: 9\r\n\r\nNot Found");
+		return (ER404);
 	
 	// Get file content
 	std::ostringstream fileStream;
@@ -378,7 +379,24 @@ std::string	deleteFile(clRequest& cl_request, const ConfigBlock& serverBlock)
 		return ("HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\nContent-Length: 9\r\n\r\nBad Query");
 	filenamePos += 9;
 
-	std::string fileName = "/uploads/" + cl_request.queryStr.substr(filenamePos);
+	std::string uploads = "/uploads/";
+	for (const std::pair<const std::string, ConfigBlock>& nested : serverBlock.nested)
+	{
+		for (const std::pair<const std::string, std::vector<std::string>>& value : nested.second.values)
+		{
+			if (value.first == "upload_store")
+			{
+				std::cout << "Found upload_store in location: " << nested.first << std::endl;
+				std::cout << "Upload store path: " << value.second.front() << std::endl;
+				uploads = value.second.front();
+				if (!uploads.empty() && *uploads.rbegin() != '/')
+				uploads.append("/");
+			}
+		}
+	}
+	std::cout << "uploads path: " << uploads << std::endl;
+
+	std::string fileName = uploads + cl_request.queryStr.substr(filenamePos);
 
 	std::cout << "filename: " << fileName << std::endl;
 	std::string filePath = root + fileName;
@@ -449,6 +467,20 @@ std::string routeRequest(clRequest& cl_request, const ConfigBlock& serverBlock)
 	for (const std::pair<const std::string, std::vector<std::string>> &value : locBlock.values)
 		if (value.first == "autoindex")
 			autoindex = value.second.front();
+
+	std::string upload_store;
+	for (const std::pair<const std::string, std::vector<std::string>> &value : locBlock.values)
+	{
+		if (value.first == "upload_store")
+		{
+			upload_store = value.second.front();
+			if (!upload_store.empty() && *upload_store.rbegin() != '/')
+				upload_store.append("/");
+			std::cout << "alt upload location: " << upload_store << std::endl;
+			std::cout << "client request path: " << cl_request.path << std::endl;
+			cl_request.path = upload_store;
+		}
+	}
 	
 	std::string filePath;
 
