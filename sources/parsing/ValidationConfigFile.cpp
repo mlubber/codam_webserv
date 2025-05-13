@@ -68,7 +68,7 @@ void isSeversSame()
                                 std::string lis2 = listen2[l];
                                 if (lis1 == lis2)
 								{
-                                    std::cerr << "Error: servers can't have the same port!" << std::endl;
+                                    std::cerr << "Error: servers can't have the same host!" << std::endl;
                                     std::exit(1);
                                 }
                             }

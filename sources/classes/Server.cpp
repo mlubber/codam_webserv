@@ -389,8 +389,21 @@ int Server::recvFromSocket(Client& client)
 	size_t headerEnd = receivedData.find("\r\n\r\n");
 	if (headerEnd != std::string::npos)
 	{
-		client.setClientState(parsing_request);
-		return (0);
+		size_t contentLength = 0;
+		size_t contentLengthPos = receivedData.find("Content-Length:");
+		if (contentLengthPos != std::string::npos)
+		{
+			size_t start = contentLengthPos + 15;
+			size_t end = receivedData.find("\r\n", start);
+			contentLength = std::stoul(receivedData.substr(start, end - start));
+		}
+		size_t totalLength = headerEnd + 4 + contentLength;
+		if (receivedData.size() >= totalLength)
+		{
+			std::cout << "Full request received (" << receivedData.size() << " bytes)" << std::endl;
+			client.setClientState(parsing_request);
+			return (0);
+		}
 	}
 	return (1);
 }
