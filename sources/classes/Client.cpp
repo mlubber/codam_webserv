@@ -25,10 +25,6 @@ int	Client::handleEvent(Server& server)
 	{
 		parsingRequest(server, *this);
 	}
-	if (_state == start_response)
-	{
-		// Readying everything and start sending response
-	}
 	if (_state == cgi_write)
 	{
 		write_to_pipe(this->getCgiStruct(), server, false);
@@ -36,6 +32,10 @@ int	Client::handleEvent(Server& server)
 	if (_state == cgi_read)
 	{
 		read_from_pipe(*this->_cgi, server, _request.cgiBody);
+	}
+	if (_state == start_response)
+	{
+		// Readying everything and start sending response
 	}
 	if (_state == sending_response)
 	{

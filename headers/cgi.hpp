@@ -15,11 +15,11 @@ typedef struct s_cgiData
 	int		ste_pipe[2];		// pipe for server to executable
 	int		ets_pipe[2];		// pipe for executable to server
 	bool	started_reading;	// Check if client object already started reading or has yet to start
-	int		child_pid;				// Child process ID
+	int		child_pid;			// Child process ID
 	std::string writeData;		// Data to write to the pipe
 }	t_cgiData;
 
-int		cgi_check(clRequest& request, const Server& server, Client& client);
+int		cgi_check(clRequest& request, Server& server, Client& client);
 void	cgi_child_process(t_cgiData& cgi, const clRequest& request, const Server& server);
 bool	cgi_setup(t_cgiData& cgi, const clRequest& request, const Server& server);
 void	cgi_cleanup(t_cgiData& cgi, bool child);

@@ -111,7 +111,6 @@ int	cgi_check(clRequest& request, Server& server, Client& client)
 	return (-1);
 }
 
-
 /* STEPS */
 
 // 1. check if CGI needed	✓

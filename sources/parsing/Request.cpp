@@ -62,7 +62,6 @@ void	resetStruct(clRequest& clRequest)
 	clRequest.headers.clear();
 	clRequest.host.clear();
 	clRequest.port.clear();
-	// Reset the isHeaderAppearTwice map for the new request
 	for (auto &header : isHeaderAppearTwice)
 	{
 		header.second = false;
@@ -75,7 +74,6 @@ int	parseHeaderMultiValueComma(std::string &headerName ,std::string &line, clReq
 	{
 		if (isHeaderAppearTwice[headerName])
 		{
-			// header should appears one 
 			clRequest.invalidRequest = true;
 			return (1);
 		}
@@ -102,9 +100,7 @@ int	parseHeaderSingleValue(std::string &headerName ,std::string &line, clRequest
 	{
 		if (isHeaderAppearTwice[headerName])
 		{
-			// header should appears one 
-
-			std::cout << "header should appears one : " << headerName << std::endl;
+			std::cout << "header should appear once: " << headerName << std::endl;
 			clRequest.invalidRequest = true;
 			return (1);
 		}
@@ -292,98 +288,6 @@ int	parseRequestLine(std::string &line, clRequest &clRequest)
 	}
 	return (0);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// int	parseRequestLine(std::string &line, clRequest &clRequest) {
-// 	//std::cout << "parse line (" << line << ")" << std::endl;
-
-// 	size_t i = 0;
-// 	size_t j = 0;
-// 	std::string word;
-
-// 	// max size request line 8 k.
-// 	if (line.size() > 8192 ) {
-// 		clRequest.invalidRequest = true;
-// 		//std::cout << "return" << std::endl;
-// 		return 1;
-// 	}
-// 	int wordCounter = 0;
-// 	while (i < line.size()) {
-// 		j = i;
-// 		word.clear();
-// 		while (j < line.size() && !isspace(line[j]))
-// 		{
-// 			word += line[j];
-// 				++j;
-// 		}
-// 		++wordCounter;
-// 		size_t pos = 0;
-// 		std::string query;
-// 		switch (wordCounter)
-// 		{
-// 		case 1:
-// 			clRequest.method = word;
-// 			if (word != "POST" && word != "GET" && word != "DELETE") {
-// 				clRequest.invalidRequest = true;
-// 				return 1;
-// 			}
-// 			break;
-// 		case 2:
-// 			pos = word.find('?');
-// 			if (pos == std::string::npos)
-// 				clRequest.path = word;
-// 			else {
-// 				query = word.substr(pos, word.size() - pos);
-// 				word = word.substr(0, pos);
-// 				clRequest.path = word;
-// 				clRequest.queryStr = query;
-// 			}
-// 			break;
-// 		case 3:
-// 			if (word.compare("HTTP/1.1") != 0) {
-// 				clRequest.invalidRequest = true;
-// 				//std::cout << "return" << std::endl;
-// 				return 1;
-// 			}
-// 			break;
-// 		default:
-// 			clRequest.invalidRequest = true;
-// 			//std::cout << "return" << std::endl;
-// 			return 1;
-// 			break;
-// 		}
-
-// 		//std::cout << "word is : (" << word << ")" << std::endl;
-// 		if (j < line.size()) {
-// 			if ((line[j] != ' ') || (isspace(line[j + 1]))) {
-// 				clRequest.invalidRequest = true;
-// 				//std::cout << "return" << std::endl;
-// 				return 1;
-// 			}
-// 		}
-// 		if (wordCounter == 3 && j != line.size()) {
-// 			clRequest.invalidRequest = true;
-// 			//std::cout << "return" << std::endl;
-// 			return 1;
-// 		}
-// 		i = j;
-// 		if (i + 1 <= line.size())
-// 			++i;
-// 	}
-// 	return 0;
-// }
 
 void	printclRequest(clRequest &clRequest)
 {
@@ -714,7 +618,7 @@ void	parsingRequest(Server& server, Client& client)
 	// 	}
 	// 	std::cout << "}" << std::endl;
 	// }
-	
+	// cgi_check(cl_request, server, client);
 	if (cl_request.invalidRequest == true)
 	{
 		std::cout << "parse request failed" << std::endl;

@@ -16,8 +16,6 @@ class ValidationConfigFile
 		~ValidationConfigFile();
 
 		void	duplicateKey();
-		// void	checkErrorPageExist(std::string defRoot, std::string overrideRoot, std::vector<std::string> errorPath, int blockIndex, bool add);
-		// void	addBaseValueIfNeedit();
 
 };
 

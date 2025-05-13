@@ -28,14 +28,17 @@ struct ConfigBlock;
 extern int	signal_pipe[2]; // To wake up epoll_wait for signals
 extern int	got_signal;		// To check the received signal
 
-int			initialize_signals();
-int			check_if_signal();
-void		handleReceivedSignal(Server& server);
-void		close_signal_pipe(int message);
+int					initialize_signals();
+int					check_if_signal();
+void				handleReceivedSignal(Server& server);
+void				close_signal_pipe(int message);
 
 
-int			setNonBlocking(int fd);
-void		parsingRequest(Server& server, Client& client);
-std::string	generateHttpResponse(clRequest& cl_request, const ConfigBlock& serverBlock);
+int					setNonBlocking(int fd);
+std::string			joinPaths(const std::string &path, const std::string &file);
+std::string			getExtType(const std::string& filename);
+std::string 		urlDecode(const std::string& encoded);
+std::vector<int>	convertToInt(std::vector<std::string> &portsStr);
+void				parsingRequest(Server& server, Client& client);
 
-void		close_webserv(Server& server);
+void				close_webserv(Server& server);

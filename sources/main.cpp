@@ -1,7 +1,7 @@
 #include "../headers/Server.hpp"
 #include "../headers/Configuration.hpp"
 #include "../headers/ValidationConfigFile.hpp"
-#include "../headers/Serve.hpp"
+#include "../headers/Host.hpp"
 #include "../headers/headers.hpp"
 #include <iterator>
 
@@ -17,9 +17,9 @@
 //     std::cout << "Resolved Path: " << resolvePath(userPath) << std::endl;
 // }
 
-std::vector<Serve>	serverArray;
+std::vector<Host>	serverArray;
 
-std::vector<Serve>& makeServerArray(ConfigBlock& configData)
+std::vector<Host>& makeServerArray(ConfigBlock& configData)
 {
 	int i = 0;
 	
@@ -40,7 +40,7 @@ std::vector<Serve>& makeServerArray(ConfigBlock& configData)
 			tServerName = serverBlock.second.values["server_name"].front();
 
 		serverArray.emplace_back(tHost, tPort, tRoot, tServerName);
-		Serve& lastServer = serverArray.back();
+		Host& lastServer = serverArray.back();
 
 		lastServer.getServerBlock().nested = serverBlock.second.nested;
 		lastServer.getServerBlock().values = serverBlock.second.values;
@@ -109,23 +109,23 @@ std::vector<Serve>& makeServerArray(ConfigBlock& configData)
 // 	}
 // }
 
-std::vector<int> convertTo_int(std::vector<std::string> &portsStr)
-{
+// std::vector<int> convertTo_int(std::vector<std::string> &portsStr)
+// {
 
-	std::vector<int> portsInt;
-	for (size_t i = 0; i <portsStr.size(); ++i)
-	{
-		try
-		{
-			portsInt.push_back(std::stoi(portsStr[i]));
-		}
-		catch(const std::exception &e) 
-		{
-			std::cerr << "Error : Conversion failed!" << e.what() << std::endl;
-		}
-	}
-	return (portsInt);
-}
+// 	std::vector<int> portsInt;
+// 	for (size_t i = 0; i <portsStr.size(); ++i)
+// 	{
+// 		try
+// 		{
+// 			portsInt.push_back(std::stoi(portsStr[i]));
+// 		}
+// 		catch(const std::exception &e) 
+// 		{
+// 			std::cerr << "Error : Conversion failed!" << e.what() << std::endl;
+// 		}
+// 	}
+// 	return (portsInt);
+// }
 
 int main(int argc, char **argv)
 {
@@ -179,7 +179,7 @@ int main(int argc, char **argv)
 	// 	std::cout << "}" << std::endl;
 	// }
 
-	std::vector<Serve> serverArray = makeServerArray(myconfig.getConfigData());
+	std::vector<Host> serverArray = makeServerArray(myconfig.getConfigData());
 
 	// std::cout << "print server array: \n\n\n" << std::endl;
 	// for (size_t i = 0; i < serverArray.size(); i++)
@@ -295,7 +295,7 @@ int main(int argc, char **argv)
 	for (size_t i = 0; i < serverArray.size(); i++)
 	{
 		configdata[i].first = serverArray[i].getHost();
-		configdata[i].second = convertTo_int(serverArray[i].getPort());
+		configdata[i].second = convertToInt(serverArray[i].getPort());
 		// std::cout << "host: " << serverArray[i].getHost() << std::endl;
 		
 		for (size_t j = 0; j < serverArray[i].getPort().size(); j++)

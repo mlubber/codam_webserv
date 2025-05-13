@@ -1,8 +1,8 @@
 #ifndef SERVER_HPP
 # define SERVER_HPP
 
-#include "headers.hpp"
-#include "Configuration.hpp"
+# include "headers.hpp"
+# include "Configuration.hpp"
 
 # define PORT 8080
 # define SOCKET_BUFFER 8192 // 8kb
@@ -68,14 +68,7 @@ class Server
 		const std::string			_root; // temp till Abbas adds his config file code
 };
 
-
-// std::string	generateHttpResponse(HttpRequest& parsedRequest, clRequest& cl_request);
-std::string	getExtType(const std::string& filename);
-std::string	serveStaticFile(const std::string& filePath);
-std::string	handlePostRequest(clRequest& cl_request, const ConfigBlock& serverBlock);
 std::string	routeRequest(clRequest& cl_request, const ConfigBlock& serverBlock);
-// void		printRequest(HttpRequest& httprequest);
 std::string serveError(std::string error_code, const ConfigBlock& serverBlock);
-std::string	deleteFile(clRequest& cl_request, const ConfigBlock& serverBlock);
 
 #endif

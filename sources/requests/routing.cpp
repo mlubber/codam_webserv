@@ -2,11 +2,31 @@
 #include "../../headers/Server.hpp"
 #include "../../headers/Client.hpp"
 
-static std::string joinPaths(const std::string &path, const std::string &file) 
+static std::string serveStaticFile(const std::string& filePath)
 {
-	if (!path.empty() && *path.rbegin() == '/')
-		return (path + file);
-	return (path + "/" + file);
+	std::ifstream file(filePath.c_str(), std::ios::binary);
+	if (!file)
+		return (ER404);
+	
+	// Get file content
+	std::ostringstream fileStream;
+	fileStream << file.rdbuf();
+	std::string fileContent = fileStream.str();
+	// std::cout << fileContent << std::endl;
+
+	// Get content type
+	std::string	contentType = getExtType(filePath);
+	// std::cout << contentType << std::endl;
+
+	// Create HTTP response
+	std::ostringstream response;
+	response << "HTTP/1.1 200 OK\r\n";
+	response << "Content-Type: " << contentType << "\r\n";
+	response << "Content-Length: " << fileContent.size() << "\r\n";
+	response << "\r\n";
+	response << fileContent;
+
+	return (response.str());
 }
 
 std::string serveError(std::string error_code, const ConfigBlock& serverBlock)
@@ -127,61 +147,7 @@ static void saveFile(const clRequest& cl_request, const std::string& boundary, c
 	std::cout << "File saved: " << fileName << std::endl;
 }
 
-
-std::string	getExtType(const std::string& filename)
-{
-	std::map<std::string, std::string> types = 
-	{
-		{".html", "text/html"},
-		{".css", "text/css"},
-		{".js", "application/javascript"},
-		{".png", "image/png"},
-		{".jpg", "image/jpeg"},
-		{".jpeg", "image/jpeg"},
-		{".gif", "image/gif"},
-		{".txt", "text/plain"}
-	};
-
-	size_t dotPos = filename.find_last_of('.');
-
-	if (dotPos != std::string::npos)
-	{
-		std::string extension = filename.substr(dotPos);
-		if (types.find(extension) != types.end())
-			return (types[extension]);
-	}
-	return ("application/octet-stream"); //
-}
-
-std::string serveStaticFile(const std::string& filePath)
-{
-	
-	std::ifstream file(filePath.c_str(), std::ios::binary);
-	if (!file)
-		return (ER404);
-	
-	// Get file content
-	std::ostringstream fileStream;
-	fileStream << file.rdbuf();
-	std::string fileContent = fileStream.str();
-	// std::cout << fileContent << std::endl;
-
-	// Get content type
-	std::string	contentType = getExtType(filePath);
-	// std::cout << contentType << std::endl;
-
-	// Create HTTP response
-	std::ostringstream response;
-	response << "HTTP/1.1 200 OK\r\n";
-	response << "Content-Type: " << contentType << "\r\n";
-	response << "Content-Length: " << fileContent.size() << "\r\n";
-	response << "\r\n";
-	response << fileContent;
-
-	return (response.str());
-}
-
-std::string	handlePostRequest(clRequest& cl_request, const ConfigBlock& serverBlock)
+static std::string	handlePostRequest(clRequest& cl_request, const ConfigBlock& serverBlock)
 {
 	// std::string filePath = STATIC_DIR + request.path + std::string("/index.html");
 	std::ostringstream response;
@@ -215,6 +181,13 @@ std::string	handlePostRequest(clRequest& cl_request, const ConfigBlock& serverBl
 				response	<< "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: "
 							<< (cl_request.body.size()) << "\r\n\r\n"
 							<< cl_request.body;
+			}
+			else if (values_vector[i].find("application/x-www-form-urlencoded") != std::string::npos)
+			{
+				std::cout << "application/x-www-form-urlencoded found! " << cl_request.cgiBody << std::endl;
+				response	<< "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: "
+							<< (cl_request.cgiBody.size()) << "\r\n\r\n"
+							<< cl_request.cgiBody;
 			}
 			else if (values_vector[i].find("multipart/form-data") != std::string::npos)
 			{
@@ -339,29 +312,7 @@ std::string	showDirList(clRequest& cl_request, const std::string& filePath, cons
 	return (response.str());
 }
 
-std::string urlDecode(const std::string& encoded)
-{
-	std::ostringstream decoded;
-	for (size_t i = 0; i < encoded.length(); ++i)
-	{
-		if (encoded[i] == '%' && i + 2 < encoded.length())
-		{
-			std::istringstream hexStream(encoded.substr(i + 1, 2));
-            int hexValue;
-            hexStream >> std::hex >> hexValue;
-            decoded << static_cast<char>(hexValue);
-            i += 2;
-		}
-		else if (encoded[i] == '+')
-			decoded << ' ';
-		else
-			decoded << encoded[i];
-	}
-	std::cout << "decoded filename: " << decoded.str() << std::endl;
-	return(decoded.str());
-}
-
-std::string	deleteFile(clRequest& cl_request, const ConfigBlock& serverBlock)
+static std::string	deleteFile(clRequest& cl_request, const ConfigBlock& serverBlock)
 {
 	std::ostringstream response;
 	std::cout << "delete file here" << std::endl;
@@ -515,10 +466,6 @@ std::string routeRequest(clRequest& cl_request, const ConfigBlock& serverBlock)
 	
 	if (cl_request.method == "GET")
 	{
-		// if (request.cgi == true)
-		// {
-		// 	// set return body not to static file but cgi
-		// }
 		struct stat stats;
 		std::cout << "after GET filling stats" << std::endl;
 		std::cout << "this is the filepath: " << filePath << std::endl;
@@ -573,15 +520,4 @@ std::string routeRequest(clRequest& cl_request, const ConfigBlock& serverBlock)
 		return (deleteFile(cl_request, serverBlock));
 	return (ER400);
 }
-
-// void	printRequest(HttpRequest& httprequest)
-// {
-// 	std::cout << "\n\nPRINT REQUEST:\n" << std::endl;
-// 	std::cout << "Method: " << httprequest.method << std::endl;
-// 	std::cout << "Path: " << httprequest.path << std::endl;
-// 	std::cout << "Version: " << httprequest.version << std::endl;
-// 	for (std::map<std::string, std::string>::iterator it = httprequest.headers.begin(); it != httprequest.headers.end(); it++)
-// 		std::cout << it->first << ": " << it->second << std::endl;
-// 	std::cout << "Body: " << httprequest.body << std::endl;
-// }
 
