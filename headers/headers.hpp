@@ -39,6 +39,6 @@ std::string			joinPaths(const std::string &path, const std::string &file);
 std::string			getExtType(const std::string& filename);
 std::string 		urlDecode(const std::string& encoded);
 std::vector<int>	convertToInt(std::vector<std::string> &portsStr);
-void				parsingRequest(Server& server, Client& client);
+int					parsingRequest(Server& server, Client& client);
 
 void				close_webserv(Server& server);

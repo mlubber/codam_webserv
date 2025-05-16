@@ -29,8 +29,7 @@ REQ_DIR				=	$(SRC_DIR)requests/routing.cpp
 
 CGI_DIR				=	$(SRC_DIR)cgi/cgi.cpp \
 						$(SRC_DIR)cgi/cgi_parent.cpp \
-						$(SRC_DIR)cgi/cgi_child.cpp \
-						$(SRC_DIR)cgi/cgi_child_setup.cpp
+						$(SRC_DIR)cgi/cgi_child.cpp
 
 # Concatenate all source files
 SRCS				=	$(MAIN_DIR) $(PARSING_DIR) $(CLASS_DIR) $(REQ_DIR) $(CGI_DIR)

@@ -108,7 +108,7 @@ std::vector<Token> Configuration::tokenize(std::ifstream &file)
 					else 
 					{
 						std::cerr << "Error: invalid character inside config file: ( " << c << " ), in line: " << line << std::endl;
-						exit(1);
+						std::exit(1);
 					}
 				} 
 				if (!stream.eof()) 

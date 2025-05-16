@@ -1,4 +1,4 @@
-#include "../headers/Request.hpp"
+#include "../headers/Host.hpp"
 #include "../headers/Client.hpp"
 #include <sstream>
 #include <exception>
@@ -585,7 +585,7 @@ std::string	generateHttpResponse(clRequest& cl_request, const ConfigBlock& serve
 	return (response);
 }
 
-void	parsingRequest(Server& server, Client& client)
+int	parsingRequest(Server& server, Client& client)
 {
 	readRequest(client);
 	clRequest		cl_request = client.getClStructRequest();
@@ -598,31 +598,26 @@ void	parsingRequest(Server& server, Client& client)
 
 	ConfigBlock serverBlock = config.getServerBlock(cl_request.host, cl_request.port);
 
-	// ConfigBlock serverBlock = _config.getServerBlock(cl_request.host, cl_request.port);
 
-	// std::cout << "server block that's responsible for this request: \n" << std::endl;
-	// for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values) 
-	// {
-	// 	std::cout << value.first <<": ";
-	// 	for (const std::string& str : value.second)
-	// 		std::cout << str << ", ";
-	// 	std::cout << std::endl;
-	// }
-	// for (const std::pair<const std::string, ConfigBlock> &nested : serverBlock.nested) {
-	// 	std::cout << nested.first << " {" << std::endl;
-	// 	for (const std::pair<const std::string, std::vector<std::string>> &value : nested.second.values) {
-	// 		std::cout << value.first <<": ";
-	// 		for (const std::string& str : value.second)
-	// 			std::cout << str << ", ";
-	// 		std::cout << std::endl;
-	// 	}
-	// 	std::cout << "}" << std::endl;
-	// }
-	// cgi_check(cl_request, server, client);
+
+
+
 	if (cl_request.invalidRequest == true)
 	{
 		std::cout << "parse request failed" << std::endl;
 		client.setResponseData(serveError("400", serverBlock));
+	}
+	else if (cgi_check(cl_request.path))
+	{
+		int status = start_cgi(cl_request, server, client);
+		std::cout << "STATUS: " << status << std::endl;
+		if (status != 0)
+		{
+			client.setResponseData(serveError("500", serverBlock));
+			if (client.checkCgiPtr() && client.getCgiStruct().child_pid != -1)
+				kill(client.getCgiStruct().child_pid, SIGTERM);
+			return (2);
+		}
 	}
 	else
 		client.setResponseData(generateHttpResponse(cl_request, serverBlock));
@@ -634,50 +629,5 @@ void	parsingRequest(Server& server, Client& client)
 	client.clearData(0);
 	// client.setReceivedData()			// Needs to erase() client._received
 	client.setClientState(sending_response);
+	return (0);
 }
-
-// void	parsingRequest(int _epoll_fd, int client_fd)
-// {
-// 	HttpRequest httprequest;
-// 	client.readRequest(_client_buffers[client_fd], client_fd);
-// 	clRequest cl_request = client.getClStructRequest(client_fd);
-
-// 	std::cout << "client request host: \n" << cl_request.host << std::endl;
-// 	std::cout << "client request port: \n" << cl_request.port << std::endl;
-
-// 	ConfigBlock serverBlock = _config.getServerBlock(cl_request.host, cl_request.port);
-
-// 	std::cout << "server block that's responsible for this request: \n" << std::endl;
-// 	for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values) 
-// 	{
-// 		std::cout << value.first <<": ";
-// 		for (const std::string& str : value.second)
-// 			std::cout << str << ", ";
-// 		std::cout << std::endl;
-// 	}
-// 	for (const std::pair<const std::string, ConfigBlock> &nested : serverBlock.nested) {
-// 		std::cout << nested.first << " {" << std::endl;
-// 		for (const std::pair<const std::string, std::vector<std::string>> &value : nested.second.values) {
-// 			std::cout << value.first <<": ";
-// 			for (const std::string& str : value.second)
-// 				std::cout << str << ", ";
-// 			std::cout << std::endl;
-// 		}
-// 		std::cout << "}" << std::endl;
-// 	}
-	
-// 	if (cl_request.invalidRequest == true)
-// 	{
-// 		std::cout << "parse request failed" << std::endl;
-// 		_responses[client_fd] = serveError("400", serverBlock);
-// 	}
-// 	else
-// 		_responses[client_fd] = generateHttpResponse(cl_request, serverBlock);
-
-
-// 	struct epoll_event event;
-// 	event.events = EPOLLIN | EPOLLOUT;
-// 	event.data.fd = client_fd;
-// 	epoll_ctl(_epoll_fd, EPOLL_CTL_MOD, client_fd, &event);
-// 	_client_buffers.erase(client_fd);
-// }

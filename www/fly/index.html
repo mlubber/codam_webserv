@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Flying Game</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            display: block;
+        }
+        #score {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        #instructions {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            color: white;
+            text-align: center;
+            font-size: 18px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        #game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 48px;
+            font-weight: bold;
+            text-align: center;
+            display: none;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        #pause-screen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 48px;
+            font-weight: bold;
+            text-align: center;
+            display: none;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        #restart-btn, #resume-btn {
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        #restart-btn:hover, #resume-btn:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div id="score">Score: 0</div>
+    <div id="instructions">
+        Use W, A, S, D or arrow keys to move. Collect stars and avoid obstacles!<br>
+        Press ESC to pause the game.
+    </div>
+    <div id="game-over">
+        Game Over!<br>
+        <span id="final-score">Score: 0</span><br>
+        <button id="restart-btn">Restart Game</button>
+    </div>
+    <div id="pause-screen">
+        Game Paused<br>
+        <button id="resume-btn">Resume Game</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script>
+        // Game variables
+        let scene, camera, renderer, player;
+        let obstacles = [];
+        let collectibles = [];
+        let score = 0;
+        let isGameOver = false;
+        let isPaused = false;
+        let gameSpeed = 0.15; // Reduced from 0.2
+        let moveSpeed = 0.15;
+        let gameArea = {
+            width: 30, // Increased from 20
+            height: 20, // Increased from 15
+            depth: 100
+        };
+        
+        // Player movement state
+        const keys = {
+            ArrowUp: false,
+            ArrowDown: false,
+            ArrowLeft: false,
+            ArrowRight: false,
+            w: false,
+            a: false,
+            s: false,
+            d: false
+        };
+
+        // Initialize the game
+        function init() {
+            // Create scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB);
+            scene.fog = new THREE.Fog(0x87CEEB, 50, 100);
+            
+            // Create camera - Modified to third-person view
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 5, 15); // Positioned behind and above the player
+            camera.lookAt(0, 0, -10); // Looking ahead of the player
+            
+            // Create renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true }); // Added antialiasing
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+            
+            // Add lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(0, 10, 5);
+            scene.add(directionalLight);
+            
+            // Create player (airplane)
+            createPlayer();
+            
+            // Create initial terrain and obstacles
+            createTerrain();
+            
+            // Event listeners
+            window.addEventListener('resize', onWindowResize);
+            window.addEventListener('keydown', handleKeyDown);
+            window.addEventListener('keyup', handleKeyUp);
+            document.getElementById('restart-btn').addEventListener('click', restartGame);
+            document.getElementById('resume-btn').addEventListener('click', resumeGame);
+            window.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape') {
+                    togglePause();
+                }
+            });
+            
+            // Start the animation loop
+            animate();
+        }
+        
+        function createPlayer() {
+            // Create a more visible airplane shape with better coloring
+            const bodyGeometry = new THREE.ConeGeometry(0.7, 2.5, 8);
+            const bodyMaterial = new THREE.MeshPhongMaterial({
+                color: 0x3366ff,
+                shininess: 80,
+                flatShading: false
+            });
+            
+            player = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            player.rotation.x = -Math.PI / 2;
+            player.position.set(0, 0, 0);
+            scene.add(player);
+            
+            // Add more visible wings
+            const wingGeometry = new THREE.BoxGeometry(4, 0.2, 1);
+            const wingMaterial = new THREE.MeshPhongMaterial({
+                color: 0x2255cc,
+                flatShading: false
+            });
+            
+            const wings = new THREE.Mesh(wingGeometry, wingMaterial);
+            wings.position.set(0, 0.2, 0);
+            player.add(wings);
+            
+            // Add tail
+            const tailGeometry = new THREE.BoxGeometry(1, 0.2, 1);
+            const tailMaterial = new THREE.MeshPhongMaterial({
+                color: 0x2255cc,
+                flatShading: false
+            });
+            
+            const tail = new THREE.Mesh(tailGeometry, tailMaterial);
+            tail.position.set(0, 0, -1);
+            player.add(tail);
+            
+            // Add cockpit
+            const cockpitGeometry = new THREE.SphereGeometry(0.3, 8, 8);
+            const cockpitMaterial = new THREE.MeshPhongMaterial({
+                color: 0x88ccff,
+                opacity: 0.7,
+                transparent: true
+            });
+            
+            const cockpit = new THREE.Mesh(cockpitGeometry, cockpitMaterial);
+            cockpit.position.set(0, 0.4, 0.5);
+            player.add(cockpit);
+        }
+        
+        function createTerrain() {
+            // Create ground
+            const groundGeometry = new THREE.PlaneGeometry(500, 500);
+            const groundMaterial = new THREE.MeshPhongMaterial({
+                color: 0x228B22,
+                side: THREE.DoubleSide
+            });
+            
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = Math.PI / 2;
+            ground.position.y = -5;
+            scene.add(ground);
+            
+            // Add some clouds
+            for (let i = 0; i < 30; i++) {
+                createCloud(
+                    Math.random() * 100 - 50,
+                    Math.random() * 20,
+                    -Math.random() * 100
+                );
+            }
+            
+            // Create initial obstacles and collectibles
+            for (let i = 0; i < 15; i++) {
+                createObstacle(-gameArea.depth + i * 10);
+                createCollectible(-gameArea.depth + i * 15);
+            }
+        }
+        
+        function createCloud(x, y, z) {
+            const cloudMaterial = new THREE.MeshPhongMaterial({
+                color: 0xffffff,
+                flatShading: true
+            });
+            
+            const cloud = new THREE.Group();
+            
+            for (let i = 0; i < 5; i++) {
+                const radius = Math.random() * 2 + 1;
+                const geometry = new THREE.SphereGeometry(radius, 7, 7);
+                const sphere = new THREE.Mesh(geometry, cloudMaterial);
+                
+                sphere.position.set(
+                    Math.random() * 4 - 2,
+                    Math.random() * 2 - 1,
+                    Math.random() * 4 - 2
+                );
+                
+                cloud.add(sphere);
+            }
+            
+            cloud.position.set(x, y, z);
+            scene.add(cloud);
+            obstacles.push(cloud);
+        }
+        
+        function createObstacle(z) {
+            // Create more visible obstacles with glowing outlines
+            const obstacleGeometry = new THREE.BoxGeometry(
+                Math.random() * 4 + 2,  // Slightly larger
+                Math.random() * 4 + 2,
+                Math.random() * 4 + 2
+            );
+            const obstacleMaterial = new THREE.MeshPhongMaterial({
+                color: 0xcc4400,  // More visible orange-brown color
+                emissive: 0x441100,  // Slight glow
+                shininess: 30,
+                flatShading: false
+            });
+            
+            const obstacle = new THREE.Mesh(obstacleGeometry, obstacleMaterial);
+            
+            // Add wireframe outline for better visibility
+            const edgesGeometry = new THREE.EdgesGeometry(obstacleGeometry);
+            const edgesMaterial = new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: 1 });
+            const wireframe = new THREE.LineSegments(edgesGeometry, edgesMaterial);
+            obstacle.add(wireframe);
+            
+            obstacle.position.set(
+                Math.random() * gameArea.width - gameArea.width / 2,
+                Math.random() * gameArea.height - gameArea.height / 4,
+                z
+            );
+            
+            scene.add(obstacle);
+            obstacles.push(obstacle);
+        }
+        
+        function createCollectible(z) {
+            // Larger, more visible collectible stars
+            const starGeometry = new THREE.TetrahedronGeometry(1.2, 2);  // Increased size
+            const starMaterial = new THREE.MeshPhongMaterial({
+                color: 0xFFD700,
+                emissive: 0xFFD700,
+                emissiveIntensity: 0.7,  // Increased glow
+                shininess: 90,
+                flatShading: false
+            });
+            
+            const star = new THREE.Mesh(starGeometry, starMaterial);
+            
+            // Add particle effect around the star
+            const particleGeometry = new THREE.SphereGeometry(1.8, 8, 8);
+            const particleMaterial = new THREE.MeshBasicMaterial({
+                color: 0xffff00,
+                transparent: true,
+                opacity: 0.3,
+                wireframe: true
+            });
+            
+            const particles = new THREE.Mesh(particleGeometry, particleMaterial);
+            star.add(particles);
+            
+            star.position.set(
+                Math.random() * gameArea.width - gameArea.width / 2,
+                Math.random() * gameArea.height - gameArea.height / 4,
+                z
+            );
+            
+            star.userData.isCollectible = true;
+            star.userData.rotationSpeed = Math.random() * 0.1 + 0.05;
+            star.userData.particleRotation = Math.random() * 0.02 + 0.01;
+            
+            scene.add(star);
+            collectibles.push(star);
+        }
+        
+        function animate() {
+            if (!isGameOver && !isPaused) {
+                requestAnimationFrame(animate);
+                
+                // Update player position based on keys
+                updatePlayerPosition();
+                
+                // Move obstacles and check collisions
+                moveObstaclesAndCheck();
+                
+                // Rotate and check collectibles
+                updateCollectibles();
+                
+                // Render the scene
+                renderer.render(scene, camera);
+            }
+        }
+        
+        function updatePlayerPosition() {
+            // Handle up/down movement
+            if (keys.ArrowUp || keys.w) {
+                player.position.y += moveSpeed;
+            }
+            if (keys.ArrowDown || keys.s) {
+                player.position.y -= moveSpeed;
+            }
+            
+            // Handle left/right movement
+            if (keys.ArrowLeft || keys.a) {
+                player.position.x -= moveSpeed;
+                player.rotation.z = Math.PI / 12; // Bank left
+            } else if (keys.ArrowRight || keys.d) {
+                player.position.x += moveSpeed;
+                player.rotation.z = -Math.PI / 12; // Bank right
+            } else {
+                player.rotation.z = 0; // Level off
+            }
+            
+            // Keep player within bounds
+            if (player.position.x > gameArea.width / 2) {
+                player.position.x = gameArea.width / 2;
+            }
+            if (player.position.x < -gameArea.width / 2) {
+                player.position.x = -gameArea.width / 2;
+            }
+            if (player.position.y > gameArea.height) {
+                player.position.y = gameArea.height;
+            }
+            if (player.position.y < -gameArea.height / 3) {
+                player.position.y = -gameArea.height / 3;
+            }
+        }
+        
+        function moveObstaclesAndCheck() {
+            for (let i = 0; i < obstacles.length; i++) {
+                const obstacle = obstacles[i];
+                
+                // Move obstacle toward player
+                obstacle.position.z += gameSpeed;
+                
+                // Reset obstacle position when it passes the player
+                if (obstacle.position.z > 10) {
+                    obstacle.position.z = -gameArea.depth;
+                    obstacle.position.x = Math.random() * gameArea.width - gameArea.width / 2;
+                    obstacle.position.y = Math.random() * gameArea.height - gameArea.height / 4;
+                }
+                
+                // Check collision
+                const playerBox = new THREE.Box3().setFromObject(player);
+                const obstacleBox = new THREE.Box3().setFromObject(obstacle);
+                
+                if (playerBox.intersectsBox(obstacleBox)) {
+                    gameOver();
+                }
+            }
+        }
+        
+        function updateCollectibles() {
+            for (let i = 0; i < collectibles.length; i++) {
+                const collectible = collectibles[i];
+                
+                // Rotate collectible
+                collectible.rotation.x += collectible.userData.rotationSpeed;
+                collectible.rotation.y += collectible.userData.rotationSpeed;
+                
+                // Move collectible toward player
+                collectible.position.z += gameSpeed;
+                
+                // Reset collectible position when it passes the player
+                if (collectible.position.z > 10) {
+                    collectible.position.z = -gameArea.depth;
+                    collectible.position.x = Math.random() * gameArea.width - gameArea.width / 2;
+                    collectible.position.y = Math.random() * gameArea.height - gameArea.height / 4;
+                }
+                
+                // Check collection
+                const playerBox = new THREE.Box3().setFromObject(player);
+                const collectibleBox = new THREE.Box3().setFromObject(collectible);
+                
+                if (playerBox.intersectsBox(collectibleBox)) {
+                    // Increase score
+                    score += 10;
+                    document.getElementById('score').innerText = `Score: ${score}`;
+                    
+                    // Reset collectible
+                    collectible.position.z = -gameArea.depth;
+                    collectible.position.x = Math.random() * gameArea.width - gameArea.width / 2;
+                    collectible.position.y = Math.random() * gameArea.height - gameArea.height / 4;
+                    
+                    // Increase game speed slightly
+                    gameSpeed += 0.01;
+                }
+            }
+        }
+        
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        
+        function handleKeyDown(event) {
+            if (keys.hasOwnProperty(event.key)) {
+                keys[event.key] = true;
+            }
+        }
+        
+        function handleKeyUp(event) {
+            if (keys.hasOwnProperty(event.key)) {
+                keys[event.key] = false;
+            }
+        }
+        
+        function gameOver() {
+            isGameOver = true;
+            document.getElementById('final-score').innerText = `Score: ${score}`;
+            document.getElementById('game-over').style.display = 'block';
+        }
+        
+        function restartGame() {
+            // Reset game variables
+            score = 0;
+            isGameOver = false;
+            gameSpeed = 0.15; // Reset to initial speed
+            document.getElementById('score').innerText = `Score: ${score}`;
+            document.getElementById('game-over').style.display = 'none';
+            
+            // Remove all obstacles and collectibles
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                scene.remove(obstacles[i]);
+            }
+            obstacles = [];
+            
+            for (let i = collectibles.length - 1; i >= 0; i--) {
+                scene.remove(collectibles[i]);
+            }
+            collectibles = [];
+            
+            // Reset player position
+            player.position.set(0, 0, 0);
+            player.rotation.set(-Math.PI / 2, 0, 0);
+            
+            // Create new terrain and obstacles
+            createTerrain();
+            
+            // Start animation loop again
+            animate();
+        }
+        
+        function resumeGame() {
+            isPaused = false;
+            document.getElementById('pause-screen').style.display = 'none';
+            animate();
+        }
+        
+        function togglePause() {
+            isPaused = !isPaused;
+            if (isPaused) {
+                document.getElementById('pause-screen').style.display = 'block';
+            } else {
+                document.getElementById('pause-screen').style.display = 'none';
+                animate();
+            }
+        }
+        
+        // Start the game
+        init();
+    </script>
+</body>
+</html>

@@ -23,19 +23,32 @@ int	Client::handleEvent(Server& server)
 	}
 	if (_state == parsing_request)
 	{
-		parsingRequest(server, *this);
+		status = parsingRequest(server, *this);
+		if (status > 0)
+			return (status);
 	}
 	if (_state == cgi_write)
 	{
-		write_to_pipe(this->getCgiStruct(), server, false);
+		status = write_to_pipe(*this, this->getCgiStruct(), server);
+		if (status == 2)
+		{
+			// response is internal server error -> need to send that and then return to main loop and remove connection
+			return (2);
+		}
+		if (status == 1)
+			return (1);
 	}
 	if (_state == cgi_read)
 	{
-		read_from_pipe(*this->_cgi, server, _request.cgiBody);
-	}
-	if (_state == start_response)
-	{
-		// Readying everything and start sending response
+		status = read_from_pipe(*this, *this->_cgi, server, _request.cgiBody);
+		if (status == 2)
+		{
+			// response is internal server error -> need to send that and then return to main loop and remove connection
+			std::cerr << "ABOUT TO CLOSE CLIENT" << std::endl;
+			return (2);
+		}
+		if (status == 1)
+			return (1);
 	}
 	if (_state == sending_response)
 	{

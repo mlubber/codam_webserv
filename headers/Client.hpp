@@ -55,9 +55,6 @@ class Client
 
 		int		handleEvent(Server& server);
 
-		void	readCGI();			// read from cgi	- uses read
-		void	writeCGI();			// write to CGI		- uses write
-
 		int 			getClientFds(int mode);
 		int				getClientState();
 		std::string&	getClientReceived();

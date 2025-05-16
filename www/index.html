@@ -69,6 +69,33 @@
         .btn:hover {
             background: #0056b3;
         }
+		.form-box {
+            display: inline-block;
+            background-color: white;
+            padding: 30px 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        input[type="text"] {
+            padding: 10px;
+            width: 250px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+        }
+        input[type="submit"] {
+            padding: 10px 20px;
+            margin-top: 15px;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        input[type="submit"]:hover {
+            background-color: #0056b3;
+        }
     </style>
 </head>
 <body>
@@ -77,6 +104,20 @@
         <p>A lightweight and efficient HTTP server built in C++.</p>
         <a href="submit/" class="btn">Get Started</a>
 		<a href="upload/" class="btn">Upload</a>
+		
+		<h2 style="margin-top: 50px;">Random game</h2>
+
+		<a href="fly/" class="btn" style="margin-top:-10">Fly</a>
+		
+		<h2 style="margin-top: 50px;">CGI stuff:</h2>
+		
+		<a href="/cgi-bin/hello.py" class="btn">CGI - Hello</a>
+		<a href="/cgi-bin/greet.py" class="btn">CGI - Greet</a>
+		<a href="/cgi-bin/dateandtime.py" class="btn">CGI - DateTime</a>
+		<form method="post" action="/cgi-bin/form.py">
+            <input type="text" name="name" placeholder="Enter your name" required><br>
+            <input type="submit" value="Submit">
+        </form>
     </div>
 </body>
 </html>

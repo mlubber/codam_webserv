@@ -1,7 +1,6 @@
 #pragma once
 #include "Configuration.hpp"
 #include "Server.hpp"
-#include "Request.hpp"
 #include "Client.hpp"
 
 struct clRequest;

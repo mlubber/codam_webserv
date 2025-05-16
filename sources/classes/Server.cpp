@@ -175,8 +175,6 @@ void Server::run(void)
 		for (int i = 0; i < event_count; i++)
 		{
 			int fd = ready_events[i].data.fd;
-
-			std::cout << "Event count: " << event_count << " , current event fd: " << fd << std::endl;
 			for (int i = 0; i < _server_fds_amount; ++i)
 				if (fd == _server_fds[i])
 					connectClient(_epoll_fd, fd);
@@ -187,7 +185,7 @@ void Server::run(void)
 				{
 					std::cout << "current event fd: " << fd << " , client fd: " << _clients[i]->getClientFds(o) << std::endl;
 					if (_clients[i]->getClientFds(o) == fd)
-						if (_clients[i]->handleEvent(*this) == 2)
+						if (_clients[i]->handleEvent(*this) >= 2)
 							removeClient(_clients[i], i);
 				}
 			}
@@ -303,9 +301,10 @@ void Server::close_webserv()
 
 
 
-	exit(0);
-	exit(errno); // IF we want to quit and return errno set to last error
+	std::exit(0);
+	std::exit(errno); // IF we want to quit and return errno set to last error
 }
+
 
 int Server::recvFromSocket(Client& client)
 {
@@ -350,6 +349,8 @@ int Server::recvFromSocket(Client& client)
 	}
 	return (1);
 }
+
+
 
 int	Server::sendToSocket(Client& client)
 {

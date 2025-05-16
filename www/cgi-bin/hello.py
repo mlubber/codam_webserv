@@ -26,12 +26,21 @@ import cgi
 # name = form.getvalue("name", "Guest")  # Get 'name' from form, default to "Guest" if empty
 
 # Generate response
-print(f"""
-<html>
-<head><title>CGI Response</title></head>
+print("Content-Type: text/html\n")
+print("""
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Hello</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f0f8ff; text-align: center; padding: 50px; }
+        h1 { color: #333; }
+    </style>
+</head>
 <body>
-    <h1>Hello, Billy!</h1>
-    <p>Thank you for using CGI!</p>
+    <h1>Hello from Python CGI!</h1>
+    <p>This is a styled HTML page served via CGI.</p>
 </body>
 </html>
 """)
