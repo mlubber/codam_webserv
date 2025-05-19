@@ -154,7 +154,7 @@ int main(int argc, char **argv) {
 	std::vector<Serve> serverArray = makeServerArray(myconfig.getConfigData());
 
 	std::string str = 
-    "GET /index.html HTTP/1.1\r\n"
+    "GET /indexee.html HTTP/1.1\r\n"
     "Host: 127.0.0.1:8080\r\n"
     "User-Agent: curl/7.68.0\r\n"
     "Accept: text/html\r\n"
