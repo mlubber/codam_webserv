@@ -9,15 +9,24 @@
 #include <filesystem>
 
 
-enum TokenType { KEYWORD, VALUE, BLOCK_START, BLOCK_END, SEMICOLON };
+enum TokenType
+{
+	KEYWORD,
+	VALUE,
+	BLOCK_START,
+	BLOCK_END,
+	SEMICOLON
+};
 
-struct Token {
+struct Token
+{
     TokenType type;
     std::string value;
 };
 
 
-struct ConfigBlock {
+struct ConfigBlock
+{
     std::map<std::string, std::vector<std::string>> values; // Change std::string to std::vector<std::string>
     std::multimap<std::string, ConfigBlock>			nested;
 };
@@ -25,18 +34,22 @@ struct ConfigBlock {
 
 class Configuration
 {
-private:
-	ConfigBlock _configData;
-	
-public:
-	Configuration();
-	~Configuration();
-	Configuration& operator=(const Configuration& other);
-	Configuration(const Configuration& other);
+	private:
 
-	std::vector<Token>			tokenize(std::ifstream &line);
-	void						parseConfig(const std::string &filename);
-	void						printConfig(const ConfigBlock &config, int depth);
-	ConfigBlock&				getConfigData();
-	std::vector<std::string>	getConfigValues(ConfigBlock& config, const std::string& key);
+		ConfigBlock _configData;
+		
+	public:
+
+		Configuration();
+		~Configuration();
+		Configuration& operator=(const Configuration& other);
+		Configuration(const Configuration& other);
+
+		ConfigBlock&				getConfigData();
+		ConfigBlock&				getServerBlock(const std::string& host, const std::string& port);
+	
+		std::vector<Token>			tokenize(std::ifstream &line);
+		void						parseConfig(const std::string &filename);
+		void						printConfig(const ConfigBlock &config, int depth);
+		// std::vector<std::string>	getConfigValues(ConfigBlock& config, const std::string& key);
 };

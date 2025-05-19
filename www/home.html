@@ -1,13 +1,29 @@
 <!-- <!DOCTYPE html>
-<html>
-<body>
-    <h2>Upload a File</h2>
-    <form action="/upload" method="POST" enctype="multipart/form-data">
-        <input type="file" name="file">
-        <input type="submit" value="Upload">
-    </form>
-</body>
-</html> -->
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Simple Web Page</title>
+		<style>
+			body {
+				font-family: Arial, sans-serif;
+				text-align: center;
+				margin: 50px;
+			}
+			h1 {
+				color: #333;
+			}
+			p {
+				color: #666;
+			}
+		</style>
+	</head>
+	<body>
+		<h1>Welcome to this website</h1>
+		<p>This is a basic webpage created with HTML and CSS.</p>
+		<button onclick="alert('Hello!')">Click Me</button>
+	</body>
+	</html> -->
 
 <!DOCTYPE html>
 <html lang="en">
@@ -38,7 +54,7 @@
             color: #666;
             font-size: 18px;
         }
-		.btn {
+        .btn {
             display: inline-block;
             padding: 10px 20px;
             margin-top: 20px;
@@ -57,14 +73,10 @@
 </head>
 <body>
     <div class="container">
-        <h2>Upload</h2>
-        <p>Add files to upload here</p>
-		<form action="/uploads" method="POST" enctype="multipart/form-data">
-			<input type="file" name="file" required>
-			<input type="submit" value="Upload">
-		</form>
-		<a href="/" class="btn">Go Back</a>
-		<a href="/delete" class="btn">Delete</a>
+        <h1>Welcome to Webserv</h1>
+        <p>A lightweight and efficient HTTP server built in C++.</p>
+        <a href="submit/" class="btn">Get Started</a>
+		<a href="upload/" class="btn">Upload</a>
     </div>
 </body>
 </html>

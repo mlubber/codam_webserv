@@ -1,125 +1,159 @@
+#include "../../headers/headers.hpp"
+#include "../../headers/Client.hpp"
 #include "../../headers/Server.hpp"
 
-static bool	init_cgi_struct(t_cgiData* cgi)
+void	cgi_cleanup(t_cgiData& cgi, bool child)
 {
+	if (cgi.ets_pipe[0] != -1 && close(cgi.ets_pipe[0]))
+		std::cerr << "CGI ERROR: closing ets_pipe[0] failed" << std::endl;
+	if (cgi.ets_pipe[1] != -1 && close(cgi.ets_pipe[1]))
+		std::cerr << "CGI ERROR: closing ets_pipe[1] failed" << std::endl;
+	if (cgi.ste_pipe[0] != -1 && close(cgi.ste_pipe[0]))
+		std::cerr << "CGI ERROR: closing ste_pipe[0] failed" << std::endl;
+	if (cgi.ste_pipe[1] != -1 && close(cgi.ste_pipe[1]))
+		std::cerr << "CGI ERROR: closing ets_pipe[1] failed" << std::endl;
+
+	if (child == true)
+	{
+		if (cgi.path != nullptr)
+			delete[] cgi.path;
+		if (cgi.exe != nullptr && cgi.exe[0] != nullptr)
+			delete[] cgi.exe[0];
+		if (cgi.exe != nullptr)
+			delete[] cgi.exe;
+		for (int i = 0; i < 10; i++)
+		{
+			if (cgi.envp[i] != nullptr)
+				delete[] cgi.envp[i];
+		}
+		if (cgi.envp != nullptr)
+			delete[] cgi.envp;
+		std::exit(errno);
+	}
+}
+
+static bool	init_cgi_struct(Client& client, clRequest& cl_request, Server& server)
+{
+	std::unique_ptr<t_cgiData> cgi = std::make_unique<t_cgiData>();
+
 	cgi->path = nullptr;
 	cgi->exe = nullptr;
 	cgi->envp = nullptr;
-	cgi->stdin_backup = dup(STDIN_FILENO);
-	cgi->stdout_backup = dup(STDOUT_FILENO);
-	if (cgi->stdin_backup == -1 || cgi->stdout_backup == -1)
-		return (1);
+	cgi->ets_pipe[0] = -1;
+	cgi->ets_pipe[1] = -1;
+	cgi->ste_pipe[0] = -1;
+	cgi->ste_pipe[1] = -1;
+	cgi->child_pid = -1;
+	cgi->started_reading = false;
+
 	if (pipe(cgi->ets_pipe) == -1)
+		return (1);
+	setNonBlocking(cgi->ets_pipe[0]);
+	struct epoll_event ets_pipe;
+	ets_pipe.events = EPOLLIN | EPOLLET;
+	ets_pipe.data.fd = cgi->ets_pipe[0];
+	if (epoll_ctl(server.getEpollFd(), EPOLL_CTL_ADD, cgi->ets_pipe[0], &ets_pipe) == -1)
 	{
-		std::cerr << "CGI ERROR: creating pipe failed" << std::endl;
+		cgi_cleanup(*cgi, false);
 		return (1);
 	}
+
+	// Only needed to set when method is POST
+	if (cl_request.method == "POST")
+	{
+		cgi->started_writing = false;
+		cgi->dataWritten = 0;
+		cgi->dataToWrite = cgi->writeData.size();
+		if (pipe(cgi->ste_pipe) == -1)
+		{
+			if (close(cgi->ets_pipe[0]) == -1 || close(cgi->ets_pipe[1]) == -1)
+				std::cerr << "CGI ERROR: Failed closing ets_pipe in parent" << std::endl;
+			cgi->ets_pipe[0] = -1;
+			cgi->ets_pipe[0] = -1;
+			return (1);
+		}
+		setNonBlocking(cgi->ste_pipe[1]);
+		struct epoll_event ste_pipe;
+		ste_pipe.events = EPOLLIN | EPOLLET;
+		ste_pipe.data.fd = cgi->ste_pipe[0];
+		if (epoll_ctl(server.getEpollFd(), EPOLL_CTL_ADD, cgi->ste_pipe[1], &ste_pipe) == -1)
+		{
+			cgi_cleanup(*cgi, false);
+			return (1);
+		}
+	}
+
+	client.setCgiStruct(std::move(cgi));
 	return (0);
 }
 
-void	read_from_pipe(t_cgiData* cgi, std::string& cgiBody)
+static int	create_cgi_child_process(t_cgiData& cgi, clRequest& cl_request, const Server& server)
 {
-	char	buffer[CGIBUFFER];
-	int		bytes_read = 0;
-
-	if (close(cgi->ets_pipe[1]) == -1)
+	cgi.child_pid = fork();
+	if (cgi.child_pid == -1)
 	{
-		std::cerr << "CGI ERROR: Failed closing write-end pipe in parent" << std::endl;
-		if (close(cgi->ets_pipe[0]) == -1)
-			std::cerr << "CGI ERROR: Failed closing read-end pipe in parent" << std::endl;
-		return ;
+		std::cerr << "CGI ERROR: Fork() failed creating child process" << std::endl;
+		cgi_cleanup(cgi, false);
+		return (2);
 	}
-	std::cerr << "WE'RE IN CGI READ_FROM_PIPE" << std::endl;
+	if (cgi.child_pid == 0)
+		cgi_child_process(cgi, cl_request, server);
+	return (0);
+}
 
-	dup2(cgi->ets_pipe[0], STDIN_FILENO);
-	do
+static int	setting_parent_fds(t_cgiData& cgi)
+{
+	if (dup2(cgi.ets_pipe[0], STDIN_FILENO) == -1)
 	{
-		bytes_read = read(cgi->ets_pipe[0], buffer, CGIBUFFER - 1);
-		if (bytes_read > 0)
+		std::cerr << "CGI ERROR: Failed dup2 in child process" << std::endl;
+		return (1);
+	}
+	if (close(cgi.ets_pipe[1]) == -1)
+		std::cerr << "CGI ERROR: Failed closing read-end pipe in child" << std::endl;
+	cgi.ets_pipe[1] = -1;
+	if (cgi.ste_pipe[1] != -1)
+	{
+		if (dup2(cgi.ste_pipe[1], STDOUT_FILENO) == -1)
 		{
-			buffer[bytes_read] = '\0';
-			cgiBody += buffer;
+			std::cerr << "CGI ERROR: Failed dup2 in child process" << std::endl;
+			return (1);
 		}
-	} while (bytes_read > 0);
-	if (close(cgi->ets_pipe[0]) == -1)
-		std::cerr << "CGI ERROR: Failed closing read-end pipe in parent" << std::endl;
-	dup2(cgi->stdin_backup, STDIN_FILENO);
-
-
-
+	}
+	if (cgi.ste_pipe[0] != -1 && close(cgi.ste_pipe[0]) == -1)
+		std::cerr << "CGI ERROR: Failed closing write-end pipe in child" << std::endl;
+	cgi.ste_pipe[0] = -1;
+	return (0);
 }
 
-
-static bool	create_cgi_process(t_cgiData* cgi, HttpRequest& request, const Server& server)
+int	start_cgi(clRequest& cl_request, Server& server, Client& client)
 {
-	pid_t	pid;
-	pid_t	wpid;
-	int		status;
-
-	pid = fork();
-	if (pid == -1)
-	{
-		std::cerr << "CGI ERROR: creating child process failed" << std::endl;
-		return (-1);
-	}
-	else if (pid == 0)
-		cgi_child_process(cgi, request, server);
+	errno = 0; // temporary, till bug somewhere else is found
+	cl_request.cgi = true;
+	if (init_cgi_struct(client, cl_request, server))
+		return (2);
+	if (create_cgi_child_process(client.getCgiStruct(), cl_request, server) != 0)
+		return (2);
+	if (setting_parent_fds(client.getCgiStruct()))
+		return (2);
+	if (cl_request.method == "POST")
+		client.setClientState(cgi_write);
 	else
-	{
-		std::cerr << "Doing parent process stuff!" << std::endl;
-		read_from_pipe(cgi, request.cgiBody);
-		wpid = waitpid(pid, &status, 0);
-		while (wait(NULL) != -1)
-			continue ;
-		if (wpid == -1)
-			std::cout << "Something wrong with child process after waitpid" << std::endl;
-		std::cout << "WPID and Status: " << wpid << " " << status << std::endl;
-	}
-	return (1);
+		client.setClientState(cgi_read);
+	errno = 0;
+	return (0);
 }
 
-int	cgi_check(HttpRequest& request, const Server& server)
+bool	cgi_check(std::string& path)
 {
-	t_cgiData	cgi;
-	int			status = 0;
-
-	if (request.path.compare(0, 9, "/cgi-bin/") == 0)
+	if (path.compare(0, 9, "/cgi-bin/") == 0)
+		return (true);
+	else if (path.length() > 3)
 	{
-		// std::cout << "CGI FOUND !!!" << std::endl;
-		request.cgi = true;
-		if (init_cgi_struct(&cgi))
-			return (-1);
-		status = create_cgi_process(&cgi, request, server);
-		if (status == -1)
-			std::cout << "Something with this status" << std::endl; // Something here when something goes wrong in the CGI functions
-		return (status);
+		size_t length = path.length();
+		if (path.compare(length - 3, length, ".py") == 0)
+			return (true);
+		if (length > 4 && path.compare(length - 3, length, ".php") == 0)
+			return (true);
 	}
-	return (status);
+	return (false);
 }
-
-
-/* STEPS */
-
-// 1. check if CGI needed	✓
-
-// 2. create 2 pipes -> 1 from server to script, 1 from script to server	✓
-
-// 3. fork process	✓
-
-//		***** Child process *****			|	***** parent process *****
-
-// 4.	create environment array  ✓			|	close write-end / dup2 read-end
-
-// 5. 	close read-end / dup2 write-end		|	Wait for data
-
-// 6.	run executable with execve			|	Store data in std::string(?) and return
-
-// 7.										|	close fds and set STDIN and STDOUT back
-
-// 8.										|	Create response header and send to client
-
-
-// Errors
-
-//		In case of errors, close fds and	| 	In case of errors, close fds
-//		free malloc'ed data -> exit(1)?

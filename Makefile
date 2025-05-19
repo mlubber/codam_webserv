@@ -13,21 +13,23 @@ CPPFLAGS			=	-Wall -Wextra -Werror -std=c++20
 RM					=	rm -f
 
 # Source Files
-MAIN_DIR			=	$(SRC_DIR)main.cpp
+MAIN_DIR			=	$(SRC_DIR)main.cpp \
+						$(SRC_DIR)signals.cpp \
+						$(SRC_DIR)utils.cpp
 
 PARSING_DIR			=	$(SRC_DIR)parsing/Configuration.cpp \
-						$(SRC_DIR)parsing/Serve.cpp \
 						$(SRC_DIR)parsing/ValidationConfigFile.cpp \
 						$(SRC_DIR)parsing/Request.cpp
 
-CLASS_DIR			=	$(SRC_DIR)classes/Server.cpp
+CLASS_DIR			=	$(SRC_DIR)classes/Client.cpp \
+						$(SRC_DIR)classes/Server.cpp \
+						$(SRC_DIR)classes/Host.cpp
 
-REQ_DIR				=	$(SRC_DIR)requests/Requests.cpp
+REQ_DIR				=	$(SRC_DIR)requests/routing.cpp
 
 CGI_DIR				=	$(SRC_DIR)cgi/cgi.cpp \
-						$(SRC_DIR)cgi/cgi_child.cpp \
-						$(SRC_DIR)cgi/cgi_child_setup.cpp \
-						$(SRC_DIR)cgi/cgi_cleanup.cpp 
+						$(SRC_DIR)cgi/cgi_parent.cpp \
+						$(SRC_DIR)cgi/cgi_child.cpp
 
 # Concatenate all source files
 SRCS				=	$(MAIN_DIR) $(PARSING_DIR) $(CLASS_DIR) $(REQ_DIR) $(CGI_DIR)
