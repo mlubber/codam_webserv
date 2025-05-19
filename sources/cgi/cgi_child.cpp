@@ -58,15 +58,13 @@ std::string get_path_info(const clRequest& cl_request, const Server& server)
 
 
 	// testing
-	char* str = new char[path_info.length() + 1]; // Need to be in try/catch block  OR new(std::nothrow_t) to check for nullptrs
-	std::strcpy(str, path_info.c_str());
-	if (access(str, F_OK | X_OK) == 0)
-		std::cout << "get_path_info file was found and is executable" << std::endl;
-	else
-	{
-		std::cout << "Checking errno in child for permission, this is errno: " << errno << std::endl;
-		std::cout << "get_path_info file was not found!!!!!!!!!!!1" << std::endl;
-	}
+	// char* str = new char[path_info.length() + 1];
+	// std::strcpy(str, path_info.c_str());
+	// if (access(str, F_OK | X_OK) != 0)
+	// {
+	// 	std::cerr << "Checking errno in child for permission, this is errno: " << errno << std::endl;
+	// 	std::cerr << "get_path_info file was not found!!!!!!!!!!!1" << std::endl;
+	// }
 	// end of testing
 
 
@@ -75,7 +73,7 @@ std::string get_path_info(const clRequest& cl_request, const Server& server)
 
 void	setup_environment(t_cgiData& cgi, const clRequest& cl_request, const Server& server)
 {
-	cgi.envp = new char*[11](); // Need to be in try/catch block  OR new(std::nothrow_t) to check for nullptrs
+	cgi.envp = new char*[11]();
 
 	cgi.envp[0] = create_env_ptr("REQUEST_METHOD", cl_request.method);
 	cgi.envp[1] = create_env_ptr("SCRIPT_NAME", cl_request.path);
@@ -85,7 +83,10 @@ void	setup_environment(t_cgiData& cgi, const clRequest& cl_request, const Server
 	cgi.envp[5] = create_env_ptr("GATEWAY_INTERFACE", "CGI/1.1");
 	cgi.envp[6] = create_env_ptr("CONTENT_LENGTH", get_header_data(cl_request, "Content-Length", 0));
 	cgi.envp[7] = create_env_ptr("CONTENT_TYPE", get_header_data(cl_request, "Content-Type", 1));
-	cgi.envp[8] = create_env_ptr("QUERY_STRING", cl_request.queryStr);
+	if (!cl_request.queryStr.empty())
+		cgi.envp[8] = create_env_ptr("QUERY_STRING", cl_request.queryStr);
+	else
+		cgi.envp[8] = create_env_ptr("QUERY_STRING", "\"\"");
 	cgi.envp[9] = create_env_ptr("PATH_INFO", get_path_info(cl_request, server));
 
 

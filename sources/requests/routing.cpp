@@ -371,7 +371,7 @@ std::string routeRequest(clRequest& cl_request, const ConfigBlock& serverBlock)
 
 	ConfigBlock	locBlock;
 	std::string	locPath;
-	std::cout << "cl_request path: " << cl_request.path << std::endl;
+	// std::cout << "cl_request path: " << cl_request.path << std::endl;
 	for (const std::pair<const std::string, ConfigBlock> &nested : serverBlock.nested)
 	{
 		for (const std::pair<const std::string, std::vector<std::string>> &value : nested.second.values)
@@ -384,7 +384,7 @@ std::string routeRequest(clRequest& cl_request, const ConfigBlock& serverBlock)
 				if (cl_request.path.find(temp) == 0)
 				{
 					locPath = value.second.front();
-					std::cout << "locationPath: " << locPath << std::endl;
+					// std::cout << "locationPath: " << locPath << std::endl;
 					locBlock = nested.second;
 				}
 				break;
@@ -427,8 +427,8 @@ std::string routeRequest(clRequest& cl_request, const ConfigBlock& serverBlock)
 			upload_store = value.second.front();
 			if (!upload_store.empty() && *upload_store.rbegin() != '/')
 				upload_store.append("/");
-			std::cout << "alt upload location: " << upload_store << std::endl;
-			std::cout << "client request path: " << cl_request.path << std::endl;
+			// std::cout << "alt upload location: " << upload_store << std::endl;
+			// std::cout << "client request path: " << cl_request.path << std::endl;
 			cl_request.path = upload_store;
 		}
 	}
@@ -441,7 +441,7 @@ std::string routeRequest(clRequest& cl_request, const ConfigBlock& serverBlock)
 			rootOverride = value.second.front();
 	if (!rootOverride.empty())
 	{
-		std::cout << "root found in nested block: " << rootOverride << std::endl;
+		// std::cout << "root found in nested block: " << rootOverride << std::endl;
 		filePath = rootOverride + cl_request.path.substr(locPath.size());
 	}
 	else
@@ -453,41 +453,41 @@ std::string routeRequest(clRequest& cl_request, const ConfigBlock& serverBlock)
 		if (value.first == "methods")
 		{
 			methods = value.second;
-			for (const std::string& method : methods)
-				std::cout << method << " ";
-			std::cout << std::endl;
+			// for (const std::string& method : methods)
+			// 	std::cout << method << " ";
+			// std::cout << std::endl;
 		}
 	}
 	if (std::find(methods.begin(), methods.end(), cl_request.method) == methods.end())
 	{
-		std::cout << "Method not allowed: " << cl_request.method << std::endl;
+		// std::cout << "Method not allowed: " << cl_request.method << std::endl;
 		return (serveError("405", serverBlock));
 	}
 	
 	if (cl_request.method == "GET")
 	{
 		struct stat stats;
-		std::cout << "after GET filling stats" << std::endl;
-		std::cout << "this is the filepath: " << filePath << std::endl;
+		// std::cout << "after GET filling stats" << std::endl;
+		// std::cout << "this is the filepath: " << filePath << std::endl;
 		if (stat(filePath.c_str(), &stats) == 0) //fills stats with metadata from filePath if filePath exists
 		{
-			std::cout << "Size: " << stats.st_size << " bytes" << std::endl;
+			// std::cout << "Size: " << stats.st_size << " bytes" << std::endl;
 			if (S_ISDIR(stats.st_mode) && !locPath.empty()) // checks if filePath is a working directory
 			{
-				std::cout << filePath << " is a directory!" << std::endl;
+				// std::cout << filePath << " is a directory!" << std::endl;
 
 				std::string fullPath = joinPaths(filePath, index);
 
-				std::cout << "looking for index: " << fullPath << std::endl;
+				// std::cout << "looking for index: " << fullPath << std::endl;
 				if (stat(fullPath.c_str(), &stats) == 0) // checks if the given index is present in the directory
 				{
-					std::cout << "index found!" << std::endl;
-					std::cout << "filePath: " << fullPath << std::endl;
+					// std::cout << "index found!" << std::endl;
+					// std::cout << "filePath: " << fullPath << std::endl;
 					return (serveStaticFile(fullPath));
 				}
 				else
 				{
-					std::cout << "no index found" << std::endl;
+					// std::cout << "no index found" << std::endl;
 					if (autoindex == "on")
 						return (showDirList(cl_request, filePath, serverBlock));
 					else
@@ -503,10 +503,10 @@ std::string routeRequest(clRequest& cl_request, const ConfigBlock& serverBlock)
 				filePath.erase(filePath.size() - 1);
 			if (stat(filePath.c_str(), &stats) == 0)
 			{
-				std::cout << "Size: " << stats.st_size << " bytes" << std::endl;
+				// std::cout << "Size: " << stats.st_size << " bytes" << std::endl;
 				if (S_ISREG(stats.st_mode)) // checks if filePath is an existing file (registry)
 				{
-					std::cout << filePath << " is a registry!" << std::endl;
+					// std::cout << filePath << " is a registry!" << std::endl;
 					return (serveStaticFile(filePath));
 				}
 			}

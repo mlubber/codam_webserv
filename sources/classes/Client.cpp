@@ -12,9 +12,9 @@ Client::~Client()
 
 int	Client::handleEvent(Server& server)
 {
-	server.setCurrentClient(_fds[0]);
 	int status;
 
+	std::cout << "Current client state: " << _state << std::endl;
 	if (_state == reading_request)
 	{
 		status = server.recvFromSocket(*this);
@@ -26,6 +26,7 @@ int	Client::handleEvent(Server& server)
 		status = parsingRequest(server, *this);
 		if (status > 0)
 			return (status);
+		return (0);
 	}
 	if (_state == cgi_write)
 	{
@@ -134,18 +135,26 @@ void	Client::setClientState(int state)
 			std::cout << "\nClient state set to: parsing_request\n" << std::endl;
 			break;
 		case 2:
-			std::cout << "\nClient state set to: start_response\n" << std::endl;
-			break;
-		case 3:
-			std::cout << "\nClient state set to: sending_response\n" << std::endl;
-			break;
-		case 4:
-			std::cout << "\nClient state set to: cgi_read\n" << std::endl;
-			break;
-		case 5:
 			std::cout << "\nClient state set to: cgi_write\n" << std::endl;
 			break;
+		case 3:
+			std::cout << "\nClient state set to: cgi_read\n" << std::endl;
+			break;
+		case 4:
+			std::cout << "\nClient state set to: sending_response\n" << std::endl;
+			break;
+
 	}
+}
+
+void Client::addFd(int fd)
+{
+	_fds.push_back(fd);
+}
+
+void Client::resetFds(int fd)
+{
+	_fds = { fd };
 }
 
 /* Update client object data */

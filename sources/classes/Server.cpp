@@ -177,16 +177,21 @@ void Server::run(void)
 			int fd = ready_events[i].data.fd;
 			for (int i = 0; i < _server_fds_amount; ++i)
 				if (fd == _server_fds[i])
+				{
 					connectClient(_epoll_fd, fd);
+				}
 			for (int i = 0; i < _client_count; ++i)
 			{
 				int client_amount = _clients[i]->getClientFds(-1);
 				for (int o = 0; o < client_amount; ++o)
 				{
-					std::cout << "current event fd: " << fd << " , client fd: " << _clients[i]->getClientFds(o) << std::endl;
+					std::cout << "fd to handle: " << fd << " , fd in client: " << _clients[i]->getClientFds(o) << std::endl;
 					if (_clients[i]->getClientFds(o) == fd)
+					{
+						std::cout << "Handling client" << std::endl;
 						if (_clients[i]->handleEvent(*this) >= 2)
 							removeClient(_clients[i], i);
+					}
 				}
 			}
 			if (got_signal != 0)
@@ -316,13 +321,13 @@ int Server::recvFromSocket(Client& client)
 	do
 	{
 		bytes_received = recv(client_fd, buffer, SOCKET_BUFFER, 0);
-		std::cout << "bytes_received: " << bytes_received << std::endl;
+		// std::cout << "bytes_received: " << bytes_received << std::endl;
 
 		if (bytes_received < 0)
 			break ;
 		else if (bytes_received == 0)
 		{
-			std::cout << "Client disconnected: " << client_fd << std::endl;
+			// std::cout << "Client disconnected: " << client_fd << std::endl;
 			return (2);
 		}
 		receivedData.append(buffer, bytes_received);
@@ -342,15 +347,13 @@ int Server::recvFromSocket(Client& client)
 		size_t totalLength = headerEnd + 4 + contentLength;
 		if (receivedData.size() >= totalLength)
 		{
-			std::cout << "Full request received (" << receivedData.size() << " bytes)" << std::endl;
+			// std::cout << "Full request received (" << receivedData.size() << " bytes)" << std::endl;
 			client.setClientState(parsing_request);
 			return (0);
 		}
 	}
 	return (1);
 }
-
-
 
 int	Server::sendToSocket(Client& client)
 {

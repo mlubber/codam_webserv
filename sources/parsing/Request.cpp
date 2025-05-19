@@ -100,7 +100,7 @@ int	parseHeaderSingleValue(std::string &headerName ,std::string &line, clRequest
 	{
 		if (isHeaderAppearTwice[headerName])
 		{
-			std::cout << "header should appear once: " << headerName << std::endl;
+			// std::cout << "header should appear once: " << headerName << std::endl;
 			clRequest.invalidRequest = true;
 			return (1);
 		}
@@ -154,13 +154,13 @@ int	parseRequestHeaders(std::string &line, clRequest& clRequest)
 	pos = line.find_first_of(':');
 	if (pos == std::string::npos)
 	{
-		std::cout << "headers here 1" << std::endl;
+		// std::cout << "headers here 1" << std::endl;
 		clRequest.invalidRequest = true;
 		return (1);
 	}
 	if (isspace(line[pos - 1]))
 	{
-		std::cout << "headers here 2" << std::endl;
+		// std::cout << "headers here 2" << std::endl;
 		clRequest.invalidRequest = true;
 		return (1);
 	}
@@ -192,7 +192,7 @@ int	parseRequestHeaders(std::string &line, clRequest& clRequest)
 		// multie value 
 		if (parseHeaderMultiValueComma(headerName, headerValue, clRequest))
 		{
-			std::cout << "here 3" << std::endl;
+			// std::cout << "here 3" << std::endl;
 			return (1);
 		}
 	}
@@ -205,7 +205,7 @@ int	parseRequestHeaders(std::string &line, clRequest& clRequest)
 		// single value
 		if (parseHeaderSingleValue(headerName, headerValue, clRequest))
 		{
-			std::cout << "here 4" << std::endl;
+			// std::cout << "here 4" << std::endl;
 			return (1);
 		}
 	}
@@ -254,7 +254,7 @@ int	parseRequestLine(std::string &line, clRequest &clRequest)
 			clRequest.method = word;
 			if (word != "POST" && word != "GET" && word != "DELETE")
 			{
-				std::cout << "here method " << std::endl;
+				// std::cout << "here method " << std::endl;
 				clRequest.methodNotAllowd = true;
 				return (1);
 			}
@@ -311,7 +311,7 @@ int	parseChunkedBody(std::string &body, clRequest &clRequest)
 	// }
 	if (clRequest.headers.find("transfer-encoding") == clRequest.headers.end())
 	{
-		std::cout << "transfer-encoding  not found" << std::endl;
+		// std::cout << "transfer-encoding  not found" << std::endl;
 		clRequest.invalidRequest = true;
 		return (1);
 	}
@@ -323,7 +323,7 @@ int	parseChunkedBody(std::string &body, clRequest &clRequest)
 	}
 	if (!isChunked)
 	{
-		std::cout << "transfer-encoding: hasn't value chunked!" << std::endl;
+		// std::cout << "transfer-encoding: hasn't value chunked!" << std::endl;
 		clRequest.invalidRequest = true;
 		return (1);
 	}
@@ -404,14 +404,14 @@ int	parseBody(std::string &body, clRequest &clRequest)
 	// }
 	if (clRequest.headers.find("content-length") != clRequest.headers.end())
 	{
-		std::cout << "---content-length---" << std::endl;
+		// std::cout << "---content-length---" << std::endl;
 		// if (clRequest.headers.find("transfer-encoding") != clRequest.headers.end()) {
 		// 	std::cout << "---transfer-encoding---" << std::endl;
 		// 	clRequest.invalidRequest = true;
 		// 	return 1;
 		// }
 
-		std::cout << "inside " << std::endl;
+		// std::cout << "inside " << std::endl;
 		strBodyLength = clRequest.headers["content-length"].front();
 		try
 		{
@@ -423,7 +423,7 @@ int	parseBody(std::string &body, clRequest &clRequest)
 			clRequest.invalidRequest = true;
 			return (1);
 		}
-		std::cout << "actual body size:  (" << body.size() << ", content length is: (" << bodyLength << ")." << std::endl;
+		// std::cout << "actual body size:  (" << body.size() << ", content length is: (" << bodyLength << ")." << std::endl;
 		if (body.size() != bodyLength)
 		{
 			clRequest.invalidRequest = true;
@@ -453,7 +453,7 @@ void readRequest(Client& client)
 	// int			clientFD = client.getClientFds(0);
 	clRequest&	clRequest = client.getClStructRequest();
 
-	std::cout << "read  request" << std::endl;
+	// std::cout << "read  request" << std::endl;
 	bool	is100Continue = false;
 	bool	foundEndOfHeaders  = false;
 
@@ -470,14 +470,14 @@ void readRequest(Client& client)
 	size_t headerEndPos = strClRequest.find("\r\n\r\n");
     if (headerEndPos == std::string::npos) 
 	{
-        std::cerr << "Headers not complete" << std::endl;
+        // std::cerr << "Headers not complete" << std::endl;
         clRequest.invalidRequest = true;
         return;
     }
 	std::string headers = strClRequest.substr(0, headerEndPos + 4);
     std::string body = strClRequest.substr(headerEndPos + 4);
 
-	std::cout << "headers extracted: \n" << headers << std::endl;
+	// std::cout << "headers extracted: \n" << headers << std::endl;
 
 	size_t	pos = 0;
 	size_t	i = 0;
@@ -502,7 +502,7 @@ void readRequest(Client& client)
 		{
 			// end of headers
 			foundEndOfHeaders = true;
-			std::cout << "end of headers" << std::endl;
+			// std::cout << "end of headers" << std::endl;
 			if (clRequest.hundredContinue)
 			{
 				//std::cout << "strClRequest.size() here is : " << strClRequest.size() << std::endl;
@@ -510,7 +510,7 @@ void readRequest(Client& client)
 				{
 					// it shouldn't has any 
 					clRequest.invalidRequest = true;
-					std::cout << "return 6" << std::endl;
+					// std::cout << "return 6" << std::endl;
 					return;
 				}
 			}
@@ -531,7 +531,7 @@ void readRequest(Client& client)
 			{
 				if (parseRequestLine(line, clRequest) != 0 )
 				{
-					std::cout << "return 3" << std::endl;
+					// std::cout << "return 3" << std::endl;
 					return;
 				}
 			}
@@ -543,12 +543,12 @@ void readRequest(Client& client)
 				if (headersSize > 8192)
 				{
 					clRequest.invalidRequest = true;
-					std::cout << "return 4" << std::endl;
+					// std::cout << "return 4" << std::endl;
 					return;
 				}
 				if (parseRequestHeaders(line, clRequest) != 0 )
 				{
-					std::cout << "return 5" << std::endl;
+					// std::cout << "return 5" << std::endl;
 					return;
 				}
 			}
@@ -559,7 +559,7 @@ void readRequest(Client& client)
 	// std::cout << "printing  request\n\n\n" << std::endl;
 	// printclRequest(clRequest);
 	
-	std::cout << "end read  request" << std::endl;
+	// std::cout << "end read  request" << std::endl;
 	if (!foundEndOfHeaders)
 		clRequest.invalidRequest = true;
 	
@@ -593,8 +593,8 @@ int	parsingRequest(Server& server, Client& client)
 	int				client_fd = client.getClientFds(0);
 
 
-	std::cout << "client request host: \n" << cl_request.host << std::endl;
-	std::cout << "client request port: \n" << cl_request.port << std::endl;
+	// std::cout << "client request host: \n" << cl_request.host << std::endl;
+	// std::cout << "client request port: \n" << cl_request.port << std::endl;
 
 	ConfigBlock serverBlock = config.getServerBlock(cl_request.host, cl_request.port);
 
@@ -604,7 +604,7 @@ int	parsingRequest(Server& server, Client& client)
 
 	if (cl_request.invalidRequest == true)
 	{
-		std::cout << "parse request failed" << std::endl;
+		// std::cout << "parse request failed" << std::endl;
 		client.setResponseData(serveError("400", serverBlock));
 	}
 	else if (cgi_check(cl_request.path))
@@ -618,6 +618,8 @@ int	parsingRequest(Server& server, Client& client)
 				kill(client.getCgiStruct().child_pid, SIGTERM);
 			return (2);
 		}
+		client.clearData(0);
+		return (0);
 	}
 	else
 		client.setResponseData(generateHttpResponse(cl_request, serverBlock));

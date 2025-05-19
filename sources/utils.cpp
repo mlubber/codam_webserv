@@ -6,7 +6,7 @@
 
 int	setNonBlocking(int fd)
 {
-	std::cout << "Setting non-blocking mode for fd: " << fd << std::endl;
+	// std::cout << "Setting non-blocking mode for fd: " << fd << std::endl;
 	int flag = fcntl(fd, F_GETFL, 0);
 	if (flag == -1)
 	{
@@ -71,7 +71,7 @@ std::string urlDecode(const std::string& encoded)
 		else
 			decoded << encoded[i];
 	}
-	std::cout << "decoded filename: " << decoded.str() << std::endl;
+	// std::cout << "decoded filename: " << decoded.str() << std::endl;
 	return(decoded.str());
 }
 

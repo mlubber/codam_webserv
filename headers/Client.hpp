@@ -3,19 +3,14 @@
 #include "headers.hpp"
 #include "cgi.hpp"
 
-# define READSOCKET		0
-# define READCGI		1
-# define WRITESOCKET	2
-# define WRITECGI		3
 
 enum state 
 {
 	reading_request,	// In loop of reading the request from the socket
 	parsing_request,	// Received the full request from the socket and now parsing
-	start_response,		// Readying everything and start sending response
-	sending_response,	// In loop of sending response to the socket
-	cgi_read,			// In loop of reading data from the cgi_pipe
 	cgi_write,			// In loop of writing data to the cgi_pipe
+	cgi_read,			// In loop of reading data from the cgi_pipe
+	sending_response,	// In loop of sending response to the socket
 };
 
 struct clRequest 
@@ -67,6 +62,9 @@ class Client
 		void	setResponseData(std::string data);
 		void	setClientState(int state);
 		void	setCgiStruct(std::unique_ptr<t_cgiData> cgi);
+
+		void	addFd(int fd);
+		void	resetFds(int fd);
 
 		void	clearData(int i);
 		void	updateBytesSent(size_t bytes_sent);

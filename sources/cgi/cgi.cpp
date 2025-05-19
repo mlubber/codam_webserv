@@ -48,7 +48,9 @@ static bool	init_cgi_struct(Client& client, clRequest& cl_request, Server& serve
 
 	if (pipe(cgi->ets_pipe) == -1)
 		return (1);
+	std::cout << "ETS PIPE: " << cgi->ets_pipe[0] << " & " << cgi->ets_pipe[1] << std::endl;
 	setNonBlocking(cgi->ets_pipe[0]);
+	client.addFd(cgi->ets_pipe[0]);
 	struct epoll_event ets_pipe;
 	ets_pipe.events = EPOLLIN | EPOLLET;
 	ets_pipe.data.fd = cgi->ets_pipe[0];
@@ -57,6 +59,7 @@ static bool	init_cgi_struct(Client& client, clRequest& cl_request, Server& serve
 		cgi_cleanup(*cgi, false);
 		return (1);
 	}
+	client.addFd(cgi->ets_pipe[0]);
 
 	// Only needed to set when method is POST
 	if (cl_request.method == "POST")
@@ -72,6 +75,7 @@ static bool	init_cgi_struct(Client& client, clRequest& cl_request, Server& serve
 			cgi->ets_pipe[0] = -1;
 			return (1);
 		}
+		std::cout << "STE PIPE: " << cgi->ste_pipe[0] << " & " << cgi->ste_pipe[1] << std::endl;
 		setNonBlocking(cgi->ste_pipe[1]);
 		struct epoll_event ste_pipe;
 		ste_pipe.events = EPOLLIN | EPOLLET;
@@ -81,6 +85,7 @@ static bool	init_cgi_struct(Client& client, clRequest& cl_request, Server& serve
 			cgi_cleanup(*cgi, false);
 			return (1);
 		}
+		client.addFd(cgi->ste_pipe[1]);
 	}
 
 	client.setCgiStruct(std::move(cgi));
@@ -152,7 +157,7 @@ bool	cgi_check(std::string& path)
 		size_t length = path.length();
 		if (path.compare(length - 3, length, ".py") == 0)
 			return (true);
-		if (length > 4 && path.compare(length - 3, length, ".php") == 0)
+		else if (length > 4 && path.compare(length - 3, length, ".php") == 0)
 			return (true);
 	}
 	return (false);
