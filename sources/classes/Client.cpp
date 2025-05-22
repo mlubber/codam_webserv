@@ -1,6 +1,6 @@
 #include "../../headers/Client.hpp"
 
-Client::Client(int socket_fd) : _state(reading_request), _cgi(nullptr)
+Client::Client(int socket_fd) : _state(reading_request), _cgi(nullptr), _close_client(false)
 {
 	_fds.push_back(socket_fd);
 }
@@ -14,48 +14,61 @@ int	Client::handleEvent(Server& server)
 {
 	int status;
 
-	std::cout << "Current client state: " << _state << std::endl;
 	if (_state == reading_request)
 	{
+		std::cout << "\nCurrent client state: reading_request" << std::endl;
+		std::cout << "\nErrno before recvFromSocket: " << errno << ", str: " << strerror(errno) << std::endl;
+		// status = server.recvFromSocket(*this, this->_request.receivedData);
 		status = server.recvFromSocket(*this);
+		errno = 0;
 		if (status > 0)
 			return (status);
 	}
+	// std::cout << "\nErrno before parsing: " << errno << ", str: " << strerror(errno) << std::endl;
+
 	if (_state == parsing_request)
 	{
+		std::cout << "\nCurrent client state: parsing_request" << std::endl;
 		status = parsingRequest(server, *this);
-		if (status > 0)
+		if (status == 2)
 			return (status);
-		return (0);
+		else if (_state != cgi_write)
+			return (status);
 	}
 	if (_state == cgi_write)
 	{
+		std::cout << "\nCurrent client state: cgi_write" << std::endl;
 		status = write_to_pipe(*this, this->getCgiStruct(), server);
 		if (status == 2)
 		{
 			// response is internal server error -> need to send that and then return to main loop and remove connection
 			return (2);
 		}
-		if (status == 1)
-			return (1);
+		return (status);
 	}
 	if (_state == cgi_read)
 	{
-		status = read_from_pipe(*this, *this->_cgi, server, _request.cgiBody);
+		std::cout << "\nCurrent client state: cgi_read" << std::endl;
+		status = read_from_pipe(*this, *this->_cgi, server, _cgi->readData);
+		std::cout << "\nStatus after read_from_pipe : " << status << std::endl;
 		if (status == 2)
 		{
 			// response is internal server error -> need to send that and then return to main loop and remove connection
 			std::cerr << "ABOUT TO CLOSE CLIENT" << std::endl;
+			this->setCloseClientState(true);
+			this->setResponseData(ER500);
+			this->setClientState(sending_response);
 			return (2);
 		}
 		if (status == 1)
+		{
 			return (1);
+		}
 	}
 	if (_state == sending_response)
 	{
-		status = server.sendToSocket(*this);
-		if (status > 0)
-			return (status);
+		std::cout << "\nCurrent client state: sending_response" << std::endl;
+		return (server.sendToSocket(*this));
 	}
 	return (0);
 }
@@ -102,6 +115,11 @@ clRequest&	Client::getClStructRequest()
     return (_request);
 }
 
+bool	Client::getCloseClientState()
+{
+	return (_close_client);
+}
+
 
 
 
@@ -146,6 +164,13 @@ void	Client::setClientState(int state)
 
 	}
 }
+
+void	Client::setCloseClientState(bool state)
+{
+	_close_client = state;
+}
+
+
 
 void Client::addFd(int fd)
 {

@@ -265,7 +265,7 @@ int	parseRequestLine(std::string &line, clRequest &clRequest)
 				clRequest.path = word;
 			else
 			{
-				query = word.substr(pos, word.size() - pos);
+				query = word.substr(pos + 1, word.size() - pos);
 				word = word.substr(0, pos);
 				clRequest.path = word;
 				clRequest.queryStr = query;
@@ -587,6 +587,10 @@ std::string	generateHttpResponse(clRequest& cl_request, const ConfigBlock& serve
 
 int	parsingRequest(Server& server, Client& client)
 {
+	// std::cout << "Errno at start of parsingRequest: " << errno << ", str: " << strerror(errno) << std::endl;
+
+	std::cout << "\n\n---Client received: ---\n" << client.getClientReceived() << "\n--- END OF RECEIVED ---" << std::endl;
+
 	readRequest(client);
 	clRequest		cl_request = client.getClStructRequest();
 	Configuration	config = server.getConfig();

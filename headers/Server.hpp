@@ -18,7 +18,7 @@
 # define ER500 "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 157\r\n\r\n<html><head><title>500 Internal Server Error</title></head><body><center><h1>500 Internal Server</h1></center><hr><center>webserv</center></hr></body></html>"
 
 class Client;
-struct clRequest;
+struct s_clRequest;
 
 class Server
 {
@@ -36,7 +36,8 @@ class Server
 		void	connectClient(int epoll_fd, int server_fd);
 		void	removeClient(Client* client, int index);	
 		
-		int		recvFromSocket(Client& client);
+		// int 	recvFromSocket(Client& client, std::string& receivedData);
+		int 	recvFromSocket(Client& client);
 		int		sendToSocket(Client& client);	
 		
 		void	handleReceivedSignal();

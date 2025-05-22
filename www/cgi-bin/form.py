@@ -2,7 +2,7 @@
 
 import cgi
 
-print("Content-Type: text/html\n")
+print("Content-Type: text/html\r\n\r\n")
 
 form = cgi.FieldStorage()
 name = form.getvalue("name")
@@ -35,6 +35,16 @@ print(f"""
 </head>
 <body>
     {response}
+	<a href="/" style="
+		display: inline-block;
+		margin-top: 20px;
+		padding: 10px 20px;
+		background-color: #4CAF50;
+		color: white;
+		text-decoration: none;
+		border-radius: 5px;
+		font-weight: bold;
+	">Back to Home</a>
 </body>
 </html>
 """)

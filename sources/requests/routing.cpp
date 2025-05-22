@@ -182,13 +182,13 @@ static std::string	handlePostRequest(clRequest& cl_request, const ConfigBlock& s
 							<< (cl_request.body.size()) << "\r\n\r\n"
 							<< cl_request.body;
 			}
-			else if (values_vector[i].find("application/x-www-form-urlencoded") != std::string::npos)
-			{
-				std::cout << "application/x-www-form-urlencoded found! " << cl_request.cgiBody << std::endl;
-				response	<< "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: "
-							<< (cl_request.cgiBody.size()) << "\r\n\r\n"
-							<< cl_request.cgiBody;
-			}
+			// else if (values_vector[i].find("application/x-www-form-urlencoded") != std::string::npos)
+			// {
+			// 	std::cout << "application/x-www-form-urlencoded found! " << cl_request.cgiBody << std::endl;
+			// 	response	<< "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: "
+			// 				<< (cl_request.cgiBody.size()) << "\r\n\r\n"
+			// 				<< cl_request.cgiBody;
+			// }
 			else if (values_vector[i].find("multipart/form-data") != std::string::npos)
 			{
 				const std::vector<std::string>& contentType = cl_request.headers.at("content-type");

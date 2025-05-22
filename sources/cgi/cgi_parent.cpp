@@ -9,6 +9,8 @@ int	wait_for_child(t_cgiData& cgi)
 	int		status;
 	int		exit_code = 0;
 
+	std::cout << "errno before wait_for_child: " << errno << ", str: " << strerror(errno) << std::endl;
+
 	if (errno != 0)
 		return (errno);
 	std::cerr << "CHECKING WPID" << std::endl;
@@ -40,78 +42,55 @@ int	wait_for_child(t_cgiData& cgi)
 }
 
 
-// int	read_from_pipe(Client& client, t_cgiData& cgi, const Server& server, std::string& cgiBody)
-// {
-// 	char	buffer[CGIBUFFER];
-// 	int		bytes_read = 0;
-
-// 	std::cerr << "\nREADING FROM PIPE" << std::endl;
-
-// 	std::cerr << "read-end num: " << cgi.ets_pipe[0] << std::endl;
-// 	bytes_read = read(cgi.ets_pipe[0], buffer, CGIBUFFER - 1);
-// 	std::cerr << "Bytes read from cgi pipe: " << bytes_read << std::endl;
-// 	if (bytes_read == -1)
-// 	{
-// 		std::cerr << "BYTES_READ -1!" << std::endl;
-// 		epoll_ctl(server.getEpollFd(), EPOLL_CTL_DEL, cgi.ste_pipe[1], NULL);
-// 		if (close(cgi.ets_pipe[0]) == -1)
-// 			std::cerr << "CGI ERROR: Failed closing ets read-end pipe in parent" << std::endl;
-// 		cgi.ets_pipe[0] = -1;
-// 		return (2);
-// 	}
-// 	else if (bytes_read == 0)
-// 	{
-// 		std::cerr << "FULL CGI BODY:\n\n" << cgiBody << std::endl;
-// 		epoll_ctl(server.getEpollFd(), EPOLL_CTL_DEL, cgi.ste_pipe[1], NULL);
-// 		if (close(cgi.ets_pipe[0]) == -1)
-// 			std::cerr << "CGI ERROR: Failed closing ets read-end pipe in parent" << std::endl;
-// 		cgi.ets_pipe[0] = -1;		
-// 		client.setClientState(sending_response);
-// 		return (wait_for_child(cgi));
-// 	}
-// 	buffer[bytes_read - 1] = '\0';
-// 	cgiBody += buffer;
-// 	std::cerr << "CGI BODY:\n\n" << cgiBody << std::endl;
-// 	return (1);
-// }
 
 
-int	read_from_pipe(Client& client, t_cgiData& cgi, const Server& server, std::string& cgiBody)
+void	createCgiResponse(Client& client, std::string& readData)
 {
+	std::string key = "\r\n\r\n";
+	size_t pos = readData.find(key);
+	if (pos == std::string::npos)
+		std::cout << "NPOS FOUND? INTERNAL SERVER ERROR" << std::endl;
+
+	std::string actualBody = readData.substr(pos + 4);
+	// std::cout << "ACTUAL BODY:" << actualBody << std::endl;
+
+	std::string contentLength = "Content-Length: " + std::to_string(actualBody.size()) + "\r\n";
+
+	client.setResponseData("HTTP/1.1 200 OK\r\n" + contentLength + readData);
+}
+
+
+
+int	read_from_pipe(Client& client, t_cgiData& cgi, const Server& server, std::string& readData)
+{
+	std::cout << "\nREAD FROM PIPE" << std::endl;
+
 	char	buffer[CGIBUFFER];
 	int		bytes_read = 0;
 
-	std::cerr << "\nREADING FROM PIPE" << std::endl;
-
-	std::cerr << "read-end num: " << cgi.ets_pipe[0] << std::endl;
 	bytes_read = read(cgi.ets_pipe[0], buffer, CGIBUFFER - 1);
-	buffer[bytes_read - 1] = '\0';
-	std::cerr << "Bytes read from cgi pipe: " << bytes_read << std::endl;
+	buffer[bytes_read] = '\0';
+	std::cerr << "\nBytes read from cgi pipe: " << bytes_read << " / " << CGIBUFFER - 1 << std::endl;
 	if (bytes_read == -1)
 	{
-		std::cerr << "BYTES_READ -1!" << std::endl;
+		std::cerr << "\nBYTES_READ -1!" << std::endl;
 		epoll_ctl(server.getEpollFd(), EPOLL_CTL_DEL, cgi.ste_pipe[1], NULL);
 		if (close(cgi.ets_pipe[0]) == -1)
 			std::cerr << "CGI ERROR: Failed closing ets read-end pipe in parent" << std::endl;
 		cgi.ets_pipe[0] = -1;
 		return (2);
 	}
-	else if (bytes_read == CGIBUFFER - 1)
-	{
-		// buffer[bytes_read - 1] = '\0';
-		cgiBody += buffer;
-		std::cerr << "CGI BODY:\n\n" << cgiBody << std::endl;
+	readData += buffer;
+	if (bytes_read > 0)
 		return (1);
 
-	}
-	cgiBody += buffer;
-	std::cerr << "FULL CGI BODY:\n\n" << cgiBody << std::endl;
-	epoll_ctl(server.getEpollFd(), EPOLL_CTL_DEL, cgi.ste_pipe[1], NULL);
+	epoll_ctl(server.getEpollFd(), EPOLL_CTL_DEL, cgi.ets_pipe[0], NULL);
 	if (close(cgi.ets_pipe[0]) == -1)
 		std::cerr << "CGI ERROR: Failed closing ets read-end pipe in parent" << std::endl;
 	cgi.ets_pipe[0] = -1;
 
-	client.setResponseData("HTTP/1.1 200 OK\r\n" + cgiBody);
+	createCgiResponse(client, readData);
+
 	client.resetFds(client.getClientFds(0));
 	client.setClientState(sending_response);
 	return (wait_for_child(cgi));
@@ -122,13 +101,6 @@ int	write_to_pipe(Client& client, t_cgiData& cgi, const Server& server)
 {
 	int currentDataSize = cgi.writeData.size();
 	int	written = 0;
-
-	if (cgi.started_writing == false) 
-	{
-		if (close(cgi.ste_pipe[0]) == -1)
-			std::cerr << "CGI ERROR: Failed closing ste read-end pipe in parent" << std::endl;
-		cgi.ste_pipe[0] = -1;
-	}
 		
 	written += write(cgi.ste_pipe[1], cgi.writeData.c_str(), std::min(CGIBUFFER, currentDataSize));
 	cgi.dataWritten += written;

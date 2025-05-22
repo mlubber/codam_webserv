@@ -56,18 +56,6 @@ std::string get_path_info(const clRequest& cl_request, const Server& server)
 		root = "/" + root;
 	std::string path_info = getenv("PWD") + root + cl_request.path;
 
-
-	// testing
-	// char* str = new char[path_info.length() + 1];
-	// std::strcpy(str, path_info.c_str());
-	// if (access(str, F_OK | X_OK) != 0)
-	// {
-	// 	std::cerr << "Checking errno in child for permission, this is errno: " << errno << std::endl;
-	// 	std::cerr << "get_path_info file was not found!!!!!!!!!!!1" << std::endl;
-	// }
-	// end of testing
-
-
 	return (path_info);
 }
 
@@ -92,13 +80,13 @@ void	setup_environment(t_cgiData& cgi, const clRequest& cl_request, const Server
 
 
 	//  Test printing environment
-	// std::cout << "\n--- CGI Environment ---" << std::endl;
-	// for (int i = 0; i < 10; ++i) {
-	// 	if (cgi.envp[i] == nullptr)
-	// 		std::cout << "null\n";
-	// 	else
-	// 		std::cout << cgi.envp[i] << "\n";
-	// } std::cout << std::endl;
+	std::cout << "\n--- CGI Environment ---" << std::endl;
+	for (int i = 0; i < 10; ++i) {
+		if (cgi.envp[i] == nullptr)
+			std::cout << "null\n";
+		else
+			std::cout << cgi.envp[i] << "\n";
+	} std::cout << std::endl;
 	//  End test printing environment
 }
 

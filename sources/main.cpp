@@ -149,13 +149,13 @@ int main(int argc, char **argv)
 
 	Configuration myconfig;
 	myconfig.parseConfig(confFile);
-	std::cout << "printing all server blocks begin!\n\n\n\n" << std::endl;
+	// std::cout << "printing all server blocks begin!\n\n\n\n" << std::endl;
 	// myconfig.printConfig(myconfig.getConfigData(), 0);
 
 
 
 	ValidationConfigFile	validator(myconfig.getConfigData());
-	std::cout << "printing all server blocks after check and add all base key value!\n\n\n\n" << std::endl;
+	// std::cout << "printing all server blocks after check and add all base key value!\n\n\n\n" << std::endl;
 	//validator.printConfig(validator.getConfig(), 0);
 	// myconfig.printConfig(myconfig.getConfigData(), 0);
 

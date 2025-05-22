@@ -26,7 +26,7 @@ import cgi
 # name = form.getvalue("name", "Guest")  # Get 'name' from form, default to "Guest" if empty
 
 # Generate response
-print("Content-Type: text/html\n")
+print("Content-Type: text/html\r\n\r\n")  # Corrected header termination
 print("""
 <!DOCTYPE html>
 <html lang="en">
@@ -34,13 +34,23 @@ print("""
     <meta charset="UTF-8">
     <title>Hello</title>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f0f8ff; text-align: center; padding: 50px; }
+        body { font-family: Arial, sans-serif; background-color: #90EE90; text-align: center; padding: 50px; }
         h1 { color: #333; }
     </style>
 </head>
 <body>
     <h1>Hello from Python CGI!</h1>
     <p>This is a styled HTML page served via CGI.</p>
+	<a href="/" style="
+		display: inline-block;
+		margin-top: 20px;
+		padding: 10px 20px;
+		background-color: #4CAF50;
+		color: white;
+		text-decoration: none;
+		border-radius: 5px;
+		font-weight: bold;
+	">Back to Home</a>
 </body>
 </html>
 """)

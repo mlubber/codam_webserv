@@ -20,6 +20,7 @@ typedef struct s_cgiData
 	std::string writeData;			// Data to write to the pipe
 	int			dataToWrite;		// Bytes needed to be written to
 	int			dataWritten;		// bytes written to pipe
+	std::string	readData;			// bytes read from pipe
 }	t_cgiData;
 
 bool	cgi_check(std::string& path);

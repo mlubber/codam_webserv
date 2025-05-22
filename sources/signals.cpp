@@ -6,6 +6,7 @@ int	got_signal = 0;	// To check the received signal
 void signalHandler(int sig)
 {
 	char signal = static_cast<char>(sig);
+	std::cout << "\nWriting signal byte to signal_pipe" << std::endl;
 	write(signal_pipe[1], &signal, 1);
 	got_signal = sig;
 }
@@ -23,7 +24,6 @@ int	check_if_signal()
 
 int	initialize_signals()
 {
-	std::cout << "Errno in initialize_signals(): " << errno << std::endl;
 	std::signal(SIGINT, signalHandler);
 	std::signal(SIGPIPE, signalHandler);
 	if (errno > 0)
@@ -48,8 +48,8 @@ void	close_signal_pipe(int message)
 			break ;
 	}
 
-	if (close(signal_pipe[0] == -1))
+	if (close(signal_pipe[0]) == -1)
 		std::cerr << "ERROR: Failed closing signal_pipe 0" << std::endl;
-	if (close(signal_pipe[1] == -1))
+	if (close(signal_pipe[1]) == -1)
 		std::cerr << "ERROR: Failed closing signal_pipe 1" << std::endl;	
 }

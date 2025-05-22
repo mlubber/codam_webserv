@@ -48,11 +48,9 @@ static bool	init_cgi_struct(Client& client, clRequest& cl_request, Server& serve
 
 	if (pipe(cgi->ets_pipe) == -1)
 		return (1);
-	std::cout << "ETS PIPE: " << cgi->ets_pipe[0] << " & " << cgi->ets_pipe[1] << std::endl;
 	setNonBlocking(cgi->ets_pipe[0]);
-	client.addFd(cgi->ets_pipe[0]);
 	struct epoll_event ets_pipe;
-	ets_pipe.events = EPOLLIN | EPOLLET;
+	ets_pipe.events = EPOLLIN;
 	ets_pipe.data.fd = cgi->ets_pipe[0];
 	if (epoll_ctl(server.getEpollFd(), EPOLL_CTL_ADD, cgi->ets_pipe[0], &ets_pipe) == -1)
 	{
@@ -78,7 +76,7 @@ static bool	init_cgi_struct(Client& client, clRequest& cl_request, Server& serve
 		std::cout << "STE PIPE: " << cgi->ste_pipe[0] << " & " << cgi->ste_pipe[1] << std::endl;
 		setNonBlocking(cgi->ste_pipe[1]);
 		struct epoll_event ste_pipe;
-		ste_pipe.events = EPOLLIN | EPOLLET;
+		ste_pipe.events = EPOLLIN;
 		ste_pipe.data.fd = cgi->ste_pipe[0];
 		if (epoll_ctl(server.getEpollFd(), EPOLL_CTL_ADD, cgi->ste_pipe[1], &ste_pipe) == -1)
 		{
@@ -106,24 +104,11 @@ static int	create_cgi_child_process(t_cgiData& cgi, clRequest& cl_request, const
 	return (0);
 }
 
-static int	setting_parent_fds(t_cgiData& cgi)
+static int	closing_parent_fds(t_cgiData& cgi)
 {
-	if (dup2(cgi.ets_pipe[0], STDIN_FILENO) == -1)
-	{
-		std::cerr << "CGI ERROR: Failed dup2 in child process" << std::endl;
-		return (1);
-	}
 	if (close(cgi.ets_pipe[1]) == -1)
 		std::cerr << "CGI ERROR: Failed closing read-end pipe in child" << std::endl;
 	cgi.ets_pipe[1] = -1;
-	if (cgi.ste_pipe[1] != -1)
-	{
-		if (dup2(cgi.ste_pipe[1], STDOUT_FILENO) == -1)
-		{
-			std::cerr << "CGI ERROR: Failed dup2 in child process" << std::endl;
-			return (1);
-		}
-	}
 	if (cgi.ste_pipe[0] != -1 && close(cgi.ste_pipe[0]) == -1)
 		std::cerr << "CGI ERROR: Failed closing write-end pipe in child" << std::endl;
 	cgi.ste_pipe[0] = -1;
@@ -132,19 +117,17 @@ static int	setting_parent_fds(t_cgiData& cgi)
 
 int	start_cgi(clRequest& cl_request, Server& server, Client& client)
 {
-	errno = 0; // temporary, till bug somewhere else is found
 	cl_request.cgi = true;
 	if (init_cgi_struct(client, cl_request, server))
 		return (2);
 	if (create_cgi_child_process(client.getCgiStruct(), cl_request, server) != 0)
 		return (2);
-	if (setting_parent_fds(client.getCgiStruct()))
+	if (closing_parent_fds(client.getCgiStruct()))
 		return (2);
 	if (cl_request.method == "POST")
 		client.setClientState(cgi_write);
 	else
 		client.setClientState(cgi_read);
-	errno = 0;
 	return (0);
 }
 

@@ -4,8 +4,9 @@ import cgi
 
 form = cgi.FieldStorage()
 name = form.getvalue("name", "Stranger")
+age = form.getvalue("age", "unknown")
 
-print("Content-Type: text/html\n")
+print("Content-Type: text/html\r\n\r\n")
 print(f"""
 <!DOCTYPE html>
 <html lang="en">
@@ -19,7 +20,17 @@ print(f"""
 </head>
 <body>
     <h1>Hello, {name}!</h1>
-    <p>This greeting is dynamic and styled.</p>
+    <p>You are {age} years old.</p>
+    <a href="/" style="
+        display: inline-block;
+        margin-top: 20px;
+        padding: 10px 20px;
+        background-color: #4CAF50;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        font-weight: bold;
+    ">Back to Home</a>
 </body>
 </html>
 """)

@@ -4,7 +4,7 @@ from datetime import datetime
 
 now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-print("Content-Type: text/html\n")
+print("Content-Type: text/html\r\n\r\n")
 print(f"""
 <!DOCTYPE html>
 <html lang="en">
@@ -28,6 +28,16 @@ print(f"""
         <p>Current Server Time:</p>
         <strong>{now}</strong>
     </div>
+	<a href="/" style="
+		display: inline-block;
+		margin-top: 20px;
+		padding: 10px 20px;
+		background-color: #4CAF50;
+		color: white;
+		text-decoration: none;
+		border-radius: 5px;
+		font-weight: bold;
+	">Back to Home</a>
 </body>
 </html>
 """)
