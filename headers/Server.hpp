@@ -69,7 +69,7 @@ class Server
 		const std::string			_root; // temp till Abbas adds his config file code
 };
 
-std::string	routeRequest(clRequest& cl_request, const ConfigBlock& serverBlock);
-std::string serveError(std::string error_code, const ConfigBlock& serverBlock);
+void	routeRequest(Client& client, clRequest& cl_request, const ConfigBlock& serverBlock);
+void	serveError(Client& client, std::string error_code, const ConfigBlock& serverBlock);
 
 #endif

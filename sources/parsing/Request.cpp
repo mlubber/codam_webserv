@@ -566,7 +566,7 @@ void readRequest(Client& client)
 }
 
 
-std::string	generateHttpResponse(clRequest& cl_request, const ConfigBlock& serverBlock)
+void	generateHttpResponse(Client& client, clRequest& cl_request, const ConfigBlock& serverBlock)
 {
 	std::string response;
 
@@ -581,8 +581,7 @@ std::string	generateHttpResponse(clRequest& cl_request, const ConfigBlock& serve
 
 	// std::cout << "generate client request path: " << cl_request.path << std::endl;
 
-	response = routeRequest(cl_request, serverBlock);
-	return (response);
+	routeRequest(client, cl_request, serverBlock);
 }
 
 int	parsingRequest(Server& server, Client& client)
@@ -609,7 +608,7 @@ int	parsingRequest(Server& server, Client& client)
 	if (cl_request.invalidRequest == true)
 	{
 		// std::cout << "parse request failed" << std::endl;
-		client.setResponseData(serveError("400", serverBlock));
+		serveError(client, "400", serverBlock);
 	}
 	else if (cgi_check(cl_request.path))
 	{
@@ -617,7 +616,7 @@ int	parsingRequest(Server& server, Client& client)
 		std::cout << "STATUS: " << status << std::endl;
 		if (status != 0)
 		{
-			client.setResponseData(serveError("500", serverBlock));
+			serveError(client, "500", serverBlock);
 			if (client.checkCgiPtr() && client.getCgiStruct().child_pid != -1)
 				kill(client.getCgiStruct().child_pid, SIGTERM);
 			return (2);
@@ -626,7 +625,7 @@ int	parsingRequest(Server& server, Client& client)
 		return (0);
 	}
 	else
-		client.setResponseData(generateHttpResponse(cl_request, serverBlock));
+		generateHttpResponse(client, cl_request, serverBlock);
 
 	struct epoll_event event;
 	event.events = EPOLLIN | EPOLLOUT;
