@@ -49,7 +49,7 @@ bool Server::initialize(const std::vector<std::pair<std::string, std::vector<int
 	}
 
 	struct epoll_event event;
-	event.events = EPOLLIN| EPOLLET;
+	event.events = EPOLLIN | EPOLLET;
 	event.data.fd = signal_pipe[0];
 
     _epoll_fd = epoll_create1(0);
@@ -192,7 +192,9 @@ void Server::run(void)
 				{
 					if (_clients[i]->getClientFds(o) == fd)
 						if (_clients[i]->handleEvent(*this) >= 2)
+						{
 							removeClient(_clients[i], i);
+						}
 					errno = 0;
 				}
 			}
@@ -226,6 +228,16 @@ void Server::connectClient(int _epoll_fd, int server_fd)
 	try
 	{
 		int new_client_fd = accept(server_fd, (struct sockaddr *)&_address, &_addr_len);
+
+		sockaddr_in addr;
+		socklen_t len = sizeof(addr);
+		getsockname(server_fd, (sockaddr*)&addr, &len);
+		// std::cout << "Server listening on port: " << ntohs(addr.sin_port) << std::endl;
+		// std::cout << "Server IP: " << inet_ntoa(addr.sin_addr) << std::endl;
+		// std::cout << "iptostring: " << ip_to_string(addr.sin_addr) << std::endl;
+
+		ConfigBlock serverBlock = _config.getServerBlock(ip_to_string(addr.sin_addr), std::to_string(ntohs(addr.sin_port)));
+		
 		if (new_client_fd < 0)
 		{
 			std::cerr << "ERROR: Failed to accept connection" << std::endl;
@@ -250,7 +262,8 @@ void Server::connectClient(int _epoll_fd, int server_fd)
 		}
 		std::cout << "Client connected: " << new_client_fd << std::endl;
 
-		Client* new_client = new Client(new_client_fd);
+		Client* new_client = new Client(new_client_fd, serverBlock);
+
 		this->_clients.push_back(new_client);
 		this->_client_count++;
 	}
@@ -374,13 +387,31 @@ int Server::recvFromSocket(Client& client)
 	long			bytes_received;
 	int				client_fd = client.getClientFds(0);
 
-
 	std::cout << "\nErrno before receiving: " << errno << ", str: " << strerror(errno) << std::endl;
 
+
+	// Read data from the socket level-triggerd without EPOLLET:
+	// bytes_received = recv(client_fd, buffer, SOCKET_BUFFER, 0);
+	// std::cout << "bytes_received: " << bytes_received << std::endl;
+
+	// if (bytes_received < 0)
+	// {
+	// 	std::cout << "No more data to read, waiting for the next EPOLLIN event" << std::endl;
+	// 	return (1); // Wait for the next EPOLLIN event
+	// }
+	// else if (bytes_received == 0)
+	// {
+	// 	std::cout << "Client disconnected: " << client_fd << std::endl;
+	// 	return (2); // Indicates the client has disconnected
+	// }
+	// receivedData.append(buffer, bytes_received);
+
+
+	// Read data from the socket edge-triggered with EPOLLET:
 	do
 	{
 		bytes_received = recv(client_fd, buffer, SOCKET_BUFFER, 0);
-		// std::cout << "\nbytes_received: " << bytes_received << std::endl;
+		std::cout << "bytes_received: " << bytes_received << std::endl;
 
 		if (bytes_received < 0)
 			break ;
@@ -391,27 +422,73 @@ int Server::recvFromSocket(Client& client)
 		}
 		receivedData.append(buffer, bytes_received);
 	} while (bytes_received > 0);
+
+	// std::cout << "receivedData: \n" << receivedData << std::endl;
+
 	std::cout << "\nErrno after receiving: " << errno << ", str: " << strerror(errno) << std::endl;
 	
+	// Check if the headers are fully received
 	size_t headerEnd = receivedData.find("\r\n\r\n");
 	if (headerEnd != std::string::npos)
 	{
+		// Headers are complete, check if the body is also complete
 		size_t contentLength = 0;
 		size_t contentLengthPos = receivedData.find("Content-Length:");
 		if (contentLengthPos != std::string::npos)
 		{
-			size_t start = contentLengthPos + 15;
+			size_t start = contentLengthPos + 15; // Skip "Content-Length: "
 			size_t end = receivedData.find("\r\n", start);
 			contentLength = std::stoul(receivedData.substr(start, end - start));
 		}
-		size_t totalLength = headerEnd + 4 + contentLength;
+
+		// Check if the full request (headers + body) has been received
+		size_t totalLength = headerEnd + 4 + contentLength; // Headers + "\r\n\r\n" + Body
 		if (receivedData.size() >= totalLength)
 		{
+			std::cout << "Full request received (" << receivedData.size() << " bytes)" << std::endl;
 			client.setClientState(parsing_request);
-			return (0);
+			return (0); // Full request received
 		}
 	}
+
+	// Not enough data yet, wait for more
 	return (1);
+
+	// do
+	// {
+	// 	bytes_received = recv(client_fd, buffer, SOCKET_BUFFER, 0);
+	// 	// std::cout << "\nbytes_received: " << bytes_received << std::endl;
+
+	// 	if (bytes_received < 0)
+	// 		break ;
+	// 	else if (bytes_received == 0)
+	// 	{
+	// 		// std::cout << "Client disconnected: " << client_fd << std::endl;
+	// 		return (2);
+	// 	}
+	// 	receivedData.append(buffer, bytes_received);
+	// } while (bytes_received > 0);
+	// std::cout << "\nErrno after receiving: " << errno << ", str: " << strerror(errno) << std::endl;
+	
+	// size_t headerEnd = receivedData.find("\r\n\r\n");
+	// if (headerEnd != std::string::npos)
+	// {
+	// 	size_t contentLength = 0;
+	// 	size_t contentLengthPos = receivedData.find("Content-Length:");
+	// 	if (contentLengthPos != std::string::npos)
+	// 	{
+	// 		size_t start = contentLengthPos + 15;
+	// 		size_t end = receivedData.find("\r\n", start);
+	// 		contentLength = std::stoul(receivedData.substr(start, end - start));
+	// 	}
+	// 	size_t totalLength = headerEnd + 4 + contentLength;
+	// 	if (receivedData.size() >= totalLength)
+	// 	{
+	// 		client.setClientState(parsing_request);
+	// 		return (0);
+	// 	}
+	// }
+	// return (1);
 }
 
 int	Server::sendToSocket(Client& client)

@@ -11,7 +11,7 @@ void	cgi_cleanup(t_cgiData& cgi, bool child)
 	if (cgi.ste_pipe[0] != -1 && close(cgi.ste_pipe[0]))
 		std::cerr << "CGI ERROR: closing ste_pipe[0] failed" << std::endl;
 	if (cgi.ste_pipe[1] != -1 && close(cgi.ste_pipe[1]))
-		std::cerr << "CGI ERROR: closing ets_pipe[1] failed" << std::endl;
+		std::cerr << "CGI ERROR: closing ste_pipe[1] failed" << std::endl;
 
 	if (child == true)
 	{

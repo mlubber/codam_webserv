@@ -1,6 +1,6 @@
 #include "../../headers/Client.hpp"
 
-Client::Client(int socket_fd) : _state(reading_request), _cgi(nullptr), _close_client(false)
+Client::Client(int socket_fd, const ConfigBlock& serverBlock) : _state(reading_request), _cgi(nullptr), _close_client(false), _server_block(serverBlock)
 {
 	_fds.push_back(socket_fd);
 }
@@ -20,9 +20,23 @@ int	Client::handleEvent(Server& server)
 		std::cout << "\nErrno before recvFromSocket: " << errno << ", str: " << strerror(errno) << std::endl;
 		// status = server.recvFromSocket(*this, this->_request.receivedData);
 		status = server.recvFromSocket(*this);
+		std::cout << "status is now: " << status << std::endl;
 		errno = 0;
-		if (status > 0)
-			return (status);
+		if (status == 2)
+		{
+			std::cout << "Lost connection or error occurred" << std::endl;
+			return (2);
+		}
+		if (status == 1)
+		{
+			std::cout << "Partial request received" << std::endl;
+			return (1);
+		}
+
+		// if (status > 0)
+		// {
+		// 	return (status);
+		// }
 	}
 	// std::cout << "\nErrno before parsing: " << errno << ", str: " << strerror(errno) << std::endl;
 
@@ -120,6 +134,10 @@ bool	Client::getCloseClientState()
 	return (_close_client);
 }
 
+ConfigBlock&	Client::getServerBlock()
+{
+	return (_server_block);
+}
 
 
 

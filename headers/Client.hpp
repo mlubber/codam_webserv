@@ -43,10 +43,11 @@ class Client
 		size_t						_response_size;		// size of response to compare with _bytes_sent to client
 		size_t						_bytes_sent;		// Amount of bytes_sent to compare with _response_size
 		bool						_close_client;		// Check if we need to close connection to client after sending response
+		ConfigBlock					_server_block;		// Server block the Client is connected to
 
-	public:
+		public:
 
-		Client(int socket_fd);
+		Client(int socket_fd, const ConfigBlock& serverBlock);
 		~Client();
 
 		int		handleEvent(Server& server);
@@ -56,9 +57,10 @@ class Client
 		std::string&	getClientReceived();
 		std::string&	getClientResponse();
 		t_cgiData&		getCgiStruct();
-		clRequest&	getClStructRequest();
+		clRequest&		getClStructRequest();
 		bool			checkCgiPtr();
 		bool			getCloseClientState();
+		ConfigBlock&	getServerBlock();
 		
 		void	setReceivedData(std::string& data);
 		void	setResponseData(std::string data);

@@ -2,7 +2,7 @@
 #include "../../headers/Server.hpp"
 #include "../../headers/Client.hpp"
 
-static std::string serveStaticFile(const std::string& filePath)
+static std::string serveStaticFile(const std::string& filePath, std::string status_code)
 {
 	std::ifstream file(filePath.c_str(), std::ios::binary);
 	if (!file)
@@ -20,11 +20,30 @@ static std::string serveStaticFile(const std::string& filePath)
 
 	// Create HTTP response
 	std::ostringstream response;
-	response << "HTTP/1.1 200 OK\r\n";
+
+	if (status_code == "200")
+		response << "HTTP/1.1 200 OK\r\n";
+	else if (status_code == "400")
+		response << "HTTP/1.1 400 Bad Request\r\n";
+	else if (status_code == "403")
+		response << "HTTP/1.1 403 Forbidden\r\n";
+	else if (status_code == "404")
+		response << "HTTP/1.1 404 Not Found\r\n";
+	else if (status_code == "405")
+		response << "HTTP/1.1 405 Method Not Allowed\r\n";
+	else if (status_code == "413")
+		response << "HTTP/1.1 413 Payload Too Large\r\n";
+	else if (status_code == "500")
+		response << "HTTP/1.1 500 Internal Server Error\r\n";
+
+	// response << "HTTP/1.1 200 OK\r\n";
 	response << "Content-Type: " << contentType << "\r\n";
 	response << "Content-Length: " << fileContent.size() << "\r\n";
 	response << "\r\n";
 	response << fileContent;
+
+	// client.setResponseData(response);
+	// client.setClientState(sending_response);
 
 	return (response.str());
 }
@@ -39,7 +58,7 @@ std::string serveError(std::string error_code, const ConfigBlock& serverBlock)
 	std::string path;
     for (const std::pair<const std::string, std::vector<std::string>>& value : serverBlock.values) 
     {
-        if (value.first == "error_page") 
+        if (value.first == "error_page")
         {
             const std::vector<std::string>& errorValues = value.second;
             for (std::vector<std::string>::const_iterator it = errorValues.begin(); it != errorValues.end(); ++it) 
@@ -73,14 +92,14 @@ std::string serveError(std::string error_code, const ConfigBlock& serverBlock)
 
 	struct stat stats;
 	if (!path.empty() && stat(filePath.c_str(), &stats) == 0)
-		return (serveStaticFile(filePath)); // Serve the custom error page
+		return (serveStaticFile(filePath, error_code)); // Serve the custom error page
 
 	// Return the default error response if no custom page is found
 	auto it = defaultErrors.find(error_code);
 	if (it != defaultErrors.end())
 		return (it->second);
 
-    return (ER500); // Fallback to 500 Internal Server Error
+    return (ER500); // Fallback to 500 Internal Server Error*
 }
 
 static void saveFile(const clRequest& cl_request, const std::string& boundary, const ConfigBlock& serverBlock)
@@ -212,7 +231,7 @@ static std::string	handlePostRequest(clRequest& cl_request, const ConfigBlock& s
 
 				std::string filePath = joinPaths((root + cl_request.path), "upload.html");
 				std::cout << "filePath: " << filePath << std::endl;
-				return (serveStaticFile(filePath));
+				return (serveStaticFile(filePath, "200"));
 			}
 			else
 				response 	<< "HTTP/1.1 400 Bad Request\r\nContent-Length: 14\r\n\r\nInvalid Format";
@@ -463,12 +482,14 @@ std::string routeRequest(clRequest& cl_request, const ConfigBlock& serverBlock)
 		// std::cout << "Method not allowed: " << cl_request.method << std::endl;
 		return (serveError("405", serverBlock));
 	}
+
+	// ./uploads/hello.py
 	
 	if (cl_request.method == "GET")
 	{
 		struct stat stats;
 		// std::cout << "after GET filling stats" << std::endl;
-		// std::cout << "this is the filepath: " << filePath << std::endl;
+		std::cout << "this is the filepath: " << filePath << std::endl;
 		if (stat(filePath.c_str(), &stats) == 0) //fills stats with metadata from filePath if filePath exists
 		{
 			// std::cout << "Size: " << stats.st_size << " bytes" << std::endl;
@@ -478,12 +499,12 @@ std::string routeRequest(clRequest& cl_request, const ConfigBlock& serverBlock)
 
 				std::string fullPath = joinPaths(filePath, index);
 
-				// std::cout << "looking for index: " << fullPath << std::endl;
+				std::cout << "looking for index: " << fullPath << std::endl;
 				if (stat(fullPath.c_str(), &stats) == 0) // checks if the given index is present in the directory
 				{
 					// std::cout << "index found!" << std::endl;
 					// std::cout << "filePath: " << fullPath << std::endl;
-					return (serveStaticFile(fullPath));
+					return (serveStaticFile(fullPath, "200"));
 				}
 				else
 				{
@@ -507,7 +528,7 @@ std::string routeRequest(clRequest& cl_request, const ConfigBlock& serverBlock)
 				if (S_ISREG(stats.st_mode)) // checks if filePath is an existing file (registry)
 				{
 					// std::cout << filePath << " is a registry!" << std::endl;
-					return (serveStaticFile(filePath));
+					return (serveStaticFile(filePath, "200"));
 				}
 			}
 			else

@@ -92,3 +92,14 @@ std::vector<int> convertToInt(std::vector<std::string> &portsStr)
 	}
 	return (portsInt);
 }
+
+std::string ip_to_string(struct in_addr addr) 
+{
+	const unsigned char *bytes = reinterpret_cast<const unsigned char *>(&addr.s_addr);
+    std::stringstream ss;
+    ss << (int)bytes[0] << "."
+       << (int)bytes[1] << "."
+       << (int)bytes[2] << "."
+       << (int)bytes[3];
+    return ss.str();
+}
