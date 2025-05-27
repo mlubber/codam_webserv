@@ -10,55 +10,108 @@ Client::~Client()
 
 }
 
+// int	Client::handleEvent(Server& server)
+// {
+// 	int status;
+
+// 	if (_state == reading_request)
+// 	{
+// 		std::cout << "\nCurrent client state: reading_request" << std::endl;
+// 		std::cout << "\nErrno before recvFromSocket: " << errno << ", str: " << strerror(errno) << std::endl;
+// 		// status = server.recvFromSocket(*this, this->_request.receivedData);
+// 		status = server.recvFromSocket(*this);
+// 		std::cout << "status is now: " << status << std::endl;
+// 		errno = 0;
+// 		if (status == 2)
+// 		{
+// 			std::cout << "Lost connection or error occurred" << std::endl;
+// 			return (2);
+// 		}
+// 		if (status == 1)
+// 		{
+// 			std::cout << "Partial request received" << std::endl;
+// 			return (1);
+// 		}
+
+// 		// if (status > 0)
+// 		// {
+// 		// 	return (status);
+// 		// }
+// 	}
+// 	// std::cout << "\nErrno before parsing: " << errno << ", str: " << strerror(errno) << std::endl;
+
+// 	if (_state == parsing_request)
+// 	{
+// 		std::cout << "\nCurrent client state: parsing_request" << std::endl;
+// 		status = parsingRequest(server, *this);
+// 		if (status == 2)
+// 			return (status);
+// 		else if (_state != cgi_write)
+// 			return (status);
+// 	}
+// 	if (_state == cgi_write)
+// 	{
+// 		std::cout << "\nCurrent client state: cgi_write" << std::endl;
+// 		status = write_to_pipe(*this, this->getCgiStruct(), server);
+// 		if (status == 2)
+// 		{
+// 			// response is internal server error -> need to send that and then return to main loop and remove connection
+// 			return (2);
+// 		}
+// 		return (status);
+// 	}
+// 	if (_state == cgi_read)
+// 	{
+// 		std::cout << "\nCurrent client state: cgi_read" << std::endl;
+// 		status = read_from_pipe(*this, *this->_cgi, server, _cgi->readData);
+// 		std::cout << "\nStatus after read_from_pipe : " << status << std::endl;
+// 		if (status == 2)
+// 		{
+// 			// response is internal server error -> need to send that and then return to main loop and remove connection
+// 			std::cerr << "ABOUT TO CLOSE CLIENT" << std::endl;
+// 			this->setCloseClientState(true);
+// 			this->setResponseData(ER500);
+// 			this->setClientState(sending_response);
+// 			return (2);
+// 		}
+// 		if (status == 1)
+// 		{
+// 			return (1);
+// 		}
+// 	}
+// 	if (_state == sending_response)
+// 	{
+// 		std::cout << "\nCurrent client state: sending_response" << std::endl;
+// 		return (server.sendToSocket(*this));
+// 	}
+// 	return (0);
+// }
+
+
+
+
 int	Client::handleEvent(Server& server)
 {
 	int status;
 
 	if (_state == reading_request)
 	{
-		std::cout << "\nCurrent client state: reading_request" << std::endl;
-		std::cout << "\nErrno before recvFromSocket: " << errno << ", str: " << strerror(errno) << std::endl;
 		// status = server.recvFromSocket(*this, this->_request.receivedData);
 		status = server.recvFromSocket(*this);
-		std::cout << "status is now: " << status << std::endl;
 		errno = 0;
 		if (status == 2)
-		{
-			std::cout << "Lost connection or error occurred" << std::endl;
 			return (2);
-		}
 		if (status == 1)
-		{
-			std::cout << "Partial request received" << std::endl;
 			return (1);
-		}
-
-		// if (status > 0)
-		// {
-		// 	return (status);
-		// }
 	}
-	// std::cout << "\nErrno before parsing: " << errno << ", str: " << strerror(errno) << std::endl;
 
 	if (_state == parsing_request)
 	{
-		std::cout << "\nCurrent client state: parsing_request" << std::endl;
-		status = parsingRequest(server, *this);
-		if (status == 2)
-			return (status);
-		else if (_state != cgi_write)
-			return (status);
+		parsingRequest(server, *this);
 	}
 	if (_state == cgi_write)
 	{
-		std::cout << "\nCurrent client state: cgi_write" << std::endl;
-		status = write_to_pipe(*this, this->getCgiStruct(), server);
-		if (status == 2)
-		{
-			// response is internal server error -> need to send that and then return to main loop and remove connection
-			return (2);
-		}
-		return (status);
+		write_to_pipe(*this, this->getCgiStruct(), server); return ;
 	}
 	if (_state == cgi_read)
 	{
@@ -67,8 +120,6 @@ int	Client::handleEvent(Server& server)
 		std::cout << "\nStatus after read_from_pipe : " << status << std::endl;
 		if (status == 2)
 		{
-			// response is internal server error -> need to send that and then return to main loop and remove connection
-			std::cerr << "ABOUT TO CLOSE CLIENT" << std::endl;
 			this->setCloseClientState(true);
 			this->setResponseData(ER500);
 			this->setClientState(sending_response);
@@ -88,8 +139,16 @@ int	Client::handleEvent(Server& server)
 }
 
 
+
+
+
+
+
+
+
+
 /* GETTERS */
-int Client::getClientFds(int index)
+int Client::getClientFds(int index) const
 {
 	if (index == -1)
 		return (_fds.size());
@@ -97,27 +156,27 @@ int Client::getClientFds(int index)
 		return (_fds[index]);
 }
 
-int	Client::getClientState()
+int	Client::getClientState() const
 {
 	return (_state);
 }
 
-std::string&	Client::getClientReceived()
+const std::string&	Client::getClientReceived() const
 {
 	return (_received);
 }
 
-std::string& Client::getClientResponse()
+const std::string& Client::getClientResponse() const
 {
 	return (_response);
 }
 
-t_cgiData& Client::getCgiStruct()
+t_cgiData& Client::getCgiStruct() const
 {
 	return (*_cgi);
 }
 
-bool	Client::checkCgiPtr()
+bool	Client::checkCgiPtr() const
 {
 	if (_cgi != nullptr)
 		return (true);
@@ -129,12 +188,12 @@ clRequest&	Client::getClStructRequest()
     return (_request);
 }
 
-bool	Client::getCloseClientState()
+bool	Client::getCloseClientState() const
 {
 	return (_close_client);
 }
 
-ConfigBlock&	Client::getServerBlock()
+const ConfigBlock&	Client::getServerBlock() const
 {
 	return (_server_block);
 }
@@ -147,7 +206,7 @@ void Client::setCgiStruct(std::unique_ptr<t_cgiData> cgi)
 	_cgi = std::move(cgi);
 }
 
-void	Client::setReceivedData(std::string& data)
+void	Client::setReceivedData(std::string data)
 {
 	_received += data;
 }

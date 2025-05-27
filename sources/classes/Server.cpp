@@ -191,10 +191,9 @@ void Server::run(void)
 				for (int o = 0; o < client_fd_amount; ++o)
 				{
 					if (_clients[i]->getClientFds(o) == fd)
-						if (_clients[i]->handleEvent(*this) >= 2)
-						{
+						_clients[i]->handleEvent(*this);
+						if (_clients[i]->getCloseClientState() == true && _clients[i]->getClientState() != sending_response)
 							removeClient(_clients[i], i);
-						}
 					errno = 0;
 				}
 			}
@@ -383,7 +382,7 @@ void Server::close_webserv()
 int Server::recvFromSocket(Client& client)
 {
 	char			buffer[SOCKET_BUFFER];
-	std::string&	receivedData = client.getClientReceived();
+	// std::string&	receivedData = client.getClientReceived();
 	long			bytes_received;
 	int				client_fd = client.getClientFds(0);
 
@@ -420,75 +419,41 @@ int Server::recvFromSocket(Client& client)
 			// std::cout << "Client disconnected: " << client_fd << std::endl;
 			return (2);
 		}
-		receivedData.append(buffer, bytes_received);
+		client.setReceivedData(buffer);
+		// receivedData.append(buffer, bytes_received);
 	} while (bytes_received > 0);
 
 	// std::cout << "receivedData: \n" << receivedData << std::endl;
 
+	std::string tempReceivedData = client.getClientReceived();
+
 	std::cout << "\nErrno after receiving: " << errno << ", str: " << strerror(errno) << std::endl;
 	
 	// Check if the headers are fully received
-	size_t headerEnd = receivedData.find("\r\n\r\n");
+	size_t headerEnd = tempReceivedData.find("\r\n\r\n");
+	// size_t headerEnd = receivedData.find("\r\n\r\n");
 	if (headerEnd != std::string::npos)
 	{
 		// Headers are complete, check if the body is also complete
 		size_t contentLength = 0;
-		size_t contentLengthPos = receivedData.find("Content-Length:");
+		size_t contentLengthPos = tempReceivedData.find("Content-Length:");
 		if (contentLengthPos != std::string::npos)
 		{
 			size_t start = contentLengthPos + 15; // Skip "Content-Length: "
-			size_t end = receivedData.find("\r\n", start);
-			contentLength = std::stoul(receivedData.substr(start, end - start));
+			size_t end = tempReceivedData.find("\r\n", start);
+			contentLength = std::stoul(tempReceivedData.substr(start, end - start));
 		}
 
 		// Check if the full request (headers + body) has been received
 		size_t totalLength = headerEnd + 4 + contentLength; // Headers + "\r\n\r\n" + Body
-		if (receivedData.size() >= totalLength)
+		if (tempReceivedData.size() >= totalLength)
 		{
-			std::cout << "Full request received (" << receivedData.size() << " bytes)" << std::endl;
+			std::cout << "Full request received (" << tempReceivedData.size() << " bytes)" << std::endl;
 			client.setClientState(parsing_request);
 			return (0); // Full request received
 		}
 	}
-
-	// Not enough data yet, wait for more
 	return (1);
-
-	// do
-	// {
-	// 	bytes_received = recv(client_fd, buffer, SOCKET_BUFFER, 0);
-	// 	// std::cout << "\nbytes_received: " << bytes_received << std::endl;
-
-	// 	if (bytes_received < 0)
-	// 		break ;
-	// 	else if (bytes_received == 0)
-	// 	{
-	// 		// std::cout << "Client disconnected: " << client_fd << std::endl;
-	// 		return (2);
-	// 	}
-	// 	receivedData.append(buffer, bytes_received);
-	// } while (bytes_received > 0);
-	// std::cout << "\nErrno after receiving: " << errno << ", str: " << strerror(errno) << std::endl;
-	
-	// size_t headerEnd = receivedData.find("\r\n\r\n");
-	// if (headerEnd != std::string::npos)
-	// {
-	// 	size_t contentLength = 0;
-	// 	size_t contentLengthPos = receivedData.find("Content-Length:");
-	// 	if (contentLengthPos != std::string::npos)
-	// 	{
-	// 		size_t start = contentLengthPos + 15;
-	// 		size_t end = receivedData.find("\r\n", start);
-	// 		contentLength = std::stoul(receivedData.substr(start, end - start));
-	// 	}
-	// 	size_t totalLength = headerEnd + 4 + contentLength;
-	// 	if (receivedData.size() >= totalLength)
-	// 	{
-	// 		client.setClientState(parsing_request);
-	// 		return (0);
-	// 	}
-	// }
-	// return (1);
 }
 
 int	Server::sendToSocket(Client& client)

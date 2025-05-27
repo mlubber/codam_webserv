@@ -52,17 +52,17 @@ class Client
 
 		int		handleEvent(Server& server);
 
-		int 			getClientFds(int mode);
-		int				getClientState();
-		std::string&	getClientReceived();
-		std::string&	getClientResponse();
-		t_cgiData&		getCgiStruct();
-		clRequest&		getClStructRequest();
-		bool			checkCgiPtr();
-		bool			getCloseClientState();
-		ConfigBlock&	getServerBlock();
+		int 				getClientFds(int index)	const;
+		int					getClientState() 		const;
+		const std::string&	getClientReceived()		const;
+		const std::string&	getClientResponse()		const;
+		t_cgiData&			getCgiStruct()			const;
+		clRequest&			getClStructRequest();
+		bool				checkCgiPtr()			const;
+		bool				getCloseClientState()	const;
+		const ConfigBlock&	getServerBlock()		const;
 		
-		void	setReceivedData(std::string& data);
+		void	setReceivedData(std::string data);
 		void	setResponseData(std::string data);
 		void	setClientState(int state);
 		void	setCgiStruct(std::unique_ptr<t_cgiData> cgi);

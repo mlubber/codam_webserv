@@ -22,6 +22,24 @@ struct s_clRequest;
 
 class Server
 {
+
+	private:
+
+		std::vector<int>			_server_fds;
+		int							_server_fds_amount;
+		int							_epoll_fd;
+		struct sockaddr_in			_address;
+		socklen_t					_addr_len;
+
+		std::vector<Client*>		_clients;
+		int							_client_count;
+		int							_current_client;
+
+		Configuration				_config;
+		const std::string			_name; // for cgi environment var server name - Now temp, but needs to come from config
+		const std::string			_port; // for cgi environment var port - Now temp, but needs to come from config
+		const std::string			_root; // temp till Abbas adds his config file code
+
 	public:
 
 		Server(const Configuration& config);
@@ -51,25 +69,9 @@ class Server
 
 		void					setCurrentClient(int client_fd);
 
-	private:
-
-		std::vector<int>			_server_fds;
-		int							_server_fds_amount;
-		int							_epoll_fd;
-		struct sockaddr_in			_address;
-		socklen_t					_addr_len;
-
-		std::vector<Client*>		_clients;
-		int							_client_count;
-		int							_current_client;
-
-		Configuration				_config;
-		const std::string			_name; // for cgi environment var server name - Now temp, but needs to come from config
-		const std::string			_port; // for cgi environment var port - Now temp, but needs to come from config
-		const std::string			_root; // temp till Abbas adds his config file code
 };
 
-void	routeRequest(Client& client, clRequest& cl_request, const ConfigBlock& serverBlock);
+void	routeRequest(Client& client, const Server& server, clRequest& cl_request, const ConfigBlock& serverBlock);
 void	serveError(Client& client, std::string error_code, const ConfigBlock& serverBlock);
 
 #endif

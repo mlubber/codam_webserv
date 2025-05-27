@@ -49,7 +49,11 @@ void	createCgiResponse(Client& client, std::string& readData)
 	std::string key = "\r\n\r\n";
 	size_t pos = readData.find(key);
 	if (pos == std::string::npos)
+	{
 		std::cout << "NPOS FOUND? INTERNAL SERVER ERROR" << std::endl;
+		serveError(client, "500", client.getServerBlock());
+		return ;
+	}
 
 	std::string actualBody = readData.substr(pos + 4);
 	// std::cout << "ACTUAL BODY:" << actualBody << std::endl;
@@ -61,7 +65,24 @@ void	createCgiResponse(Client& client, std::string& readData)
 
 
 
-int	read_from_pipe(Client& client, t_cgiData& cgi, const Server& server, std::string& readData)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void	read_from_pipe(Client& client, t_cgiData& cgi, const Server& server, std::string& readData)
 {
 	std::cout << "\nREAD FROM PIPE" << std::endl;
 
@@ -74,15 +95,16 @@ int	read_from_pipe(Client& client, t_cgiData& cgi, const Server& server, std::st
 	if (bytes_read == -1)
 	{
 		std::cerr << "\nBYTES_READ -1!" << std::endl;
+		serveError(client, "500", client.getServerBlock());
 		epoll_ctl(server.getEpollFd(), EPOLL_CTL_DEL, cgi.ste_pipe[1], NULL);
 		if (close(cgi.ets_pipe[0]) == -1)
 			std::cerr << "CGI ERROR: Failed closing ets read-end pipe in parent" << std::endl;
 		cgi.ets_pipe[0] = -1;
-		return (2);
+		return ;
 	}
 	readData += buffer;
 	if (bytes_read > 0)
-		return (1);
+		return ;
 
 	epoll_ctl(server.getEpollFd(), EPOLL_CTL_DEL, cgi.ets_pipe[0], NULL);
 	if (close(cgi.ets_pipe[0]) == -1)
@@ -93,11 +115,27 @@ int	read_from_pipe(Client& client, t_cgiData& cgi, const Server& server, std::st
 
 	client.resetFds(client.getClientFds(0));
 	client.setClientState(sending_response);
-	return (wait_for_child(cgi));
+	wait_for_child(cgi);
 }
 
 
-int	write_to_pipe(Client& client, t_cgiData& cgi, const Server& server)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void	write_to_pipe(Client& client, t_cgiData& cgi, const Server& server)
 {
 	int currentDataSize = cgi.writeData.size();
 	int	written = 0;
@@ -111,17 +149,16 @@ int	write_to_pipe(Client& client, t_cgiData& cgi, const Server& server)
 			std::cerr << "CGI ERROR: Failed closing ste write-end pipe in parent" << std::endl;
 		cgi.ste_pipe[1] = -1;
 		client.setClientState(cgi_read);
-		return (0);
 	}
 	else if (written > 0)
-	{
 		cgi.writeData.erase(0, cgi.dataWritten);
-		return (1);
+	else
+	{
+		epoll_ctl(server.getEpollFd(), EPOLL_CTL_DEL, cgi.ste_pipe[1], NULL);
+		if (close(cgi.ste_pipe[1]) == -1)
+			std::cerr << "CGI ERROR: Failed closing ste write-end pipe in parent" << std::endl;
+		cgi.ste_pipe[1] = -1;
+		kill(cgi.child_pid, SIGTERM);
+		serveError(client, "500", client.getServerBlock());
 	}
-	epoll_ctl(server.getEpollFd(), EPOLL_CTL_DEL, cgi.ste_pipe[1], NULL);
-	if (close(cgi.ste_pipe[1]) == -1)
-		std::cerr << "CGI ERROR: Failed closing ste write-end pipe in parent" << std::endl;
-	cgi.ste_pipe[1] = -1;
-	kill(cgi.child_pid, SIGTERM);
-	return (2);
 }

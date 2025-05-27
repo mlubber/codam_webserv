@@ -110,14 +110,17 @@ std::string	extract_first_word(std::string path)
 
 	if (path.size() > 1)
 	{
-		if (!path.empty() && path[path.size() - 1] == '/')
-			path.erase(path.size() - 1);
 		std::string::size_type first = path.find('/');
 		if (first != std::string::npos)
 		{
 			std::string::size_type second = path.find('/', first + 1);
 			if (second != std::string::npos)
+			{
 				word = path.substr(first, second + 1 - first);
+				std::string::size_type dot = word.find('.');
+				if (dot != std::string::npos)
+					word = path.substr(0, 1);
+			}
 			else
 				word = path.substr(first, 1);
 		}

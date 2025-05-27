@@ -32,7 +32,7 @@ void	cgi_cleanup(t_cgiData& cgi, bool child)
 	}
 }
 
-static bool	init_cgi_struct(Client& client, clRequest& cl_request, Server& server)
+static bool	init_cgi_struct(Client& client, clRequest& cl_request, const Server& server)
 {
 	std::unique_ptr<t_cgiData> cgi = std::make_unique<t_cgiData>();
 
@@ -90,7 +90,7 @@ static bool	init_cgi_struct(Client& client, clRequest& cl_request, Server& serve
 	return (0);
 }
 
-static int	create_cgi_child_process(t_cgiData& cgi, clRequest& cl_request, const Server& server)
+static int	create_cgi_child_process(t_cgiData& cgi, const clRequest& cl_request, const Server& server)
 {
 	cgi.child_pid = fork();
 	if (cgi.child_pid == -1)
@@ -115,7 +115,7 @@ static int	closing_parent_fds(t_cgiData& cgi)
 	return (0);
 }
 
-int	start_cgi(clRequest& cl_request, Server& server, Client& client)
+int	start_cgi(clRequest& cl_request, const Server& server, Client& client)
 {
 	cl_request.cgi = true;
 	if (init_cgi_struct(client, cl_request, server))

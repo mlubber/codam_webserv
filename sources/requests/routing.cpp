@@ -26,6 +26,7 @@ static void serveStaticFile(Client& client, const std::string& filePath, std::st
 
 	if (status_code == "200")
 		response << "HTTP/1.1 200 OK\r\n";
+		
 	else if (status_code == "400")
 		response << "HTTP/1.1 400 Bad Request\r\n";
 	else if (status_code == "403")
@@ -51,6 +52,7 @@ static void serveStaticFile(Client& client, const std::string& filePath, std::st
 
 void serveError(Client& client, std::string error_code, const ConfigBlock& serverBlock)
 {
+	client.setCloseClientState(true);
 	std::string root;
 	for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values)
 		if (value.first == "root")
@@ -94,12 +96,11 @@ void serveError(Client& client, std::string error_code, const ConfigBlock& serve
 	struct stat stats;
 	if (!path.empty() && stat(filePath.c_str(), &stats) == 0)
 	{
-		serveStaticFile(client, filePath, error_code); // Serve the custom error page
+		serveStaticFile(client, filePath, error_code);
 		return ;
 	}
 
-	std::cout << "after serve static file: " << std::endl;
-	// Return the default error response if no custom page is found
+	client.setClientState(sending_response);
 	auto it = defaultErrors.find(error_code);
 	if (it != defaultErrors.end())
 	{
@@ -372,7 +373,7 @@ static void	deleteFile(Client& client, clRequest& cl_request, const ConfigBlock&
 		client.setResponseData("HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\nContent-Length: 14\r\n\r\nFile Not Found");
 }
 
-void routeRequest(Client& client, clRequest& cl_request, const ConfigBlock& serverBlock)
+void routeRequest(Client& client, const Server& server, clRequest& cl_request, const ConfigBlock& serverBlock)
 {
 	std::string root;
 
@@ -398,6 +399,8 @@ void routeRequest(Client& client, clRequest& cl_request, const ConfigBlock& serv
 				if (cl_request.path.find(temp) == 0)
 				{
 					locPath = value.second.front();
+					if (!locPath.empty() && *locPath.rbegin() != '/')
+						locPath.append("/");
 					if (locPath != locConf)
 						locPath.erase();
 					locBlock = nested.second;
@@ -548,7 +551,28 @@ void routeRequest(Client& client, clRequest& cl_request, const ConfigBlock& serv
 					}
 					std::cout << "request filepath: \"" << locConf << "\" matches config filepath: \"" << locPath << "\"" << std::endl;
 					
-					serveStaticFile(client, filePath, "200");
+
+
+
+
+
+
+					if (cgi_check(cl_request.path))
+					{
+						int status = start_cgi(cl_request, server, client);
+						std::cout << "\n\nSTATUS: " << status << "\n\n" << std::endl;
+						if (status != 0)
+						{
+							serveError(client, "500", serverBlock);
+							if (client.checkCgiPtr() && client.getCgiStruct().child_pid != -1)
+								kill(client.getCgiStruct().child_pid, SIGTERM);
+							return ;
+						}
+						client.clearData(0);
+						return ;
+					}
+					else
+						serveStaticFile(client, filePath, "200");
 					return ;
 				}
 			}
@@ -569,6 +593,6 @@ void routeRequest(Client& client, clRequest& cl_request, const ConfigBlock& serv
 		deleteFile(client, cl_request, serverBlock);
 		return ;
 	}
-	serveError(client, ER400, client.getServerBlock());
+	serveError(client, "400", client.getServerBlock());
 }
 

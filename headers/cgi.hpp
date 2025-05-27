@@ -3,7 +3,7 @@
 #include "headers.hpp"
 #include "Server.hpp"
 
-#define CGIBUFFER 8192
+#define CGIBUFFER 32768
 
 struct clRequest;
 
@@ -24,8 +24,8 @@ typedef struct s_cgiData
 }	t_cgiData;
 
 bool	cgi_check(std::string& path);
-int		start_cgi(clRequest& request, Server& server, Client& client);
+int		start_cgi(clRequest& request, const Server& server, Client& client);
 void	cgi_child_process(t_cgiData& cgi, const clRequest& request, const Server& server);
 void	cgi_cleanup(t_cgiData& cgi, bool child);
-int		write_to_pipe(Client& client, t_cgiData& cgi, const Server& server);
-int		read_from_pipe(Client& client, t_cgiData& cgi, const Server& server, std::string& cgiBody);
+void	write_to_pipe(Client& client, t_cgiData& cgi, const Server& server);
+void	read_from_pipe(Client& client, t_cgiData& cgi, const Server& server, std::string& cgiBody);
