@@ -466,15 +466,6 @@ void readRequest(Client& client)
 		resetStruct(clRequest);
 		//std::cout << "inside else" << std::endl;
 	}
-	size_t headerEndPos = strClRequest.find("\r\n\r\n");
-    if (headerEndPos == std::string::npos) 
-	{
-        // std::cerr << "Headers not complete" << std::endl;
-        clRequest.invalidRequest = true;
-        return;
-    }
-	std::string headers = strClRequest.substr(0, headerEndPos + 4);
-    std::string body = strClRequest.substr(headerEndPos + 4);
 
     size_t headerEndPos = strClRequest.find("\r\n\r\n");
     if (headerEndPos == std::string::npos) 
@@ -486,7 +477,7 @@ void readRequest(Client& client)
 	std::string headers = strClRequest.substr(0, headerEndPos + 4);
     std::string body = strClRequest.substr(headerEndPos + 4);
 
-	std::cout << "headers extracted: \n" << headers << std::endl;
+	// std::cout << "headers extracted: \n" << headers << std::endl;
 
 	size_t	pos = 0;
 	size_t	i = 0;
@@ -619,20 +610,20 @@ int	parsingRequest(Server& server, Client& client)
 		// std::cout << "parse request failed" << std::endl;
 		serveError(client, "400", serverBlock);
 	}
-	else if (cgi_check(cl_request.path))
-	{
-		int status = start_cgi(cl_request, server, client);
-		std::cout << "STATUS: " << status << std::endl;
-		if (status != 0)
-		{
-			serveError(client, "500", serverBlock);
-			if (client.checkCgiPtr() && client.getCgiStruct().child_pid != -1)
-				kill(client.getCgiStruct().child_pid, SIGTERM);
-			return (2);
-		}
-		client.clearData(0);
-		return (0);
-	}
+	// else if (cgi_check(cl_request.path))
+	// {
+	// 	int status = start_cgi(cl_request, server, client);
+	// 	std::cout << "STATUS: " << status << std::endl;
+	// 	if (status != 0)
+	// 	{
+	// 		serveError(client, "500", serverBlock);
+	// 		if (client.checkCgiPtr() && client.getCgiStruct().child_pid != -1)
+	// 			kill(client.getCgiStruct().child_pid, SIGTERM);
+	// 		return (2);
+	// 	}
+	// 	client.clearData(0);
+	// 	return (0);
+	// }
 	else
 		generateHttpResponse(client, cl_request, serverBlock);
 

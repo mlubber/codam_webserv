@@ -182,19 +182,6 @@ static void	handlePostRequest(Client& client, clRequest& cl_request, const Confi
 		if (value.first == "root")
 			root = value.second.front();
 
-	size_t maxBody = 1048576; // MAX 1MB;
-	for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values)
-		if (value.first == "client_max_body_size")
-			maxBody = std::stoul(value.second.front());
-
-	std::cout << "client_max_body_size: " << maxBody << std::endl;
-	std::cout << "cl_request.body.size: " << cl_request.body.size() << std::endl;
-	if (cl_request.body.size() > maxBody)
-	{
-		std::cout << "body too big!" << std::endl;
-		return(serveError("413", serverBlock));
-	}
-
 	size_t maxBody = MAX_BODY_SIZE;
 	for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values)
 		if (value.first == "client_max_body_size")
@@ -397,7 +384,7 @@ void routeRequest(Client& client, clRequest& cl_request, const ConfigBlock& serv
 
 	ConfigBlock	locBlock;
 	std::string	locPath;
-	// std::cout << "cl_request path: " << cl_request.path << std::endl;
+	std::string locConf = extract_first_word(cl_request.path);
 	for (const std::pair<const std::string, ConfigBlock> &nested : serverBlock.nested)
 	{
 		for (const std::pair<const std::string, std::vector<std::string>> &value : nested.second.values)
@@ -407,16 +394,21 @@ void routeRequest(Client& client, clRequest& cl_request, const ConfigBlock& serv
 				std::string temp = value.second.front();
 				if (!temp.empty() && *temp.rbegin() != '/')
 					temp.append("/");
+				std::cout << temp << std::endl;
 				if (cl_request.path.find(temp) == 0)
 				{
 					locPath = value.second.front();
-					// std::cout << "locationPath: " << locPath << std::endl;
+					if (locPath != locConf)
+						locPath.erase();
 					locBlock = nested.second;
 				}
 				break;
 			}
 		}
 	}
+
+	std::cout << "locationPath: " << locPath << std::endl;
+
 	for (const std::pair<const std::string, std::vector<std::string>> &value : locBlock.values)
     {
         if (value.first == "return" && value.second.size() >= 2)
@@ -515,7 +507,7 @@ void routeRequest(Client& client, clRequest& cl_request, const ConfigBlock& serv
 				}
 				else
 				{
-					// std::cout << "no index found" << std::endl;
+					std::cout << "no index found" << std::endl;
 					if (autoindex == "on")
 					{
 						showDirList(client, cl_request, filePath, serverBlock);
@@ -523,6 +515,7 @@ void routeRequest(Client& client, clRequest& cl_request, const ConfigBlock& serv
 					}
 					else
 					{
+						std::cout << "autoindex off. Serve 404 error" << std::endl; 
 						serveError(client, "404", serverBlock);
 						return ;
 					}
@@ -530,6 +523,7 @@ void routeRequest(Client& client, clRequest& cl_request, const ConfigBlock& serv
 			}
 			else
 			{
+				std::cout << "stat did not get attributes. filepath not found" << std::endl;
 				serveError(client, "404", serverBlock);
 				return ;
 			}
@@ -543,7 +537,17 @@ void routeRequest(Client& client, clRequest& cl_request, const ConfigBlock& serv
 				// std::cout << "Size: " << stats.st_size << " bytes" << std::endl;
 				if (S_ISREG(stats.st_mode)) // checks if filePath is an existing file (registry)
 				{
-					// std::cout << filePath << " is a registry!" << std::endl;
+					std::cout << filePath << " is a registry!" << std::endl;
+					std::cout << "location path in config: " << locPath << std::endl;
+					size_t pos = filePath.find(locPath);
+					if (pos == std::string::npos || locPath.empty())
+					{
+						std::cout << "request filepath: " << locConf << " not found in config filepath" << std::endl;
+						serveError(client, "404", serverBlock);
+						return;
+					}
+					std::cout << "request filepath: \"" << locConf << "\" matches config filepath: \"" << locPath << "\"" << std::endl;
+					
 					serveStaticFile(client, filePath, "200");
 					return ;
 				}

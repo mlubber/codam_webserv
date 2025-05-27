@@ -103,3 +103,26 @@ std::string ip_to_string(struct in_addr addr)
        << (int)bytes[3];
     return ss.str();
 }
+
+std::string	extract_first_word(std::string path)
+{
+	std::string word;
+
+	if (path.size() > 1)
+	{
+		if (!path.empty() && path[path.size() - 1] == '/')
+			path.erase(path.size() - 1);
+		std::string::size_type first = path.find('/');
+		if (first != std::string::npos)
+		{
+			std::string::size_type second = path.find('/', first + 1);
+			if (second != std::string::npos)
+				word = path.substr(first, second + 1 - first);
+			else
+				word = path.substr(first, 1);
+		}
+	}
+	else
+		return (path);
+	return (word);
+}
