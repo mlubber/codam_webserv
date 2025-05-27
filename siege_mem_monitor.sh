@@ -44,3 +44,8 @@ kill $MEM_MONITOR_PID 2>/dev/null
 wait $MEM_MONITOR_PID 2>/dev/null
 
 echo "Done. Memory usage logged to '$MEMORY_LOG'."
+
+# Manual:
+# get PID: ps aux | grep webserv
+# monitor: top -p <PID>
+# run: siege "http://127.0.0.1:8081"
