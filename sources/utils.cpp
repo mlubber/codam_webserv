@@ -108,18 +108,35 @@ std::string	extract_first_word(std::string path)
 {
 	std::string word;
 
+	std::cout << "extract first word here" << std::endl;
+	std::cout << "from this path: " << path << std::endl;
+	word = "first word\n";
+
 	if (path.size() > 1)
 	{
-		if (!path.empty() && path[path.size() - 1] == '/')
-			path.erase(path.size() - 1);
 		std::string::size_type first = path.find('/');
 		if (first != std::string::npos)
 		{
 			std::string::size_type second = path.find('/', first + 1);
 			if (second != std::string::npos)
+			{
 				word = path.substr(first, second + 1 - first);
+				std::cout << "first word: " << word << std::endl;
+			}
 			else
-				word = path.substr(first, 1);
+			{
+				std::cout << "second slash not found" << std::endl;
+				word = path.substr(first);
+				std::cout << "first word: " << word << std::endl;
+				std::string::size_type dot = word.find('.');
+				if (dot != std::string::npos)
+				{
+					std::cout << "extension found" << std::endl;
+					word = path.substr(0, 1);
+				}
+				if (!word.empty() && *word.rbegin() != '/')
+					word.append("/");
+			}
 		}
 	}
 	else

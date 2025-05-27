@@ -391,13 +391,17 @@ void routeRequest(Client& client, clRequest& cl_request, const ConfigBlock& serv
 		{
 			if (value.first == "location")
 			{
-				std::string temp = value.second.front();
-				if (!temp.empty() && *temp.rbegin() != '/')
-					temp.append("/");
-				std::cout << temp << std::endl;
-				if (cl_request.path.find(temp) == 0)
+				std::string tempLoc = value.second.front();
+				if (!tempLoc.empty() && *tempLoc.rbegin() != '/')
+					tempLoc.append("/");
+				std::string tempPath = cl_request.path;
+				if (!tempPath.empty() && *tempPath.rbegin() != '/')
+					tempPath.append("/");
+				if (tempPath.find(tempLoc) == 0)
 				{
-					locPath = value.second.front();
+					locPath = tempLoc;
+					std::cout << "locpath: " << locPath << std::endl;
+					std::cout << "locconf: " << locConf << std::endl;
 					if (locPath != locConf)
 						locPath.erase();
 					locBlock = nested.second;
@@ -521,42 +525,56 @@ void routeRequest(Client& client, clRequest& cl_request, const ConfigBlock& serv
 					}
 				}
 			}
+			else if (S_ISREG(stats.st_mode))
+			{
+				if (!filePath.empty() && filePath[filePath.size() - 1] == '/')
+					filePath.erase(filePath.size() - 1);
+				if (stat(filePath.c_str(), &stats) == 0)
+				{
+					// std::cout << "Size: " << stats.st_size << " bytes" << std::endl;
+					if (S_ISREG(stats.st_mode)) // checks if filePath is an existing file (registry)
+					{
+						std::cout << filePath << " is a registry!" << std::endl;
+						std::cout << "location path in config: " << locPath << std::endl;
+						size_t pos = filePath.find(locPath);
+						if (pos == std::string::npos || locPath.empty())
+						{
+							std::cout << "request filepath: " << locConf << " not found in config filepath" << std::endl;
+							serveError(client, "404", serverBlock);
+							return;
+						}
+						std::cout << "request filepath: \"" << locConf << "\" matches config filepath: \"" << locPath << "\"" << std::endl;
+						
+
+
+
+
+
+
+						
+
+
+						serveStaticFile(client, filePath, "200");
+						return ;
+					}
+				}
+				else
+				{
+					serveError(client, "404", serverBlock);
+					return ;
+				}
+			}
 			else
 			{
-				std::cout << "stat did not get attributes. filepath not found" << std::endl;
+				std::cout << "not a directory or registry. filepath not found" << std::endl;
 				serveError(client, "404", serverBlock);
 				return ;
 			}
 		}
 		else
 		{
-			if (!filePath.empty() && filePath[filePath.size() - 1] == '/')
-				filePath.erase(filePath.size() - 1);
-			if (stat(filePath.c_str(), &stats) == 0)
-			{
-				// std::cout << "Size: " << stats.st_size << " bytes" << std::endl;
-				if (S_ISREG(stats.st_mode)) // checks if filePath is an existing file (registry)
-				{
-					std::cout << filePath << " is a registry!" << std::endl;
-					std::cout << "location path in config: " << locPath << std::endl;
-					size_t pos = filePath.find(locPath);
-					if (pos == std::string::npos || locPath.empty())
-					{
-						std::cout << "request filepath: " << locConf << " not found in config filepath" << std::endl;
-						serveError(client, "404", serverBlock);
-						return;
-					}
-					std::cout << "request filepath: \"" << locConf << "\" matches config filepath: \"" << locPath << "\"" << std::endl;
-					
-					serveStaticFile(client, filePath, "200");
-					return ;
-				}
-			}
-			else
-			{
-				serveError(client, "404", serverBlock);
+			serveError(client, "404", serverBlock);
 				return ;
-			}
 		}
 	}
 	else if (cl_request.method == "POST")
