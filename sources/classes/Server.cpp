@@ -126,7 +126,7 @@ bool Server::initialize(const std::vector<std::pair<std::string, std::vector<int
                 continue ;
             }
 
-            if (listen(socket_fd, 10) < 0)
+            if (listen(socket_fd, 100) < 0)
             {
                 std::cerr << "Listening failed on " << host << ":" << ports[j] << std::endl;
                 close(socket_fd);

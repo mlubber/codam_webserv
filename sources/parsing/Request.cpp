@@ -576,8 +576,8 @@ void	generateHttpResponse(Client& client, const Server& server, clRequest& cl_re
 	// 	parsedRequest.path.append("/");
 	if (cl_request.path == "/favicon.ico")
 		cl_request.path = "/";
-	if (!cl_request.path.empty() && *cl_request.path.rbegin() != '/')
-		cl_request.path.append("/");
+	// if (!cl_request.path.empty() && *cl_request.path.rbegin() != '/')
+	// 	cl_request.path.append("/");
 
 	// std::cout << "generate client request path: " << cl_request.path << std::endl;
 
