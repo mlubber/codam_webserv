@@ -191,9 +191,11 @@ void Server::run(void)
 				for (int o = 0; o < client_fd_amount; ++o)
 				{
 					if (_clients[i]->getClientFds(o) == fd)
+					{
 						_clients[i]->handleEvent(*this);
 						if (_clients[i]->getCloseClientState() == true && _clients[i]->getClientState() != sending_response)
 							removeClient(_clients[i], i);
+					}
 					errno = 0;
 				}
 			}
@@ -414,9 +416,9 @@ int Server::recvFromSocket(Client& client)
 
 		if (bytes_received < 0)
 			break ;
-		else if (bytes_received == 0)
+		else if (bytes_received == 0 && client.getClientReceived().empty())
 		{
-			// std::cout << "Client disconnected: " << client_fd << std::endl;
+			client.setCloseClientState(true);
 			return (2);
 		}
 		client.setReceivedData(buffer);
@@ -456,36 +458,31 @@ int Server::recvFromSocket(Client& client)
 	return (1);
 }
 
-int	Server::sendToSocket(Client& client)
+void	Server::sendToSocket(Client& client)
 {
 	std::string response = client.getClientResponse();
 
-	// std::cout << "\n--- RESPONSE ---\n" << response << "\n--- END OF RESPONSE --- " << std::endl;
-	
 	int	socket_fd = client.getClientFds(0);
 	ssize_t bytes_sent = send(socket_fd, response.c_str(), response.size(), 0);
 	std::cout << "Response size / bytes sent: " << response.size() << " / " << bytes_sent << std::endl;
 	if (bytes_sent <= 0)
 	{
 		std::cout << "Error writing to client: " << socket_fd << std::endl;
-		return (2);
+		client.setCloseClientState(true);
+		client.setClientState(sending_error);
+		return ;
 	}
 	if (bytes_sent != static_cast<ssize_t>(response.size()))
 	{
 		client.setResponseData(response.substr(bytes_sent));
 		client.updateBytesSent(bytes_sent);
-		return (1);
+		return ;
 	}
 	struct epoll_event event;
 	event.events = EPOLLIN;
 	event.data.fd = socket_fd;
 	epoll_ctl(_epoll_fd, EPOLL_CTL_MOD, socket_fd, &event);
-	if (client.getCloseClientState() == true)
-		return (2);
-	client.setClientState(reading_request);
-	client.clearData(1);
-
-	return (0);
+	client.clearData();
 }
 
 

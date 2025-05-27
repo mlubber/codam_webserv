@@ -91,6 +91,20 @@
 			<input type="number" name="age" placeholder="Enter your age" required>
 			<input type="submit" value="Submit Name & Age" class="btn">
 		</form>
+
+		<h2 style="margin-top: 50px;">CGI - POST Form</h2>
+		<form action="/cgi-bin/postform.py" method="post">
+			<label for="favlang">Favorite programming language:</label><br>
+			<input type="text" id="favlang" name="language" required><br><br>
+			<label for="level">Your skill level:</label><br>
+			<select name="level">
+				<option value="Beginner">Beginner</option>
+				<option value="Intermediate">Intermediate</option>
+				<option value="Expert">Expert</option>
+			</select><br><br>
+			<input type="submit" value="Submit">
+		</form>
+
     </div>
 </body>
 </html>

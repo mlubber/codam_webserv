@@ -117,46 +117,46 @@ static void saveFile(const clRequest& cl_request, const std::string& boundary, c
 		if (value.first == "root")
 			root = value.second.front();
 	
-	std::cout << "save file client" << std::endl;
+	// std::cout << "save file client" << std::endl;
 	size_t start = cl_request.body.find(boundary);
 	if (start == std::string::npos)
 	{
-		std::cout << "Boundary not found!" << std::endl;
+		// std::cout << "Boundary not found!" << std::endl;
 		return;
 	}
 	start += boundary.length();
-	std::cout << "start position: " << start << std::endl;
+	// std::cout << "start position: " << start << std::endl;
 
 	size_t dispositionPos = cl_request.body.find("Content-Disposition:", start);
 	if (dispositionPos ==  std::string::npos)
 		return;
-	std::cout << "Content-disposition position: " << dispositionPos << std::endl;
+	// std::cout << "Content-disposition position: " << dispositionPos << std::endl;
 	
 	size_t	filenamePos = cl_request.body.find("filename=\"", dispositionPos);
 	if (filenamePos == std::string::npos)
 		return;
 	filenamePos += 10;
-	std::cout << "filename position: " << filenamePos << std::endl;
+	// std::cout << "filename position: " << filenamePos << std::endl;
 	
 	size_t filenameEnd = cl_request.body.find("\"", filenamePos);
 	std::string fileName = cl_request.body.substr(filenamePos, filenameEnd - filenamePos);
-	std::cout << "filename: " << fileName << std::endl;
+	// std::cout << "filename: " << fileName << std::endl;
 
-	std::cout << "client request path: " << cl_request.path << std::endl;
+	// std::cout << "client request path: " << cl_request.path << std::endl;
 	std::string filePath = joinPaths(root + cl_request.path, fileName);
-	std::cout << "registry path: " << filePath << std::endl;
+	// std::cout << "registry path: " << filePath << std::endl;
 
 	size_t dataStart = cl_request.body.find("\r\n\r\n", filenameEnd);
 	if (dataStart == std::string::npos)
 		return;
 	dataStart += 4;
-	std::cout << "data start position: " << dataStart << std::endl;
+	// std::cout << "data start position: " << dataStart << std::endl;
 
 	size_t dataEnd = cl_request.body.find(boundary, dataStart);
 	if (dataEnd == std::string::npos)
 		return;
 	dataEnd -= 2;
-	std::cout << "data end position: " << dataEnd << std::endl;
+	// std::cout << "data end position: " << dataEnd << std::endl;
 
 	std::string fileData = cl_request.body.substr(dataStart, dataEnd - dataStart);
 	// std::cout << "file data: \n" << fileData << std::endl;
@@ -164,14 +164,14 @@ static void saveFile(const clRequest& cl_request, const std::string& boundary, c
 	std::ofstream outFile(filePath.c_str(), std::ios::binary);
 	if (!outFile)
 	{
-		std::cout << "Error opening file for writing: " << fileName << std::endl;
+		// std::cout << "Error opening file for writing: " << fileName << std::endl;
 		return;
 	}
 
 	outFile.write(fileData.c_str(), fileData.size());
 	outFile.close();
 
-	std::cout << "File saved: " << fileName << std::endl;
+	// std::cout << "File saved: " << fileName << std::endl;
 }
 
 static void	handlePostRequest(Client& client, clRequest& cl_request, const ConfigBlock& serverBlock)
@@ -188,11 +188,11 @@ static void	handlePostRequest(Client& client, clRequest& cl_request, const Confi
 		if (value.first == "client_max_body_size")
 			maxBody = std::stoul(value.second.front());
 
-	std::cout << "client_max_body_size: " << maxBody << std::endl;
-	std::cout << "cl_request.body.size: " << cl_request.body.size() << std::endl;
+	// std::cout << "client_max_body_size: " << maxBody << std::endl;
+	// std::cout << "cl_request.body.size: " << cl_request.body.size() << std::endl;
 	if (cl_request.body.size() > maxBody)
 	{
-		std::cout << "body too big!" << std::endl;
+		// std::cout << "body too big!" << std::endl;
 		serveError(client, "413", serverBlock);
 		return ;
 	}
@@ -235,14 +235,14 @@ static void	handlePostRequest(Client& client, clRequest& cl_request, const Confi
 						boundary.erase(car, 1);
 					std::string closing_boundary = "--" + boundary + "--";
 
-					std::cout << "BOUNDARY: " << boundary << std::endl;
-					std::cout << "CLOSING:" << closing_boundary << std::endl;
+					// std::cout << "BOUNDARY: " << boundary << std::endl;
+					// std::cout << "CLOSING:" << closing_boundary << std::endl;
 
 					saveFile(cl_request, boundary, serverBlock);
 				}
 
 				std::string filePath = joinPaths((root + cl_request.path), "upload.html");
-				std::cout << "filePath: " << filePath << std::endl;
+				// std::cout << "filePath: " << filePath << std::endl;
 				serveStaticFile(client, filePath, "200");
 				return ;
 			}
@@ -265,7 +265,7 @@ void	showDirList(Client& client, clRequest& cl_request, const std::string& fileP
 		if (value.first == "root")
 			root = value.second.front();
 	
-	std::cout << "show directory listing" << std::endl;
+	// std::cout << "show directory listing" << std::endl;
 	std::ostringstream response;
 	std::ostringstream list;
 
@@ -285,7 +285,7 @@ void	showDirList(Client& client, clRequest& cl_request, const std::string& fileP
 	cutPath = cutPath.substr(0, cutPath.find_last_of('/'));
 	if (cutPath.empty())
 		cutPath = "../";
-	std::cout << "cut client request: " << cutPath << std::endl;
+	// std::cout << "cut client request: " << cutPath << std::endl;
 
 	if (filePath != home)
 		list << "<li><a href=\"" << cutPath << "\">../</a></li>\n";
@@ -307,8 +307,8 @@ void	showDirList(Client& client, clRequest& cl_request, const std::string& fileP
 			list << "<li><a href=\"" << href << "\">" << name << "</a></li>\n";
 	}
 
-	std::cout << list.str() << std::endl;
-	std::cout << list.str().size() << std::endl;
+	// std::cout << list.str() << std::endl;
+	// std::cout << list.str().size() << std::endl;
 
 	response	<< "HTTP/1.1 200 OK\r\n"
 				<< "Content-Length: " << (113 + cl_request.path.size() + list.str().size()) << "\r\n"
@@ -325,9 +325,9 @@ void	showDirList(Client& client, clRequest& cl_request, const std::string& fileP
 static void	deleteFile(Client& client, clRequest& cl_request, const ConfigBlock& serverBlock)
 {
 	std::ostringstream response;
-	std::cout << "delete file here" << std::endl;
-	std::cout << cl_request.path << std::endl;
-	std::cout << cl_request.queryStr << std::endl;
+	// std::cout << "delete file here" << std::endl;
+	// std::cout << cl_request.path << std::endl;
+	// std::cout << cl_request.queryStr << std::endl;
 	
 	std::string root;
 	for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values)
@@ -335,14 +335,14 @@ static void	deleteFile(Client& client, clRequest& cl_request, const ConfigBlock&
 	root = value.second.front();
 	
 	size_t	filenamePos = cl_request.queryStr.find("filename=");
-	std::cout << "filenamepos: " << filenamePos << std::endl;
+	// std::cout << "filenamepos: " << filenamePos << std::endl;
 	if (filenamePos == std::string::npos)
 	{
 		client.setResponseData("HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\nContent-Length: 9\r\n\r\nBad Query");
 		return ;
 	}
 	filenamePos += 9;
-	std::cout << urlDecode(cl_request.queryStr.substr(filenamePos)) << std::endl;
+	// std::cout << urlDecode(cl_request.queryStr.substr(filenamePos)) << std::endl;
 
 	std::string uploads = "/uploads/";
 	for (const std::pair<const std::string, ConfigBlock>& nested : serverBlock.nested)
@@ -351,21 +351,21 @@ static void	deleteFile(Client& client, clRequest& cl_request, const ConfigBlock&
 		{
 			if (value.first == "upload_store")
 			{
-				std::cout << "Found upload_store in location: " << nested.first << std::endl;
-				std::cout << "Upload store path: " << value.second.front() << std::endl;
+				// std::cout << "Found upload_store in location: " << nested.first << std::endl;
+				// std::cout << "Upload store path: " << value.second.front() << std::endl;
 				uploads = value.second.front();
 				if (!uploads.empty() && *uploads.rbegin() != '/')
 					uploads.append("/");
 			}
 		}
 	}
-	std::cout << "uploads path: " << uploads << std::endl;
+	// std::cout << "uploads path: " << uploads << std::endl;
 
 	std::string fileName = uploads + cl_request.queryStr.substr(filenamePos);
 
-	std::cout << "filename: " << fileName << std::endl;
+	// std::cout << "filename: " << fileName << std::endl;
 	std::string filePath = root + fileName;
-	std::cout << "filepath: " << filePath << std::endl;
+	// std::cout << "filepath: " << filePath << std::endl;
 
 	if (remove(filePath.c_str()) == 0)
 		client.setResponseData("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 12\r\n\r\nFile Deleted");
@@ -401,8 +401,8 @@ void routeRequest(Client& client, const Server& server, clRequest& cl_request, c
 				if (tempPath.find(tempLoc) == 0)
 				{
 					locPath = tempLoc;
-					std::cout << "locpath: " << locPath << std::endl;
-					std::cout << "locconf: " << locConf << std::endl;
+					// std::cout << "locpath: " << locPath << std::endl;
+					// std::cout << "locconf: " << locConf << std::endl;
 					if (locPath != locConf)
 						locPath.erase();
 					locBlock = nested.second;
@@ -412,7 +412,7 @@ void routeRequest(Client& client, const Server& server, clRequest& cl_request, c
 		}
 	}
 
-	std::cout << "locationPath: " << locPath << std::endl;
+	// std::cout << "locationPath: " << locPath << std::endl;
 
 	for (const std::pair<const std::string, std::vector<std::string>> &value : locBlock.values)
     {
@@ -558,7 +558,7 @@ void routeRequest(Client& client, const Server& server, clRequest& cl_request, c
 									kill(client.getCgiStruct().child_pid, SIGTERM);
 								return ;
 							}
-							client.clearData(0);
+							// client.clearData();
 							return ;
 						}
 						else

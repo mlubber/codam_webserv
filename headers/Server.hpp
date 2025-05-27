@@ -56,7 +56,7 @@ class Server
 		
 		// int 	recvFromSocket(Client& client, std::string& receivedData);
 		int 	recvFromSocket(Client& client);
-		int		sendToSocket(Client& client);	
+		void	sendToSocket(Client& client);	
 		
 		void	handleReceivedSignal();
 

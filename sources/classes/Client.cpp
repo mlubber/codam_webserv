@@ -10,87 +10,7 @@ Client::~Client()
 
 }
 
-// int	Client::handleEvent(Server& server)
-// {
-// 	int status;
-
-// 	if (_state == reading_request)
-// 	{
-// 		std::cout << "\nCurrent client state: reading_request" << std::endl;
-// 		std::cout << "\nErrno before recvFromSocket: " << errno << ", str: " << strerror(errno) << std::endl;
-// 		// status = server.recvFromSocket(*this, this->_request.receivedData);
-// 		status = server.recvFromSocket(*this);
-// 		std::cout << "status is now: " << status << std::endl;
-// 		errno = 0;
-// 		if (status == 2)
-// 		{
-// 			std::cout << "Lost connection or error occurred" << std::endl;
-// 			return (2);
-// 		}
-// 		if (status == 1)
-// 		{
-// 			std::cout << "Partial request received" << std::endl;
-// 			return (1);
-// 		}
-
-// 		// if (status > 0)
-// 		// {
-// 		// 	return (status);
-// 		// }
-// 	}
-// 	// std::cout << "\nErrno before parsing: " << errno << ", str: " << strerror(errno) << std::endl;
-
-// 	if (_state == parsing_request)
-// 	{
-// 		std::cout << "\nCurrent client state: parsing_request" << std::endl;
-// 		status = parsingRequest(server, *this);
-// 		if (status == 2)
-// 			return (status);
-// 		else if (_state != cgi_write)
-// 			return (status);
-// 	}
-// 	if (_state == cgi_write)
-// 	{
-// 		std::cout << "\nCurrent client state: cgi_write" << std::endl;
-// 		status = write_to_pipe(*this, this->getCgiStruct(), server);
-// 		if (status == 2)
-// 		{
-// 			// response is internal server error -> need to send that and then return to main loop and remove connection
-// 			return (2);
-// 		}
-// 		return (status);
-// 	}
-// 	if (_state == cgi_read)
-// 	{
-// 		std::cout << "\nCurrent client state: cgi_read" << std::endl;
-// 		status = read_from_pipe(*this, *this->_cgi, server, _cgi->readData);
-// 		std::cout << "\nStatus after read_from_pipe : " << status << std::endl;
-// 		if (status == 2)
-// 		{
-// 			// response is internal server error -> need to send that and then return to main loop and remove connection
-// 			std::cerr << "ABOUT TO CLOSE CLIENT" << std::endl;
-// 			this->setCloseClientState(true);
-// 			this->setResponseData(ER500);
-// 			this->setClientState(sending_response);
-// 			return (2);
-// 		}
-// 		if (status == 1)
-// 		{
-// 			return (1);
-// 		}
-// 	}
-// 	if (_state == sending_response)
-// 	{
-// 		std::cout << "\nCurrent client state: sending_response" << std::endl;
-// 		return (server.sendToSocket(*this));
-// 	}
-// 	return (0);
-// }
-
-
-
-
-int	Client::handleEvent(Server& server)
+void	Client::handleEvent(Server& server)
 {
 	int status;
 
@@ -99,43 +19,32 @@ int	Client::handleEvent(Server& server)
 		// status = server.recvFromSocket(*this, this->_request.receivedData);
 		status = server.recvFromSocket(*this);
 		errno = 0;
-		if (status == 2)
-			return (2);
-		if (status == 1)
-			return (1);
+		// if (status == 2)
+		// 	return (2);
+		// if (status == 1)
+		// 	return (1);
+		// return ;
 	}
 
 	if (_state == parsing_request)
 	{
 		parsingRequest(server, *this);
+		return ;
 	}
 	if (_state == cgi_write)
 	{
-		write_to_pipe(*this, this->getCgiStruct(), server); return ;
+		write_to_pipe(*this, this->getCgiStruct(), server);
+		return ;
 	}
 	if (_state == cgi_read)
 	{
-		std::cout << "\nCurrent client state: cgi_read" << std::endl;
-		status = read_from_pipe(*this, *this->_cgi, server, _cgi->readData);
-		std::cout << "\nStatus after read_from_pipe : " << status << std::endl;
-		if (status == 2)
-		{
-			this->setCloseClientState(true);
-			this->setResponseData(ER500);
-			this->setClientState(sending_response);
-			return (2);
-		}
-		if (status == 1)
-		{
-			return (1);
-		}
+		read_from_pipe(*this, *this->_cgi, server, _cgi->readData);
+		return ;
 	}
 	if (_state == sending_response)
 	{
-		std::cout << "\nCurrent client state: sending_response" << std::endl;
-		return (server.sendToSocket(*this));
+		server.sendToSocket(*this);
 	}
-	return (0);
 }
 
 
@@ -261,16 +170,14 @@ void Client::resetFds(int fd)
 
 /* Update client object data */
 // Pass 0 to clear _received data, and pass 1 or bigger to clear _reponse
-void	Client::clearData(int i)
+void	Client::clearData()
 {
-	if (i == 0)
 		_received.clear();
-	else
-	{
 		_response.clear();
 		_response_size = 0;
 		_bytes_sent = 0;
-	}
+		_cgi = nullptr;
+		_state = reading_request;
 }
 
 void	Client::updateBytesSent(size_t bytes_sent)

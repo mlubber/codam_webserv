@@ -13,11 +13,11 @@ int	wait_for_child(t_cgiData& cgi)
 
 	if (errno != 0)
 		return (errno);
-	std::cerr << "CHECKING WPID" << std::endl;
+	std::cout << "CHECKING WPID" << std::endl;
 	wpid = waitpid(cgi.child_pid, &status, WNOHANG);
 	if (wpid == 0)
 	{
-		std::cerr << "Killing child process\n" << std::endl;
+		std::cout << "Killing child process\n" << std::endl;
 		kill(cgi.child_pid, SIGTERM);
 		wpid = waitpid(cgi.child_pid, &status, 0);
 		return (0);
@@ -27,7 +27,7 @@ int	wait_for_child(t_cgiData& cgi)
 	else if (WIFSIGNALED(status))
 	{
 		int signal_number = WTERMSIG(status);
-		std::cerr << "CGI ERROR: Child terminated by signal: " << signal_number << std::endl;
+		std::cout << "CGI ERROR: Child terminated by signal: " << signal_number << std::endl;
 		if (signal_number == SIGINT)
 			exit_code = 130;
 		else
@@ -56,7 +56,7 @@ void	createCgiResponse(Client& client, std::string& readData)
 	}
 
 	std::string actualBody = readData.substr(pos + 4);
-	// std::cout << "ACTUAL BODY:" << actualBody << std::endl;
+	std::cout << "ACTUAL BODY:" << actualBody << std::endl;
 
 	std::string contentLength = "Content-Length: " + std::to_string(actualBody.size()) + "\r\n";
 
@@ -91,10 +91,10 @@ void	read_from_pipe(Client& client, t_cgiData& cgi, const Server& server, std::s
 
 	bytes_read = read(cgi.ets_pipe[0], buffer, CGIBUFFER - 1);
 	buffer[bytes_read] = '\0';
-	std::cerr << "\nBytes read from cgi pipe: " << bytes_read << " / " << CGIBUFFER - 1 << std::endl;
+	std::cout << "\nBytes read from cgi pipe: " << bytes_read << " / " << CGIBUFFER - 1 << std::endl;
 	if (bytes_read == -1)
 	{
-		std::cerr << "\nBYTES_READ -1!" << std::endl;
+		std::cout << "\nBYTES_READ -1!" << std::endl;
 		serveError(client, "500", client.getServerBlock());
 		epoll_ctl(server.getEpollFd(), EPOLL_CTL_DEL, cgi.ste_pipe[1], NULL);
 		if (close(cgi.ets_pipe[0]) == -1)
@@ -112,6 +112,11 @@ void	read_from_pipe(Client& client, t_cgiData& cgi, const Server& server, std::s
 	cgi.ets_pipe[0] = -1;
 
 	createCgiResponse(client, readData);
+
+	struct epoll_event event;
+	event.events = EPOLLIN | EPOLLOUT;
+	event.data.fd = client.getClientFds(0);
+	epoll_ctl(server.getEpollFd(), EPOLL_CTL_MOD, client.getClientFds(0), &event);
 
 	client.resetFds(client.getClientFds(0));
 	client.setClientState(sending_response);

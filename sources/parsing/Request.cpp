@@ -609,13 +609,17 @@ int	parsingRequest(Server& server, Client& client)
 		serveError(client, "400", serverBlock);
 
 	generateHttpResponse(client, server, cl_request, serverBlock);
+	if (client.checkCgiPtr() == true)
+	{
+		std::cout << "cgi ptr not nullptr" << std::endl;
+		return (0);
+	}
 
 	struct epoll_event event;
 	event.events = EPOLLIN | EPOLLOUT;
 	event.data.fd = client_fd;
 	epoll_ctl(server.getEpollFd(), EPOLL_CTL_MOD, client_fd, &event);
-	client.clearData(0);
-	// client.setReceivedData()			// Needs to erase() client._received
 	client.setClientState(sending_response);
+	std::cout << "Finished parsing and set client state to sending_response" << std::endl;
 	return (0);
 }

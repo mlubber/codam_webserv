@@ -11,6 +11,7 @@ enum state
 	cgi_write,			// In loop of writing data to the cgi_pipe
 	cgi_read,			// In loop of reading data from the cgi_pipe
 	sending_response,	// In loop of sending response to the socket
+	sending_error		// Only used when sending data to client fails and we need to remove the client
 };
 
 struct clRequest 
@@ -50,7 +51,7 @@ class Client
 		Client(int socket_fd, const ConfigBlock& serverBlock);
 		~Client();
 
-		int		handleEvent(Server& server);
+		void				handleEvent(Server& server);
 
 		int 				getClientFds(int index)	const;
 		int					getClientState() 		const;
@@ -67,11 +68,10 @@ class Client
 		void	setClientState(int state);
 		void	setCgiStruct(std::unique_ptr<t_cgiData> cgi);
 		void	setCloseClientState(bool state);
-		// void	setErrorResponse();
 
 		void	addFd(int fd);
 		void	resetFds(int fd);
 
-		void	clearData(int i);
+		void	clearData();
 		void	updateBytesSent(size_t bytes_sent);
 	};
