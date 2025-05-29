@@ -595,14 +595,7 @@ int	parsingRequest(Server& server, Client& client)
 	Configuration	config = server.getConfig();
 	int				client_fd = client.getClientFds(0);
 
-
-	// std::cout << "client request host: \n" << cl_request.host << std::endl;
-	// std::cout << "client request port: \n" << cl_request.port << std::endl;
-
 	ConfigBlock serverBlock = config.getServerBlock(cl_request.host, cl_request.port);
-
-
-
 
 
 	if (cl_request.invalidRequest == true)

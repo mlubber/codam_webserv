@@ -72,6 +72,6 @@ class Client
 		void	addFd(int fd);
 		void	resetFds(int fd);
 
-		void	clearData();
+		void	clearData(int epollFd);
 		void	updateBytesSent(size_t bytes_sent);
 	};

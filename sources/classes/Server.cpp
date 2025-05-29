@@ -182,6 +182,7 @@ void Server::run(void)
 		for (int i = 0; i < event_count; i++) // Going through events returned by epoll_wait()
 		{
 			int fd = ready_events[i].data.fd;
+			std::cout << "FD: " << fd <<std::endl;
 			for (int i = 0; i < _server_fds_amount; ++i)
 				if (fd == _server_fds[i])
 					connectClient(_epoll_fd, fd);
@@ -194,14 +195,16 @@ void Server::run(void)
 					{
 						_clients[i]->handleEvent(*this);
 						if (_clients[i]->getCloseClientState() == true && _clients[i]->getClientState() != sending_response)
+						{
 							removeClient(_clients[i], i);
+							break ;
+						}
 					}
 					errno = 0;
 				}
 			}
 			if (got_signal != 0)
 				handleReceivedSignal();
-			setCurrentClient(-1);
 		}
 	}
 	close(_epoll_fd);
@@ -217,9 +220,7 @@ void	Server::handleReceivedSignal()
 	if (got_signal == SIGPIPE)
 	{
 		std::cout << "SIGNAL: Received SIGPIPE, disconnecting client now.." << std::endl;
-		for (int i = 0; i < _client_count; ++i)
-			if (_server_fds[i] == _current_client)
-				removeClient(_clients[i], i);
+
 	}
 }
 
@@ -233,9 +234,6 @@ void Server::connectClient(int _epoll_fd, int server_fd)
 		sockaddr_in addr;
 		socklen_t len = sizeof(addr);
 		getsockname(server_fd, (sockaddr*)&addr, &len);
-		// std::cout << "Server listening on port: " << ntohs(addr.sin_port) << std::endl;
-		// std::cout << "Server IP: " << inet_ntoa(addr.sin_addr) << std::endl;
-		// std::cout << "iptostring: " << ip_to_string(addr.sin_addr) << std::endl;
 
 		ConfigBlock serverBlock = _config.getServerBlock(ip_to_string(addr.sin_addr), std::to_string(ntohs(addr.sin_port)));
 		
@@ -272,8 +270,8 @@ void Server::connectClient(int _epoll_fd, int server_fd)
 	{
 		std::cerr << e.what() << '\n' << "CLIENT ERROR: failed connecting new client" << std::endl;
 	}
-
 }
+
 
 void Server::removeClient(Client* client, int index)
 {
@@ -282,11 +280,17 @@ void Server::removeClient(Client* client, int index)
 	if (client->checkCgiPtr())
 	{
 		if (client->getCgiStruct().ets_pipe[1] != -1)
-			if (close(client->getCgiStruct().ets_pipe[1]) == -1)
+		{
+			if (close(client->getCgiStruct().ets_pipe[0]) == -1)
 				std::cout << "SERVER ERROR: Failed closing cgi_pipe write_end " << std::endl;
+			if (epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, client->getCgiStruct().ets_pipe[0], NULL) == -1)
+				std::cout << "Failed deleting " << client->getCgiStruct().ets_pipe[0] << " from EPOLL" << std::endl;
+		}
 		if (client->getCgiStruct().ste_pipe[0] != -1)
-			if (close(client->getCgiStruct().ste_pipe[0]) == -1)
+		{
+			if (close(client->getCgiStruct().ste_pipe[1]) == -1)
 				std::cout << "SERVER ERROR: Failed closing cgi_pipe read_end " << std::endl;
+		}
 	}
 
 	int status = epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, client_fd, NULL);
@@ -294,6 +298,10 @@ void Server::removeClient(Client* client, int index)
 		std::cout << "SERVER ERROR: Failed deleting client fd " << client_fd << " from epoll!" << std::endl;
 	if (close(client_fd) == -1)
 		std::cout << "SERVER ERROR: Failed closing client_fd " << client_fd << std::endl;
+
+
+	// REMOVE CLIENT FD FROM _server_fds
+	// this->_server_fds.erase(index);
 
 	_clients.erase(_clients.begin() + index);
 	delete client;
@@ -303,6 +311,13 @@ void Server::removeClient(Client* client, int index)
 
 	return ;
 }
+
+
+
+
+
+
+
 
 void Server::close_webserv()
 {
@@ -462,6 +477,9 @@ void	Server::sendToSocket(Client& client)
 {
 	std::string response = client.getClientResponse();
 
+	std::cout << "\n\n\n-----------FULL RESPONSE BEFORE SENDING-------------\n\n\n" << response << "\n\n\n-------------- END OF RESPONSE BEFORE SENDING--------------\n\n\n" << std::endl;
+
+
 	int	socket_fd = client.getClientFds(0);
 	ssize_t bytes_sent = send(socket_fd, response.c_str(), response.size(), 0);
 	std::cout << "Response size / bytes sent: " << response.size() << " / " << bytes_sent << std::endl;
@@ -482,7 +500,7 @@ void	Server::sendToSocket(Client& client)
 	event.events = EPOLLIN;
 	event.data.fd = socket_fd;
 	epoll_ctl(_epoll_fd, EPOLL_CTL_MOD, socket_fd, &event);
-	client.clearData();
+	client.clearData(_epoll_fd);
 }
 
 
@@ -506,8 +524,3 @@ const Configuration&	Server::getConfig() const
 	return (_config);
 }
 
-
-void Server::setCurrentClient(int client_fd)
-{
-	_current_client = client_fd;
-}

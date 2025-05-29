@@ -52,6 +52,7 @@ static void serveStaticFile(Client& client, const std::string& filePath, std::st
 
 void serveError(Client& client, std::string error_code, const ConfigBlock& serverBlock)
 {
+	std::cout << "-------------- SOME ERROR ---------------- " << error_code << std::endl;
 	client.setCloseClientState(true);
 	std::string root;
 	for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values)
@@ -217,9 +218,9 @@ static void	handlePostRequest(Client& client, clRequest& cl_request, const Confi
 			// 	response	<< "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: "
 			// 				<< (cl_request.cgiBody.size()) << "\r\n\r\n"
 			// 				<< cl_request.cgiBody;
-			//	client.setResponseData(response.str());
-			//	return ;
-			//	}
+			// 	client.setResponseData(response.str());
+			// 	return ;
+			// 	}
 			else if (values_vector[i].find("multipart/form-data") != std::string::npos)
 			{
 				const std::vector<std::string>& contentType = cl_request.headers.at("content-type");
@@ -483,7 +484,6 @@ void routeRequest(Client& client, const Server& server, clRequest& cl_request, c
 	}
 	if (std::find(methods.begin(), methods.end(), cl_request.method) == methods.end())
 	{
-		// std::cout << "Method not allowed: " << cl_request.method << std::endl;
 		serveError(client, "405", serverBlock);
 		return ;
 	}
@@ -587,7 +587,21 @@ void routeRequest(Client& client, const Server& server, clRequest& cl_request, c
 	}
 	else if (cl_request.method == "POST")
 	{
-		handlePostRequest(client, cl_request, serverBlock);
+		if (cgi_check(cl_request.path))
+		{
+			int status = start_cgi(cl_request, server, client);
+			std::cout << "\n\nSTATUS: " << status << "\n\n" << std::endl;
+			if (status != 0)
+			{
+				serveError(client, "500", serverBlock);
+				if (client.checkCgiPtr() && client.getCgiStruct().child_pid != -1)
+					kill(client.getCgiStruct().child_pid, SIGTERM);
+				return ;
+			}
+			return ;
+		}
+		else
+			handlePostRequest(client, cl_request, serverBlock);
 		return ;
 	}
 	else if (cl_request.method == "DELETE")

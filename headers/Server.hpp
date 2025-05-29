@@ -33,7 +33,6 @@ class Server
 
 		std::vector<Client*>		_clients;
 		int							_client_count;
-		int							_current_client;
 
 		Configuration				_config;
 		const std::string			_name; // for cgi environment var server name - Now temp, but needs to come from config
@@ -54,7 +53,6 @@ class Server
 		void	connectClient(int epoll_fd, int server_fd);
 		void	removeClient(Client* client, int index);	
 		
-		// int 	recvFromSocket(Client& client, std::string& receivedData);
 		int 	recvFromSocket(Client& client);
 		void	sendToSocket(Client& client);	
 		
@@ -66,8 +64,6 @@ class Server
 		const std::string		getServerInfo(int i) const;
 		int						getEpollFd() const;
 		const Configuration&	getConfig() const;
-
-		void					setCurrentClient(int client_fd);
 
 };
 

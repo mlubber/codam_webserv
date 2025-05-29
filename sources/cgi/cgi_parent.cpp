@@ -48,6 +48,7 @@ void	createCgiResponse(Client& client, std::string& readData)
 {
 	std::string key = "\r\n\r\n";
 	size_t pos = readData.find(key);
+	std::cout << "\n\n\n ------------------------ START READ DATA -------------------------------\n\n\n" << readData << "\n\n\n ------------------------ END READ DATA -------------------------------" << std::endl;
 	if (pos == std::string::npos)
 	{
 		std::cout << "NPOS FOUND? INTERNAL SERVER ERROR" << std::endl;
@@ -61,6 +62,7 @@ void	createCgiResponse(Client& client, std::string& readData)
 	std::string contentLength = "Content-Length: " + std::to_string(actualBody.size()) + "\r\n";
 
 	client.setResponseData("HTTP/1.1 200 OK\r\n" + contentLength + readData);
+
 }
 
 
@@ -100,6 +102,7 @@ void	read_from_pipe(Client& client, t_cgiData& cgi, const Server& server, std::s
 		if (close(cgi.ets_pipe[0]) == -1)
 			std::cerr << "CGI ERROR: Failed closing ets read-end pipe in parent" << std::endl;
 		cgi.ets_pipe[0] = -1;
+		wait_for_child(cgi);
 		return ;
 	}
 	readData += buffer;
@@ -145,7 +148,8 @@ void	write_to_pipe(Client& client, t_cgiData& cgi, const Server& server)
 	int currentDataSize = cgi.writeData.size();
 	int	written = 0;
 		
-	written += write(cgi.ste_pipe[1], cgi.writeData.c_str(), std::min(CGIBUFFER, currentDataSize));
+	written = write(cgi.ste_pipe[1], cgi.writeData.c_str(), std::min(CGIBUFFER, currentDataSize));
+	std::cout << "Bytes written to CGI pipe: " << written << std::endl;
 	cgi.dataWritten += written;
 	if (cgi.dataToWrite == cgi.dataWritten)
 	{
