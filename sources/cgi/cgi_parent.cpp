@@ -48,7 +48,7 @@ void	createCgiResponse(Client& client, std::string& readData)
 {
 	std::string key = "\r\n\r\n";
 	size_t pos = readData.find(key);
-	std::cout << "\n\n\n ------------------------ START READ DATA -------------------------------\n\n\n" << readData << "\n\n\n ------------------------ END READ DATA -------------------------------" << std::endl;
+	// std::cout << "\n\n\n ------------------------ START READ DATA -------------------------------\n\n\n" << readData << "\n\n\n ------------------------ END READ DATA -------------------------------" << std::endl;
 	if (pos == std::string::npos)
 	{
 		std::cout << "NPOS FOUND? INTERNAL SERVER ERROR" << std::endl;
@@ -57,7 +57,7 @@ void	createCgiResponse(Client& client, std::string& readData)
 	}
 
 	std::string actualBody = readData.substr(pos + 4);
-	std::cout << "ACTUAL BODY:" << actualBody << std::endl;
+	// std::cout << "ACTUAL BODY:" << actualBody << std::endl;
 
 	std::string contentLength = "Content-Length: " + std::to_string(actualBody.size()) + "\r\n";
 

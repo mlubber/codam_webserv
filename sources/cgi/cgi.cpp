@@ -81,8 +81,8 @@ static bool	init_cgi_struct(Client& client, clRequest& cl_request, const Server&
 		std::cout << "STE PIPE: " << cgi->ste_pipe[0] << " & " << cgi->ste_pipe[1] << std::endl;
 		setNonBlocking(cgi->ste_pipe[1]);
 		struct epoll_event ste_pipe;
-		ste_pipe.events = EPOLLIN;
-		ste_pipe.data.fd = cgi->ste_pipe[0];
+		ste_pipe.events = EPOLLOUT;
+		ste_pipe.data.fd = cgi->ste_pipe[1];
 		if (epoll_ctl(server.getEpollFd(), EPOLL_CTL_ADD, cgi->ste_pipe[1], &ste_pipe) == -1)
 		{
 			cgi_cleanup(*cgi, false);

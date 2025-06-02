@@ -122,9 +122,9 @@ void Client::setCgiStruct(std::unique_ptr<t_cgiData> cgi)
 	_cgi = std::move(cgi);
 }
 
-void	Client::setReceivedData(std::string data)
+void	Client::setReceivedData(const char* data, ssize_t bytes_received)
 {
-	_received += data;
+	_received.append(data, bytes_received);
 }
 
 
@@ -179,31 +179,34 @@ void Client::resetFds(int fd)
 // Pass 0 to clear _received data, and pass 1 or bigger to clear _reponse
 void	Client::clearData(int epollFd)
 {
-		_received.clear();
-		_response.clear();
-		_response_size = 0;
-		_bytes_sent = 0;
+	std::cout << "\n\n---- REQUEST RECEIVED IN CLEAR DATA -----\n" << _received << "\n---- END OF RECEIVED IN CLEAR DATA -----\n\n" << std::endl;
+	_received.clear();
+	std::cout << "---- REQUEST RECEIVED IN CLEAR DATA -----\n" << _received << "\n---- END OF RECEIVED IN CLEAR DATA -----\n" << std::endl;
 
-		if (_cgi != nullptr)
+	_response.clear();
+	_response_size = 0;
+	_bytes_sent = 0;
+
+	if (_cgi != nullptr)
+	{
+		if (_cgi->ets_pipe[0] != -1)
 		{
-			if (_cgi->ets_pipe[0] != -1)
-			{
-				std::cout << "Deleting and closing read-end pipe " << _cgi->ets_pipe[0] << std::endl;
-				epoll_ctl(epollFd, EPOLL_CTL_DEL, _cgi->ets_pipe[0], NULL);
-				if (close(_cgi->ets_pipe[0]) == -1)
-					std::cerr << "CGI ERROR: Failed closing ets read-end pipe in parent" << std::endl;
-			}
-			if (_cgi->ste_pipe[1] != -1)
-			{
-				std::cout << "Deleting and closing read-end pipe " << _cgi->ste_pipe[1] << std::endl;
-				epoll_ctl(epollFd, EPOLL_CTL_DEL, _cgi->ste_pipe[1], NULL);
-				if (close(_cgi->ste_pipe[1]) == -1)
-					std::cerr << "CGI ERROR: Failed closing ets read-end pipe in parent" << std::endl;
-			}
-			_cgi = nullptr;
+			std::cout << "Deleting and closing read-end pipe " << _cgi->ets_pipe[0] << std::endl;
+			epoll_ctl(epollFd, EPOLL_CTL_DEL, _cgi->ets_pipe[0], NULL);
+			if (close(_cgi->ets_pipe[0]) == -1)
+				std::cerr << "CGI ERROR: Failed closing ets read-end pipe in parent" << std::endl;
 		}
+		if (_cgi->ste_pipe[1] != -1)
+		{
+			std::cout << "Deleting and closing read-end pipe " << _cgi->ste_pipe[1] << std::endl;
+			epoll_ctl(epollFd, EPOLL_CTL_DEL, _cgi->ste_pipe[1], NULL);
+			if (close(_cgi->ste_pipe[1]) == -1)
+				std::cerr << "CGI ERROR: Failed closing ets read-end pipe in parent" << std::endl;
+		}
+		_cgi = nullptr;
+	}
 
-		_state = reading_request;
+	_state = reading_request;
 }
 
 void	Client::updateBytesSent(size_t bytes_sent)

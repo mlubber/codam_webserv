@@ -558,7 +558,6 @@ void routeRequest(Client& client, const Server& server, clRequest& cl_request, c
 									kill(client.getCgiStruct().child_pid, SIGTERM);
 								return ;
 							}
-							// client.clearData();
 							return ;
 						}
 						else

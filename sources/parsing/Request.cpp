@@ -56,16 +56,19 @@ std::string headerMultieValueSeparatedWithSemicolon = "cookie";
 void	resetStruct(clRequest& clRequest)
 {
 	clRequest.invalidRequest = false;
-	clRequest.body.clear();
-	clRequest.path.clear();
 	clRequest.method.clear();
+	clRequest.path.clear();
+	if (!clRequest.queryStr.empty())
+		clRequest.queryStr.clear();
 	clRequest.headers.clear();
-	clRequest.host.clear();
+	clRequest.body.clear();
 	clRequest.port.clear();
+	clRequest.host.clear();
 	for (auto &header : isHeaderAppearTwice)
 	{
 		header.second = false;
 	}
+	clRequest.cgi = false;
 }
 
 int	parseHeaderMultiValueComma(std::string &headerName ,std::string &line, clRequest &clRequest)
@@ -422,7 +425,7 @@ int	parseBody(std::string &body, clRequest &clRequest)
 			clRequest.invalidRequest = true;
 			return (1);
 		}
-		// std::cout << "actual body size:  (" << body.size() << ", content length is: (" << bodyLength << ")." << std::endl;
+		std::cout << "actual body size:  (" << body.size() << ", content length is: (" << bodyLength << ")." << std::endl;
 		if (body.size() != bodyLength)
 		{
 			clRequest.invalidRequest = true;
@@ -484,7 +487,7 @@ void readRequest(Client& client)
 	size_t	headersSize = 0;
 	if (is100Continue)
 	{
-		//std::cout << "just parse body" << std::endl;
+		std::cout << "just parse body" << std::endl;
 		parseBody(strClRequest, clRequest);
 		return;
 
@@ -584,7 +587,7 @@ void	generateHttpResponse(Client& client, const Server& server, clRequest& cl_re
 	routeRequest(client, server, cl_request, serverBlock);
 }
 
-int	parsingRequest(Server& server, Client& client)
+void	parsingRequest(Server& server, Client& client)
 {
 	// std::cout << "Errno at start of parsingRequest: " << errno << ", str: " << strerror(errno) << std::endl;
 
@@ -599,13 +602,16 @@ int	parsingRequest(Server& server, Client& client)
 
 
 	if (cl_request.invalidRequest == true)
+	{
 		serveError(client, "400", serverBlock);
+		return ;
+	}
 
 	generateHttpResponse(client, server, cl_request, serverBlock);
 	if (client.checkCgiPtr() == true)
 	{
 		std::cout << "cgi ptr not nullptr" << std::endl;
-		return (0);
+		return ;
 	}
 
 	struct epoll_event event;
@@ -614,5 +620,5 @@ int	parsingRequest(Server& server, Client& client)
 	epoll_ctl(server.getEpollFd(), EPOLL_CTL_MOD, client_fd, &event);
 	client.setClientState(sending_response);
 	std::cout << "Finished parsing and set client state to sending_response" << std::endl;
-	return (0);
+	return ;
 }

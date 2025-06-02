@@ -36,6 +36,7 @@ std::string	get_header_data(const clRequest& cl_request, std::string header, int
 {
 	for (const auto& pair : cl_request.headers)
 	{
+		// std::cout << "Header data: " << pair.first << std::endl;
 		if (pair.first == header)
 		{
 			for (const auto& value : pair.second)
@@ -69,8 +70,8 @@ void	setup_environment(t_cgiData& cgi, const clRequest& cl_request, const Server
 	cgi.envp[3] = create_env_ptr("SERVER_PORT", server.getServerInfo(1));
 	cgi.envp[4] = create_env_ptr("SERVER_PROTOCOL", "HTTP/1.1");
 	cgi.envp[5] = create_env_ptr("GATEWAY_INTERFACE", "CGI/1.1");
-	cgi.envp[6] = create_env_ptr("CONTENT_LENGTH", get_header_data(cl_request, "Content-Length", 0));
-	cgi.envp[7] = create_env_ptr("CONTENT_TYPE", get_header_data(cl_request, "Content-Type", 1));
+	cgi.envp[6] = create_env_ptr("CONTENT_LENGTH", get_header_data(cl_request, "content-length", 0));
+	cgi.envp[7] = create_env_ptr("CONTENT_TYPE", get_header_data(cl_request, "content-type", 1));
 	if (!cl_request.queryStr.empty())
 		cgi.envp[8] = create_env_ptr("QUERY_STRING", cl_request.queryStr);
 	else
@@ -80,13 +81,13 @@ void	setup_environment(t_cgiData& cgi, const clRequest& cl_request, const Server
 
 
 	//  Test printing environment
-	std::cout << "\n--- CGI Environment ---" << std::endl;
-	for (int i = 0; i < 10; ++i) {
-		if (cgi.envp[i] == nullptr)
-			std::cout << "null\n";
-		else
-			std::cout << cgi.envp[i] << "\n";
-	} std::cout << std::endl;
+	// std::cout << "\n--- CGI Environment ---" << std::endl;
+	// for (int i = 0; i < 10; ++i) {
+	// 	if (cgi.envp[i] == nullptr)
+	// 		std::cout << "null\n";
+	// 	else
+	// 		std::cout << cgi.envp[i] << "\n";
+	// } std::cout << std::endl;
 	//  End test printing environment
 }
 

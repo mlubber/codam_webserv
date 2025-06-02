@@ -41,6 +41,6 @@ std::string 		urlDecode(const std::string& encoded);
 std::vector<int>	convertToInt(std::vector<std::string> &portsStr);
 std::string			ip_to_string(struct in_addr addr);
 std::string			extract_first_word(std::string path);
-int					parsingRequest(Server& server, Client& client);
+void				parsingRequest(Server& server, Client& client);
 
-void				close_webserv(Server& server);
+// void				close_webserv(Server& server);

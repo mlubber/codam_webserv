@@ -19,7 +19,6 @@ struct clRequest
 	bool		invalidRequest = false;
 	bool		methodNotAllowd = false;
 	bool		hundredContinue = false;
-	std::string	receivedData;
     std::string method;
     std::string path;
 	std::string	queryStr;
@@ -63,7 +62,7 @@ class Client
 		bool				getCloseClientState()	const;
 		const ConfigBlock&	getServerBlock()		const;
 		
-		void	setReceivedData(std::string data);
+		void	setReceivedData(const char* data, ssize_t bytes_received);
 		void	setResponseData(std::string data);
 		void	setClientState(int state);
 		void	setCgiStruct(std::unique_ptr<t_cgiData> cgi);
