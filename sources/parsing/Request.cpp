@@ -615,7 +615,7 @@ void	parsingRequest(Server& server, Client& client)
 	}
 
 	struct epoll_event event;
-	event.events = EPOLLIN | EPOLLOUT;
+	event.events = EPOLLOUT;
 	event.data.fd = client_fd;
 	epoll_ctl(server.getEpollFd(), EPOLL_CTL_MOD, client_fd, &event);
 	client.setClientState(sending_response);

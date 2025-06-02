@@ -114,6 +114,11 @@ const ConfigBlock&	Client::getServerBlock() const
 	return (_server_block);
 }
 
+long	Client::getLastRequest() const
+{
+	return (_last_request);
+}
+
 
 
 /* SETTERS */
@@ -163,6 +168,10 @@ void	Client::setCloseClientState(bool state)
 	_close_client = state;
 }
 
+void	Client::setLastRequest(long secondsSinceEpoch)
+{
+	_last_request = std::time(nullptr);
+}
 
 
 void Client::addFd(int fd)

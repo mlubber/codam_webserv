@@ -406,6 +406,9 @@ int Server::recvFromSocket(Client& client)
 	std::cout << "\nErrno before receiving: " << errno << ", str: " << strerror(errno) << std::endl;
 	std::cout << "\n\n--- BUFFER ---\n" << buffer << "\n\n--- END OF BUFFER ---\n" << std::endl;
 
+	// time_t timestamp;
+	// time(&timestamp);
+	std::cout << "TIME: " << std::time(nullptr) << std::endl;
 
 	// Read data from the socket level-triggerd without EPOLLET:
 	// bytes_received = recv(client_fd, buffer, SOCKET_BUFFER, 0);
@@ -524,3 +527,24 @@ const Configuration&	Server::getConfig() const
 	return (_config);
 }
 
+
+void Server::checkTimedOut()
+{
+	for (int i = 0; i < _client_count; ++i)
+	{
+		if (std::time(nullptr) - _clients[i]->getLastRequest() > 10)
+		{
+			int client_fd = _clients[i]->getClientFds(0);
+			struct epoll_event event;
+			event.events = EPOLLOUT;
+			event.data.fd = client_fd;
+			epoll_ctl(getEpollFd(), EPOLL_CTL_MOD, client_fd, &event);
+			_clients[i]->setClientState(sending_response);
+			_clients[i]->setCloseClientState(true);
+			if (_clients[i]->getClientState() == reading_request)
+				serveError(*_clients[i], "408", _clients[i]->getServerBlock());
+			else
+				serveError(*_clients[i], "500", _clients[i]->getServerBlock());
+		}
+	}
+}

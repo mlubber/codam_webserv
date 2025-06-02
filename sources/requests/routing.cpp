@@ -35,6 +35,8 @@ static void serveStaticFile(Client& client, const std::string& filePath, std::st
 		response << "HTTP/1.1 404 Not Found\r\n";
 	else if (status_code == "405")
 		response << "HTTP/1.1 405 Method Not Allowed\r\n";
+	else if (status_code == "408")
+		response << "HTTP/1.1 408 Request Timeout\r\n";
 	else if (status_code == "413")
 		response << "HTTP/1.1 413 Payload Too Large\r\n";
 	else if (status_code == "500")
@@ -86,6 +88,7 @@ void serveError(Client& client, std::string error_code, const ConfigBlock& serve
         {"403", ER403},
         {"404", ER404},
         {"405", ER405},
+		{"408", ER408},
         {"413", ER413},
         {"500", ER500}
     };

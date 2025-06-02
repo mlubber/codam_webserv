@@ -44,6 +44,7 @@ class Client
 		size_t						_bytes_sent;		// Amount of bytes_sent to compare with _response_size
 		bool						_close_client;		// Check if we need to close connection to client after sending response
 		ConfigBlock					_server_block;		// Server block the Client is connected to
+		long						_last_request;		// timestamp of last request
 
 		public:
 
@@ -61,12 +62,14 @@ class Client
 		bool				checkCgiPtr()			const;
 		bool				getCloseClientState()	const;
 		const ConfigBlock&	getServerBlock()		const;
+		long				getLastRequest()		const;
 		
 		void	setReceivedData(const char* data, ssize_t bytes_received);
 		void	setResponseData(std::string data);
 		void	setClientState(int state);
 		void	setCgiStruct(std::unique_ptr<t_cgiData> cgi);
 		void	setCloseClientState(bool state);
+		void	setLastRequest(long secondsSinceEpoch);
 
 		void	addFd(int fd);
 		void	resetFds(int fd);
