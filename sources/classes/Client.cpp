@@ -179,10 +179,7 @@ void Client::resetFds(int fd)
 // Pass 0 to clear _received data, and pass 1 or bigger to clear _reponse
 void	Client::clearData(int epollFd)
 {
-	std::cout << "\n\n---- REQUEST RECEIVED IN CLEAR DATA -----\n" << _received << "\n---- END OF RECEIVED IN CLEAR DATA -----\n\n" << std::endl;
 	_received.clear();
-	std::cout << "---- REQUEST RECEIVED IN CLEAR DATA -----\n" << _received << "\n---- END OF RECEIVED IN CLEAR DATA -----\n" << std::endl;
-
 	_response.clear();
 	_response_size = 0;
 	_bytes_sent = 0;

@@ -144,3 +144,40 @@ std::string	extract_first_word(std::string path)
 	return (word);
 }
 
+int	check_path(std::string filePath, std::string locPath, std::string locConf)
+{
+	struct stat stats;
+	if (stat(filePath.c_str(), &stats) == 0)
+	{
+		std::cout << "\nINSIDE CHECK PATH\nSize: " << stats.st_size << " bytes" << std::endl;
+		std::cout << "filePath: " << filePath << std::endl;
+		if (S_ISDIR(stats.st_mode))
+		{
+			std::cout << filePath << ": Is a directory!" << std::endl;
+			std::cout << "location path in config: " << locPath << std::endl;
+			size_t pos = filePath.find(locPath);
+			if (pos == std::string::npos || locPath.empty())
+			{
+				std::cout << "request filepath: " << locConf << " NOT FOUND in config filepath" << std::endl;
+				return (1);
+			}
+			std::cout << "request filepath: \"" << locConf << "\" matches config filepath: \"" << locPath << "\"" << std::endl;
+			return (0);
+		}
+		else if (S_ISREG(stats.st_mode))
+		{
+			std::cout << filePath << ": Is a registry!" << std::endl;
+			std::cout << "location path in config: " << locPath << std::endl;
+			size_t pos = filePath.find(locPath);
+			if (pos == std::string::npos || locPath.empty())
+			{
+				std::cout << "request filepath: " << locConf << " NOT FOUND in config filepath" << std::endl;
+				return (1);
+			}
+			std::cout << "request filepath: \"" << locConf << "\" matches config filepath: \"" << locPath << "\"" << std::endl;
+			return (0);
+		}
+	}
+	return (1);
+}
+

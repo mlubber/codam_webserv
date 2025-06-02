@@ -280,6 +280,9 @@ void	showDirList(Client& client, clRequest& cl_request, const std::string& fileP
 	if (!home.empty() && *home.rbegin() != '/')
 		home.append("/");
 
+	if (!cl_request.path.empty() && *cl_request.path.rbegin() != '/')
+		cl_request.path.append("/");
+	
 	std::string cutPath;
 	if (!cl_request.path.empty() && cl_request.path[cl_request.path.size() - 1] == '/')
 		cutPath = cl_request.path.substr(0, cl_request.path.size() - 1);
@@ -530,46 +533,49 @@ void routeRequest(Client& client, const Server& server, clRequest& cl_request, c
 			{
 				if (!filePath.empty() && filePath[filePath.size() - 1] == '/')
 					filePath.erase(filePath.size() - 1);
-				if (stat(filePath.c_str(), &stats) == 0)
-				{
+				// if (stat(filePath.c_str(), &stats) == 0)
+				// {
 					// std::cout << "Size: " << stats.st_size << " bytes" << std::endl;
-					if (S_ISREG(stats.st_mode)) // checks if filePath is an existing file (registry)
-					{
-						std::cout << filePath << " is a registry!" << std::endl;
-						std::cout << "location path in config: " << locPath << std::endl;
-						size_t pos = filePath.find(locPath);
-						if (pos == std::string::npos || locPath.empty())
-						{
-							std::cout << "request filepath: " << locConf << " not found in config filepath" << std::endl;
-							serveError(client, "404", serverBlock);
-							return;
-						}
-						std::cout << "request filepath: \"" << locConf << "\" matches config filepath: \"" << locPath << "\"" << std::endl;
-
-
-						if (cgi_check(cl_request.path))
-						{
-							int status = start_cgi(cl_request, server, client);
-							std::cout << "\n\nSTATUS: " << status << "\n\n" << std::endl;
-							if (status != 0)
-							{
-								serveError(client, "500", serverBlock);
-								if (client.checkCgiPtr() && client.getCgiStruct().child_pid != -1)
-									kill(client.getCgiStruct().child_pid, SIGTERM);
-								return ;
-							}
-							return ;
-						}
-						else
-							serveStaticFile(client, filePath, "200");
-						return ;
-					}
-				}
-				else
+				// if (S_ISREG(stats.st_mode)) // checks if filePath is an existing file (registry)
+				// {
+				// std::cout << filePath << " is a registry!" << std::endl;
+				// std::cout << "location path in config: " << locPath << std::endl;
+				// size_t pos = filePath.find(locPath);
+				// if (pos == std::string::npos || locPath.empty())
+				// {
+				// 	std::cout << "request filepath: " << locConf << " not found in config filepath" << std::endl;
+				// 	serveError(client, "404", serverBlock);
+				// 	return;
+				// }
+				// std::cout << "request filepath: \"" << locConf << "\" matches config filepath: \"" << locPath << "\"" << std::endl;
+				if (check_path(filePath, locPath, locConf) == 1)
 				{
 					serveError(client, "404", serverBlock);
 					return ;
 				}
+				if (cgi_check(cl_request.path))
+				{
+					int status = start_cgi(cl_request, server, client);
+					std::cout << "\n\nSTATUS: " << status << "\n\n" << std::endl;
+					if (status != 0)
+					{
+						serveError(client, "500", serverBlock);
+						if (client.checkCgiPtr() && client.getCgiStruct().child_pid != -1)
+							kill(client.getCgiStruct().child_pid, SIGTERM);
+						return ;
+					}
+					return ;
+				}
+				else
+					serveStaticFile(client, filePath, "200");
+				return ;
+				// }
+				// }
+				// else
+				// {
+				// 	serveError(client, "404", serverBlock);
+				// 	return ;
+				// }
 			}
 			else
 			{
@@ -586,6 +592,11 @@ void routeRequest(Client& client, const Server& server, clRequest& cl_request, c
 	}
 	else if (cl_request.method == "POST")
 	{
+		if (check_path(filePath, locPath, locConf) == 1)
+		{
+			serveError(client, "404", serverBlock);
+			return ;
+		}
 		if (cgi_check(cl_request.path))
 		{
 			int status = start_cgi(cl_request, server, client);
@@ -600,7 +611,10 @@ void routeRequest(Client& client, const Server& server, clRequest& cl_request, c
 			return ;
 		}
 		else
+		{
+			std::cout << "handlePostRequest here" << std::endl;
 			handlePostRequest(client, cl_request, serverBlock);
+		}
 		return ;
 	}
 	else if (cl_request.method == "DELETE")
