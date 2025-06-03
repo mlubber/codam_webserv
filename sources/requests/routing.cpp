@@ -518,6 +518,7 @@ void routeRequest(Client& client, const Server& server, clRequest& cl_request, c
 					std::cout << "no index found" << std::endl;
 					if (autoindex == "on")
 					{
+						std::cout << "autoindex on, show directory" << std::endl;
 						showDirList(client, cl_request, filePath, serverBlock);
 						return ;
 					}

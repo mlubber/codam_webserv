@@ -154,6 +154,8 @@ int	check_path(std::string filePath, std::string locPath, std::string locConf)
 		if (S_ISDIR(stats.st_mode))
 		{
 			std::cout << filePath << ": Is a directory!" << std::endl;
+			if (*filePath.rbegin() != '/')
+				filePath.append("/");
 			std::cout << "location path in config: " << locPath << std::endl;
 			size_t pos = filePath.find(locPath);
 			if (pos == std::string::npos || locPath.empty())
