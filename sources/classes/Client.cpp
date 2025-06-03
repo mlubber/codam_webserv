@@ -114,6 +114,19 @@ const ConfigBlock&	Client::getServerBlock() const
 	return (_server_block);
 }
 
+std::string		Client::getServerBlockInfo(std::string search)
+{
+	std::string found;
+	for (const std::pair<const std::string, std::vector<std::string>> &value : _server_block.values)
+	{
+		if (value.first == search)
+		{
+			found = value.second.front();
+			return (found);
+		}
+	}
+	return (nullptr);
+}
 
 
 /* SETTERS */

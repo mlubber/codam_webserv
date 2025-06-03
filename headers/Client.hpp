@@ -61,6 +61,7 @@ class Client
 		bool				checkCgiPtr()			const;
 		bool				getCloseClientState()	const;
 		const ConfigBlock&	getServerBlock()		const;
+		std::string			getServerBlockInfo(std::string search);
 		
 		void	setReceivedData(const char* data, ssize_t bytes_received);
 		void	setResponseData(std::string data);

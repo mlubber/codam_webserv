@@ -54,10 +54,11 @@ void serveError(Client& client, std::string error_code, const ConfigBlock& serve
 {
 	std::cout << "-------------- SOME ERROR ---------------- " << error_code << std::endl;
 	client.setCloseClientState(true);
-	std::string root;
-	for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values)
-		if (value.first == "root")
-			root = value.second.front();
+	std::string root = client.getServerBlockInfo("root");
+	// for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values)
+	// 	if (value.first == "root")
+	// 		root = value.second.front();
+	
 	
 	std::string path;
     for (const std::pair<const std::string, std::vector<std::string>>& value : serverBlock.values) 
@@ -117,6 +118,8 @@ static void saveFile(const clRequest& cl_request, const std::string& boundary, c
 	for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values)
 		if (value.first == "root")
 			root = value.second.front();
+	if (root[0] != '.')
+		root = "." + root;
 	
 	// std::cout << "save file client" << std::endl;
 	size_t start = cl_request.body.find(boundary);
@@ -179,10 +182,12 @@ static void	handlePostRequest(Client& client, clRequest& cl_request, const Confi
 {
 	// std::string filePath = STATIC_DIR + request.path + std::string("/index.html");
 	std::ostringstream response;
-	std::string root;
-	for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values)
-		if (value.first == "root")
-			root = value.second.front();
+	std::string root = client.getServerBlockInfo("root");
+	// for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values)
+	// 	if (value.first == "root")
+	// 		root = value.second.front();
+	if (root[0] != '.')
+		root = "." + root;
 
 	size_t maxBody = MAX_BODY_SIZE;
 	for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values)
@@ -261,10 +266,12 @@ static void	handlePostRequest(Client& client, clRequest& cl_request, const Confi
 
 void	showDirList(Client& client, clRequest& cl_request, const std::string& filePath, const ConfigBlock& serverBlock)
 {
-	std::string root;
-	for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values)
-		if (value.first == "root")
-			root = value.second.front();
+	std::string root = client.getServerBlockInfo("root");
+	// for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values)
+	// 	if (value.first == "root")
+	// 		root = value.second.front();
+	if (root[0] != '.')
+		root = "." + root;
 	
 	// std::cout << "show directory listing" << std::endl;
 	std::ostringstream response;
@@ -333,10 +340,12 @@ static void	deleteFile(Client& client, clRequest& cl_request, const ConfigBlock&
 	// std::cout << cl_request.path << std::endl;
 	// std::cout << cl_request.queryStr << std::endl;
 	
-	std::string root;
-	for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values)
-	if (value.first == "root")
-	root = value.second.front();
+	std::string root = client.getServerBlockInfo("root");
+	// for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values)
+	// 	if (value.first == "root")
+	// 	root = value.second.front();
+	if (root[0] != '.')
+		root = "." + root;
 	
 	size_t	filenamePos = cl_request.queryStr.find("filename=");
 	// std::cout << "filenamepos: " << filenamePos << std::endl;
@@ -379,11 +388,13 @@ static void	deleteFile(Client& client, clRequest& cl_request, const ConfigBlock&
 
 void routeRequest(Client& client, const Server& server, clRequest& cl_request, const ConfigBlock& serverBlock)
 {
-	std::string root;
+	std::string root = client.getServerBlockInfo("root");
 
-	for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values)
-		if (value.first == "root")
-			root = value.second.front();
+	// for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values)
+	// 	if (value.first == "root")
+	// 		root = value.second.front();
+	if (root[0] != '.')
+		root = "." + root;
 
 	cl_request.queryStr = urlDecode(cl_request.queryStr);
 
@@ -466,6 +477,8 @@ void routeRequest(Client& client, const Server& server, clRequest& cl_request, c
 	for (const std::pair<const std::string, std::vector<std::string>> &value : locBlock.values)
 		if (value.first == "root")
 			rootOverride = value.second.front();
+	if (!rootOverride.empty() && rootOverride[0] != '.')
+		rootOverride = "." + rootOverride;
 	if (!rootOverride.empty())
 	{
 		// std::cout << "root found in nested block: " << rootOverride << std::endl;
@@ -498,7 +511,7 @@ void routeRequest(Client& client, const Server& server, clRequest& cl_request, c
 		std::cout << "this is the filepath: " << filePath << std::endl;
 		if (stat(filePath.c_str(), &stats) == 0) //fills stats with metadata from filePath if filePath exists
 		{
-			// std::cout << "Size: " << stats.st_size << " bytes" << std::endl;
+			std::cout << "Size: " << stats.st_size << " bytes" << std::endl;
 			if (S_ISDIR(stats.st_mode) && !locPath.empty()) // checks if filePath is a working directory
 			{
 				// std::cout << filePath << " is a directory!" << std::endl;

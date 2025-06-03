@@ -95,7 +95,7 @@ static bool	init_cgi_struct(Client& client, clRequest& cl_request, const Server&
 	return (0);
 }
 
-static int	create_cgi_child_process(t_cgiData& cgi, const clRequest& cl_request, const Server& server)
+static int	create_cgi_child_process(t_cgiData& cgi, const clRequest& cl_request, const Server& server, Client& client)
 {
 	cgi.child_pid = fork();
 	if (cgi.child_pid == -1)
@@ -105,7 +105,7 @@ static int	create_cgi_child_process(t_cgiData& cgi, const clRequest& cl_request,
 		return (2);
 	}
 	if (cgi.child_pid == 0)
-		cgi_child_process(cgi, cl_request, server);
+		cgi_child_process(cgi, cl_request, server, client);
 	return (0);
 }
 
@@ -125,7 +125,7 @@ int	start_cgi(clRequest& cl_request, const Server& server, Client& client)
 	cl_request.cgi = true;
 	if (init_cgi_struct(client, cl_request, server))
 		return (2);
-	if (create_cgi_child_process(client.getCgiStruct(), cl_request, server) != 0)
+	if (create_cgi_child_process(client.getCgiStruct(), cl_request, server, client) != 0)
 		return (2);
 	if (closing_parent_fds(client.getCgiStruct()))
 		return (2);
@@ -140,7 +140,7 @@ bool	cgi_check(std::string& path)
 {
 	if (path.compare(0, 9, "/cgi-bin/") == 0)
 		return (true);
-	else if (path.length() > 3)
+	if (path.length() > 3)
 	{
 		size_t length = path.length();
 		if (path.compare(length - 3, length, ".py") == 0)
