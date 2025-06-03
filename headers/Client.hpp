@@ -6,6 +6,7 @@
 
 enum state 
 {
+	idle,				// When a client is connected, has sent a request, got a response and is now just connected
 	reading_request,	// In loop of reading the request from the socket
 	parsing_request,	// Received the full request from the socket and now parsing
 	cgi_write,			// In loop of writing data to the cgi_pipe
@@ -69,11 +70,11 @@ class Client
 		void	setClientState(int state);
 		void	setCgiStruct(std::unique_ptr<t_cgiData> cgi);
 		void	setCloseClientState(bool state);
-		void	setLastRequest(long secondsSinceEpoch);
+		void	setLastRequest();
 
 		void	addFd(int fd);
 		void	resetFds(int fd);
 
-		void	clearData(int epollFd);
+		void	resetClient(int epollFd);
 		void	updateBytesSent(size_t bytes_sent);
 	};

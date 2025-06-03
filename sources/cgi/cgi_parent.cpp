@@ -3,7 +3,7 @@
 #include "../../headers/cgi.hpp"
 #include "../../headers/Client.hpp"
 
-int	wait_for_child(t_cgiData& cgi)
+static void wait_for_child(t_cgiData& cgi)
 {
 	pid_t	wpid;
 	int		status;
@@ -11,8 +11,8 @@ int	wait_for_child(t_cgiData& cgi)
 
 	std::cout << "errno before wait_for_child: " << errno << ", str: " << strerror(errno) << std::endl;
 
-	if (errno != 0)
-		return (errno);
+	// if (errno != 0)
+	// 	return (errno);
 	std::cout << "CHECKING WPID" << std::endl;
 	wpid = waitpid(cgi.child_pid, &status, WNOHANG);
 	if (wpid == 0)
@@ -20,7 +20,8 @@ int	wait_for_child(t_cgiData& cgi)
 		std::cout << "Killing child process\n" << std::endl;
 		kill(cgi.child_pid, SIGTERM);
 		wpid = waitpid(cgi.child_pid, &status, 0);
-		return (0);
+		cgi.child_pid = -1;
+		return ;
 	}
 	if (wpid == -1)
 		exit_code = errno;
@@ -35,10 +36,9 @@ int	wait_for_child(t_cgiData& cgi)
 	}
 	else if (exit_code == 0 && WIFEXITED(status))
 		exit_code = WEXITSTATUS(status);
-	if (exit_code == 0)
-		return (0);
-	else
-		return(2);
+	if (exit_code != 0)
+		std::cerr << "NOTE: Child didn't end properly, code: " << exit_code << std::endl; 
+
 }
 
 
@@ -64,19 +64,6 @@ void	createCgiResponse(Client& client, std::string& readData)
 	client.setResponseData("HTTP/1.1 200 OK\r\n" + contentLength + readData);
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -124,19 +111,8 @@ void	read_from_pipe(Client& client, t_cgiData& cgi, const Server& server, std::s
 	client.resetFds(client.getClientFds(0));
 	client.setClientState(sending_response);
 	wait_for_child(cgi);
+	cgi.child_pid = -1;
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

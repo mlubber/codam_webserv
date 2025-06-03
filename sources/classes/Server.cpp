@@ -160,7 +160,13 @@ void Server::run(void)
 	{
 		std::cout << "\nEpoll_Wait() ----------------------------------------" << std::endl;
 		got_signal = 0;
-		int event_count = epoll_wait(_epoll_fd, ready_events, MAX_EVENTS, -1);
+		errno = 0;
+		int event_count = epoll_wait(_epoll_fd, ready_events, MAX_EVENTS, 5000);
+		if (event_count == 0)
+		{
+			checkTimedOut();
+			continue ;
+		}
 		if (event_count == -1)
 		{
 			std::cerr << "Epoll wait error: " << strerror(errno) << std::endl;
@@ -206,8 +212,8 @@ void Server::run(void)
 			if (got_signal != 0)
 				handleReceivedSignal();
 		}
+		checkTimedOut();
 	}
-	close(_epoll_fd);
 }
 
 void	Server::handleReceivedSignal()
@@ -250,7 +256,7 @@ void Server::connectClient(int _epoll_fd, int server_fd)
 		}
 
 		struct epoll_event event;
-		event.events = EPOLLIN | EPOLLOUT | EPOLLET;
+		event.events = EPOLLIN | EPOLLET;
 		event.data.fd = new_client_fd;
 
 		if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, new_client_fd, &event) == -1)
@@ -399,16 +405,13 @@ void Server::close_webserv()
 int Server::recvFromSocket(Client& client)
 {
 	char			buffer[SOCKET_BUFFER] = {0};
-	// std::string&	receivedData = client.getClientReceived();
 	long			bytes_received;
 	int				client_fd = client.getClientFds(0);
 
-	std::cout << "\nErrno before receiving: " << errno << ", str: " << strerror(errno) << std::endl;
-	std::cout << "\n\n--- BUFFER ---\n" << buffer << "\n\n--- END OF BUFFER ---\n" << std::endl;
-
-	// time_t timestamp;
-	// time(&timestamp);
-	std::cout << "TIME: " << std::time(nullptr) << std::endl;
+	if (client.getClientState() == idle)
+		client.setClientState(reading_request);
+	if (client.getClientReceived().empty())
+		client.setLastRequest();
 
 	// Read data from the socket level-triggerd without EPOLLET:
 	// bytes_received = recv(client_fd, buffer, SOCKET_BUFFER, 0);
@@ -425,7 +428,7 @@ int Server::recvFromSocket(Client& client)
 	// 	return (2); // Indicates the client has disconnected
 	// }
 	// receivedData.append(buffer, bytes_received);
-	std::cout << "\n\n--receivedData BEFORE: --\n" << client.getClientReceived() << "\n\n--END receivedData BEFORE--\n" << std::endl;
+	// std::cout << "\n\n--receivedData BEFORE: --\n" << client.getClientReceived() << "\n\n--END receivedData BEFORE--\n" << std::endl;
 
 	// Read data from the socket edge-triggered with EPOLLET:
 	do
@@ -499,11 +502,7 @@ void	Server::sendToSocket(Client& client)
 		client.updateBytesSent(bytes_sent);
 		return ;
 	}
-	struct epoll_event event;
-	event.events = EPOLLIN;
-	event.data.fd = socket_fd;
-	epoll_ctl(_epoll_fd, EPOLL_CTL_MOD, socket_fd, &event);
-	client.clearData(_epoll_fd);
+	client.resetClient(_epoll_fd);
 }
 
 
@@ -530,21 +529,30 @@ const Configuration&	Server::getConfig() const
 
 void Server::checkTimedOut()
 {
+	std::cout << "\n\nChecking time outs\n\n" << std::endl;
+	int time_since_request;
+	int state;
+	int client_fd;
 	for (int i = 0; i < _client_count; ++i)
 	{
-		if (std::time(nullptr) - _clients[i]->getLastRequest() > 10)
+		time_since_request = std::time(nullptr) - _clients[i]->getLastRequest();
+		client_fd = _clients[i]->getClientFds(0);
+		state = _clients[i]->getClientState();
+		if (state == reading_request && time_since_request >= TIMEOUT)
 		{
-			int client_fd = _clients[i]->getClientFds(0);
 			struct epoll_event event;
 			event.events = EPOLLOUT;
 			event.data.fd = client_fd;
-			epoll_ctl(getEpollFd(), EPOLL_CTL_MOD, client_fd, &event);
-			_clients[i]->setClientState(sending_response);
-			_clients[i]->setCloseClientState(true);
-			if (_clients[i]->getClientState() == reading_request)
-				serveError(*_clients[i], "408", _clients[i]->getServerBlock());
-			else
-				serveError(*_clients[i], "500", _clients[i]->getServerBlock());
+			epoll_ctl(_epoll_fd, EPOLL_CTL_MOD, client_fd, &event);
+			serveError(*_clients[i], "408", _clients[i]->getServerBlock());
 		}
+		else if ((state == cgi_write || state == cgi_read) && time_since_request >= TIMEOUT)
+		{
+			if (_clients[i]->checkCgiPtr() && _clients[i]->getCgiStruct().child_pid != -1)
+				kill(_clients[i]->getCgiStruct().child_pid, SIGTERM);
+			serveError(*_clients[i], "500", _clients[i]->getServerBlock());
+		}
+		else if (state == idle && time_since_request >= KEEPALIVETIME)
+			removeClient(_clients[i], i);
 	}
 }
