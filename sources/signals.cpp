@@ -48,8 +48,10 @@ void	close_signal_pipe(int message)
 			break ;
 	}
 
-	if (close(signal_pipe[0]) == -1)
+	if (signal_pipe[0] != -1 && close(signal_pipe[0]) == -1)
 		std::cerr << "ERROR: Failed closing signal_pipe 0" << std::endl;
-	if (close(signal_pipe[1]) == -1)
-		std::cerr << "ERROR: Failed closing signal_pipe 1" << std::endl;	
+	signal_pipe[0] = -1;
+	if (signal_pipe[1] != -1 && close(signal_pipe[1]) == -1)
+		std::cerr << "ERROR: Failed closing signal_pipe 1" << std::endl;
+	signal_pipe[1] = -1;	
 }

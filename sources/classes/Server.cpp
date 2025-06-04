@@ -35,19 +35,6 @@ Server&	Server::operator=(const Server& other)
 
 bool Server::initialize(const std::vector<std::pair<std::string, std::vector<int> > >& server_configs)
 {
-	if (pipe(signal_pipe) == -1)
-		return (false);
-	if (setNonBlocking(signal_pipe[0]) == -1)
-	{
-		close_signal_pipe(1);
-		return (false);
-	}
-	if (initialize_signals() == -1)
-	{
-		close_signal_pipe(2);
-		return (false);
-	}
-
 	struct epoll_event event;
 	event.events = EPOLLIN | EPOLLET;
 	event.data.fd = signal_pipe[0];
@@ -152,11 +139,12 @@ bool Server::initialize(const std::vector<std::pair<std::string, std::vector<int
 }
 
 
-void Server::run(void)
+void	Server::run(void)
 {
 	struct epoll_event ready_events[MAX_EVENTS];
+	int x = 0;
 
-	while (true)
+	while (_close_server == false)
 	{
 		std::cout << "\nEpoll_Wait() ----------------------------------------" << std::endl;
 		got_signal = 0;
@@ -181,9 +169,12 @@ void Server::run(void)
 				{
 					std::cout << "RECEIVED CTRL + C" << std::endl;
 					close_webserv();
+					x = 1;
 				}
 			}
 		}
+		if (x == 1)
+			break ;
 
 		for (int i = 0; i < event_count; i++) // Going through events returned by epoll_wait()
 		{
@@ -337,13 +328,14 @@ void Server::close_webserv()
 
 	// close epoll fd
 	epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, _epoll_fd, NULL);
+	_close_server = true;
 
 	// remove configuration stuff ??
 
 
 
-	std::exit(0);
-	std::exit(errno); // IF we want to quit and return errno set to last error
+	// std::exit(0);
+	// std::exit(errno); // IF we want to quit and return errno set to last error
 }
 
 
@@ -472,7 +464,7 @@ int Server::recvFromSocket(Client& client)
 		size_t totalLength = headerEnd + 4 + contentLength; // Headers + "\r\n\r\n" + Body
 		if (tempReceivedData.size() >= totalLength)
 		{
-			std::cout << "Full request received (" << tempReceivedData.size() << " bytes)" << std::endl;
+			// std::cout << "Full request received (" << tempReceivedData.size() << " bytes)" << std::endl;
 			client.setClientState(parsing_request);
 			return (0); // Full request received
 		}
@@ -484,7 +476,7 @@ void	Server::sendToSocket(Client& client)
 {
 	std::string response = client.getClientResponse();
 
-	std::cout << "\n\n\n-----------FULL RESPONSE BEFORE SENDING-------------\n\n\n" << response << "\n\n\n-------------- END OF RESPONSE BEFORE SENDING--------------\n\n\n" << std::endl;
+	// std::cout << "\n\n\n-----------FULL RESPONSE BEFORE SENDING-------------\n\n\n" << response << "\n\n\n-------------- END OF RESPONSE BEFORE SENDING--------------\n\n\n" << std::endl;
 
 
 	int	socket_fd = client.getClientFds(0);
@@ -525,6 +517,11 @@ int	Server::getEpollFd() const
 const Configuration&	Server::getConfig() const
 {
 	return (_config);
+}
+
+bool	Server::getCloseServer() const
+{
+	return (_close_server);
 }
 
 

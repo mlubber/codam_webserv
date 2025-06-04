@@ -21,9 +21,6 @@
 # include <csignal>
 # include <ctime>
 
-#define KEEPALIVETIME 60
-#define TIMEOUT 10
-
 class Client;
 class Server;
 struct clRequest;

@@ -304,11 +304,44 @@ int main(int argc, char **argv)
 		}
 	}
 
-	Server server(myconfig);
-
-	if (!server.initialize(configdata))
+	if (pipe(signal_pipe) == -1)
 		return (1);
-	server.run();
+	if (setNonBlocking(signal_pipe[0]) == -1)
+	{
+		close_signal_pipe(1);
+		return (1);
+	}
+	if (initialize_signals() == -1)
+	{
+		close_signal_pipe(2);
+		return (1);
+	}
+
+	while (1)
+	{
+		try
+		{
+			Server server(myconfig);
+		
+			if (!server.initialize(configdata))
+			{
+				close_signal_pipe(0);
+				return (1);
+			}
+			server.run();
+			if (server.getCloseServer() == true)
+				break ;
+		}
+		catch(const std::exception& e)
+		{
+			std::cerr << "Server failed: " << e.what() << "\n..server restarting.." << std::endl;
+		}
+		catch (...){
+			std::cerr << "Server failed: server restarting.." << std::endl;
+		}
+		
+
+	}
 	
 	return (0);
 }
