@@ -117,7 +117,7 @@ long	Client::getLastRequest() const
 }
 
 
-std::string		Client::getServerBlockInfo(std::string search)
+std::string		Client::getServerBlockInfo(std::string search) const
 {
 	std::string found;
 	for (const std::pair<const std::string, std::vector<std::string>> &value : _server_block.values)

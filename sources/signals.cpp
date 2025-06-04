@@ -26,6 +26,7 @@ int	initialize_signals()
 {
 	std::signal(SIGINT, signalHandler);
 	std::signal(SIGPIPE, signalHandler);
+	std::signal(SIGQUIT, SIG_IGN);
 	if (errno > 0)
 		return (-1);
 	return (0);

@@ -64,7 +64,7 @@ class Client
 		bool				getCloseClientState()	const;
 		const ConfigBlock&	getServerBlock()		const;
 		long				getLastRequest()		const;
-		std::string			getServerBlockInfo(std::string search);
+		std::string			getServerBlockInfo(std::string search) const;
 		
 		void	setReceivedData(const char* data, ssize_t bytes_received);
 		void	setResponseData(std::string data);

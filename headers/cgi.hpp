@@ -25,7 +25,7 @@ typedef struct s_cgiData
 
 bool	cgi_check(std::string& path);
 int		start_cgi(clRequest& request, const Server& server, Client& client);
-void	cgi_child_process(t_cgiData& cgi, const clRequest& request, const Server& server, Client& client);
+void	cgi_child_process(t_cgiData& cgi, const clRequest& request, Client& client);
 void	cgi_cleanup(t_cgiData& cgi, bool child);
 void	write_to_pipe(Client& client, t_cgiData& cgi, const Server& server);
 void	read_from_pipe(Client& client, t_cgiData& cgi, const Server& server, std::string& cgiBody);

@@ -104,7 +104,7 @@ void	read_from_pipe(Client& client, t_cgiData& cgi, const Server& server, std::s
 	createCgiResponse(client, readData);
 
 	struct epoll_event event;
-	event.events = EPOLLIN | EPOLLOUT;
+	event.events = EPOLLOUT;
 	event.data.fd = client.getClientFds(0);
 	epoll_ctl(server.getEpollFd(), EPOLL_CTL_MOD, client.getClientFds(0), &event);
 

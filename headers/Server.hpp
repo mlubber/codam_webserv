@@ -40,9 +40,6 @@ class Server
 		bool						_close_server;
 
 		Configuration				_config;
-		const std::string			_name; // for cgi environment var server name - Now temp, but needs to come from config
-		const std::string			_port; // for cgi environment var port - Now temp, but needs to come from config
-		const std::string			_root; // temp till Abbas adds his config file code
 
 	public:
 
@@ -67,7 +64,7 @@ class Server
 
 		void	close_webserv();
 
-		const std::string		getServerInfo(int i) const;
+		// const std::string		getServerInfo(int i) const;
 		int						getEpollFd() const;
 		const Configuration&	getConfig() const;
 		bool					getCloseServer() const;

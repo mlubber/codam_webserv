@@ -336,11 +336,10 @@ int main(int argc, char **argv)
 		{
 			std::cerr << "Server failed: " << e.what() << "\n..server restarting.." << std::endl;
 		}
-		catch (...){
+		catch (...)
+		{
 			std::cerr << "Server failed: server restarting.." << std::endl;
 		}
-		
-
 	}
 	
 	return (0);

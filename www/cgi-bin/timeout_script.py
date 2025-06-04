@@ -28,8 +28,7 @@ import time
 
 # Generate response
 print("Content-Type: text/html\r\n\r\n")  # Corrected header termination
-while True
-	continue
+time.sleep(15)
 print("""
 <!DOCTYPE html>
 <html lang="en">

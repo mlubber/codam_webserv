@@ -3,7 +3,7 @@
 #include "../../headers/Client.hpp"
 #include "Configuration.hpp"
 
-Server::Server(const Configuration& config) : _server_fds_amount(0), _addr_len(sizeof(_address)), _client_count(0), _config(config), _name("localhost"), _port("8080"), _root("/www")
+Server::Server(const Configuration& config) : _server_fds_amount(0), _addr_len(sizeof(_address)), _client_count(0), _config(config)
 {
 	std::cout	<< "Default constructor"
 				<< std::endl;
@@ -142,7 +142,6 @@ bool Server::initialize(const std::vector<std::pair<std::string, std::vector<int
 void	Server::run(void)
 {
 	struct epoll_event ready_events[MAX_EVENTS];
-	int x = 0;
 
 	while (_close_server == false)
 	{
@@ -157,24 +156,15 @@ void	Server::run(void)
 		}
 		if (event_count == -1)
 		{
-			std::cerr << "Epoll wait error: " << strerror(errno) << std::endl;
-			continue;
-		}
-		for (int i = 0; i < event_count; i++) // Checking if signal interrupted
-		{
-			int fd = ready_events[i].data.fd;
-			if (fd == signal_pipe[0])
+			if (got_signal != 0)
 			{
 				if (check_if_signal() == SIGINT)
-				{
-					std::cout << "RECEIVED CTRL + C" << std::endl;
-					close_webserv();
-					x = 1;
-				}
+					break ;
 			}
+			else
+				std::cerr << "Epoll wait error: " << strerror(errno) << std::endl;
+			continue;
 		}
-		if (x == 1)
-			break ;
 
 		for (int i = 0; i < event_count; i++) // Going through events returned by epoll_wait()
 		{
@@ -203,8 +193,10 @@ void	Server::run(void)
 			if (got_signal != 0)
 				handleReceivedSignal();
 		}
-		checkTimedOut();
+		if (_close_server == false)
+			checkTimedOut();
 	}
+	close_webserv();
 }
 
 void	Server::handleReceivedSignal()
@@ -212,12 +204,11 @@ void	Server::handleReceivedSignal()
 	if (got_signal == SIGINT)
 	{
 		std::cout << "SIGNAL: Received SIGINT, closing webserv.." << std::endl;
-		close_webserv();
+		_close_server = true;
 	}
 	if (got_signal == SIGPIPE)
 	{
 		std::cout << "SIGNAL: Received SIGPIPE, disconnecting client now.." << std::endl;
-
 	}
 }
 
@@ -268,7 +259,6 @@ void Server::connectClient(int _epoll_fd, int server_fd)
 		std::cerr << e.what() << '\n' << "CLIENT ERROR: failed connecting new client" << std::endl;
 	}
 }
-
 
 void Server::removeClient(Client* client, int index)
 {
@@ -329,13 +319,6 @@ void Server::close_webserv()
 	// close epoll fd
 	epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, _epoll_fd, NULL);
 	_close_server = true;
-
-	// remove configuration stuff ??
-
-
-
-	// std::exit(0);
-	// std::exit(errno); // IF we want to quit and return errno set to last error
 }
 
 
@@ -499,15 +482,15 @@ void	Server::sendToSocket(Client& client)
 }
 
 
-const std::string	Server::getServerInfo(int i) const
-{
-	if (i == 0)
-		return (_name);
-	else if (i == 1)
-		return (_port);
-	else
-		return (_root);
-}
+// const std::string	Server::getServerInfo(int i) const
+// {
+// 	if (i == 0)
+// 		return (_name);
+// 	else if (i == 1)
+// 		return (_port);
+// 	else
+// 		return (_root);
+// }
 
 int	Server::getEpollFd() const
 {
