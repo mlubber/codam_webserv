@@ -413,6 +413,9 @@ int Server::recvFromSocket(Client& client)
 	if (client.getClientReceived().empty())
 		client.setLastRequest();
 
+
+	std::cout << "\nErrno before receiving: " << errno << ", str: " << strerror(errno) << std::endl;
+
 	// Read data from the socket level-triggerd without EPOLLET:
 	// bytes_received = recv(client_fd, buffer, SOCKET_BUFFER, 0);
 	// std::cout << "bytes_received: " << bytes_received << std::endl;
@@ -445,8 +448,6 @@ int Server::recvFromSocket(Client& client)
 		}
 		client.setReceivedData(buffer, bytes_received);
 	} while (bytes_received > 0);
-
-	std::cout << "\n\n--receivedData AFTER: --\n" << client.getClientReceived() << "\n\n--END receivedData AFTER--\n" << std::endl;
 
 	std::string tempReceivedData = client.getClientReceived();
 

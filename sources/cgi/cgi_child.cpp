@@ -2,7 +2,7 @@
 #include "../../headers/Client.hpp"
 #include "../../headers/Server.hpp"
 
-void	get_exe_path(t_cgiData& cgi, const clRequest& cl_request, const Server& server)
+void	get_exe_path(t_cgiData& cgi, const clRequest& cl_request, const Server& server, Client& client)
 {
 	std::string path;
 	const std::string& root = server.getServerInfo(2);
@@ -12,6 +12,7 @@ void	get_exe_path(t_cgiData& cgi, const clRequest& cl_request, const Server& ser
 		path = root + cl_request.path;
 	cgi.path = new char[path.size() + 1];
 	std::strcpy(cgi.path, path.c_str());
+	(void)client;
 }
 
 void	get_exe(t_cgiData& cgi, const clRequest& cl_request)
@@ -50,24 +51,24 @@ std::string	get_header_data(const clRequest& cl_request, std::string header, int
 		return ("\"\"");
 }
 
-std::string get_path_info(const clRequest& cl_request, const Server& server)
+std::string get_path_info(const clRequest& cl_request, const Server& server, Client& client)
 {
-	std::string root = server.getServerInfo(2);
+	std::string root = client.getServerBlockInfo("root");
 	if (root[0] != '/')
 		root = "/" + root;
 	std::string path_info = getenv("PWD") + root + cl_request.path;
-
+	(void)server;
 	return (path_info);
 }
 
-void	setup_environment(t_cgiData& cgi, const clRequest& cl_request, const Server& server)
+void	setup_environment(t_cgiData& cgi, const clRequest& cl_request, const Server& server, Client& client)
 {
 	cgi.envp = new char*[11]();
 
 	cgi.envp[0] = create_env_ptr("REQUEST_METHOD", cl_request.method);
 	cgi.envp[1] = create_env_ptr("SCRIPT_NAME", cl_request.path);
-	cgi.envp[2] = create_env_ptr("SERVER_NAME", server.getServerInfo(0));
-	cgi.envp[3] = create_env_ptr("SERVER_PORT", server.getServerInfo(1));
+	cgi.envp[2] = create_env_ptr("SERVER_NAME", client.getServerBlockInfo("host"));
+	cgi.envp[3] = create_env_ptr("SERVER_PORT", client.getServerBlockInfo("listen"));
 	cgi.envp[4] = create_env_ptr("SERVER_PROTOCOL", "HTTP/1.1");
 	cgi.envp[5] = create_env_ptr("GATEWAY_INTERFACE", "CGI/1.1");
 	cgi.envp[6] = create_env_ptr("CONTENT_LENGTH", get_header_data(cl_request, "content-length", 0));
@@ -76,19 +77,20 @@ void	setup_environment(t_cgiData& cgi, const clRequest& cl_request, const Server
 		cgi.envp[8] = create_env_ptr("QUERY_STRING", cl_request.queryStr);
 	else
 		cgi.envp[8] = create_env_ptr("QUERY_STRING", "\"\"");
-	cgi.envp[9] = create_env_ptr("PATH_INFO", get_path_info(cl_request, server));
+	cgi.envp[9] = create_env_ptr("PATH_INFO", get_path_info(cl_request, server, client));
 
 
 
 	//  Test printing environment
-	// std::cout << "\n--- CGI Environment ---" << std::endl;
-	// for (int i = 0; i < 10; ++i) {
-	// 	if (cgi.envp[i] == nullptr)
-	// 		std::cout << "null\n";
-	// 	else
-	// 		std::cout << cgi.envp[i] << "\n";
-	// } std::cout << std::endl;
+	std::cout << "\n--- CGI Environment ---" << std::endl;
+	for (int i = 0; i < 10; ++i) {
+		if (cgi.envp[i] == nullptr)
+			std::cout << "null\n";
+		else
+			std::cout << cgi.envp[i] << "\n";
+	} std::cout << std::endl;
 	//  End test printing environment
+	std::cout << "ACTUAL SERVER_NAME=" << client.getServerBlockInfo("host") << std::endl;
 }
 
 static int	setting_fds(t_cgiData& cgi)
@@ -115,12 +117,12 @@ static int	setting_fds(t_cgiData& cgi)
 	return (0);
 }
 
-void	cgi_child_process(t_cgiData& cgi, const clRequest& cl_request, const Server& server)
+void	cgi_child_process(t_cgiData& cgi, const clRequest& cl_request, const Server& server, Client& client)
 {
 	try
 	{
-		setup_environment(cgi, cl_request, server);
-		get_exe_path(cgi, cl_request, server);
+		setup_environment(cgi, cl_request, server, client);
+		get_exe_path(cgi, cl_request, server, client);
 		get_exe(cgi, cl_request);
 	}
 	catch(const std::exception& e)

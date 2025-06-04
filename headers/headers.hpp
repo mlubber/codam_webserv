@@ -46,5 +46,6 @@ std::vector<int>	convertToInt(std::vector<std::string> &portsStr);
 std::string			ip_to_string(struct in_addr addr);
 std::string			extract_first_word(std::string path);
 void				parsingRequest(Server& server, Client& client);
+int					check_path(std::string filePath, std::string locPath, std::string locConf);
 
 // void				close_webserv(Server& server);
