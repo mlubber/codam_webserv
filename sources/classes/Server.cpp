@@ -193,8 +193,8 @@ void	Server::run(void)
 			if (got_signal != 0)
 				handleReceivedSignal();
 		}
-		if (_close_server == false)
-			checkTimedOut();
+		// if (_close_server == false)
+		// 	checkTimedOut();
 	}
 	close_webserv();
 }
@@ -238,7 +238,7 @@ void Server::connectClient(int _epoll_fd, int server_fd)
 		}
 
 		struct epoll_event event;
-		event.events = EPOLLIN | EPOLLET;
+		event.events = EPOLLIN;
 		event.data.fd = new_client_fd;
 
 		if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, new_client_fd, &event) == -1)
@@ -301,11 +301,6 @@ void Server::removeClient(Client* client, int index)
 
 
 
-
-
-
-
-
 void Server::close_webserv()
 {
 	// remove clients
@@ -322,19 +317,23 @@ void Server::close_webserv()
 }
 
 
-// int Server::recvFromSocket(Client& client, std::string& receivedData)
+// int Server::recvFromSocket(Client& client)
 // {
 // 	char			buffer[SOCKET_BUFFER];
 // 	// std::string&	receivedData = client.getClientReceived();
 // 	long			bytes_received;
 // 	int				client_fd = client.getClientFds(0);
 
+// 	if (client.getClientState() == idle)
+// 		client.setClientState(reading_request);
+// 	if (client.getClientReceived().empty())
+// 		client.setLastRequest();
+
 
 // 	std::cout << "\nErrno before receiving: " << errno << ", str: " << strerror(errno) << std::endl;
 
 
-// 	bytes_received = recv(client_fd, buffer, SOCKET_BUFFER - 1, 0);
-// 	buffer[bytes_received - 1] = '\0';
+// 	bytes_received = recv(client_fd, buffer, SOCKET_BUFFER, 0);
 // 	std::cout << "\nbytes_received: " << bytes_received << std::endl;
 
 // 	if (bytes_received == -1)
@@ -346,9 +345,9 @@ void Server::close_webserv()
 // 	}
 // 	else if (bytes_received == 0)
 // 		return (2);
-// 	else if (bytes_received == SOCKET_BUFFER - 1)
+// 	else if (bytes_received == SOCKET_BUFFER)
 // 	{
-// 		receivedData += buffer;
+// 		client.setReceivedData(buffer, bytes_received);
 // 		return (1);
 // 	}
 
@@ -392,37 +391,37 @@ int Server::recvFromSocket(Client& client)
 	std::cout << "\nErrno before receiving: " << errno << ", str: " << strerror(errno) << std::endl;
 
 	// Read data from the socket level-triggerd without EPOLLET:
-	// bytes_received = recv(client_fd, buffer, SOCKET_BUFFER, 0);
-	// std::cout << "bytes_received: " << bytes_received << std::endl;
+	bytes_received = recv(client_fd, buffer, SOCKET_BUFFER, 0);
+	std::cout << "bytes_received: " << bytes_received << std::endl;
 
-	// if (bytes_received < 0)
-	// {
-	// 	std::cout << "No more data to read, waiting for the next EPOLLIN event" << std::endl;
-	// 	return (1); // Wait for the next EPOLLIN event
-	// }
-	// else if (bytes_received == 0)
-	// {
-	// 	std::cout << "Client disconnected: " << client_fd << std::endl;
-	// 	return (2); // Indicates the client has disconnected
-	// }
-	// receivedData.append(buffer, bytes_received);
-	// std::cout << "\n\n--receivedData BEFORE: --\n" << client.getClientReceived() << "\n\n--END receivedData BEFORE--\n" << std::endl;
+	if (bytes_received < 0)
+	{
+		std::cout << "No more data to read, waiting for the next EPOLLIN event" << std::endl;
+		return (1); // Wait for the next EPOLLIN event
+	}
+	else if (bytes_received == 0)
+	{
+		std::cout << "Client disconnected: " << client_fd << std::endl;
+		return (2); // Indicates the client has disconnected
+	}
+	client.setReceivedData(buffer, bytes_received);
+	std::cout << "\n\n--receivedData BEFORE: --\n" << client.getClientReceived() << "\n\n--END receivedData BEFORE--\n" << std::endl;
 
 	// Read data from the socket edge-triggered with EPOLLET:
-	do
-	{
-		bytes_received = recv(client_fd, buffer, SOCKET_BUFFER, 0);
-		std::cout << "bytes_received: " << bytes_received << std::endl;
+	// do
+	// {
+	// 	bytes_received = recv(client_fd, buffer, SOCKET_BUFFER, 0);
+	// 	std::cout << "bytes_received: " << bytes_received << std::endl;
 
-		if (bytes_received < 0)
-			break ;
-		else if (bytes_received == 0 && client.getClientReceived().empty())
-		{
-			client.setCloseClientState(true);
-			return (2);
-		}
-		client.setReceivedData(buffer, bytes_received);
-	} while (bytes_received > 0);
+	// 	if (bytes_received < 0)
+	// 		break ;
+	// 	else if (bytes_received == 0 && client.getClientReceived().empty())
+	// 	{
+	// 		client.setCloseClientState(true);
+	// 		return (2);
+	// 	}
+	// 	client.setReceivedData(buffer, bytes_received);
+	// } while (bytes_received > 0);
 
 	std::string tempReceivedData = client.getClientReceived();
 

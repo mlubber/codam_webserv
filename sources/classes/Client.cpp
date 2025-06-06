@@ -227,7 +227,7 @@ void	Client::resetClient(int epoll_fd)
 	}
 	_state = idle;
 	struct epoll_event event;
-	event.events = EPOLLIN | EPOLLET;
+	event.events = EPOLLIN;
 	event.data.fd = _fds[0];
 	epoll_ctl(epoll_fd, EPOLL_CTL_MOD, _fds[0], &event);
 }

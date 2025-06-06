@@ -9,15 +9,10 @@ static void wait_for_child(t_cgiData& cgi)
 	int		status;
 	int		exit_code = 0;
 
-	std::cout << "errno before wait_for_child: " << errno << ", str: " << strerror(errno) << std::endl;
-
-	// if (errno != 0)
-	// 	return (errno);
-	std::cout << "CHECKING WPID" << std::endl;
 	wpid = waitpid(cgi.child_pid, &status, WNOHANG);
 	if (wpid == 0)
 	{
-		std::cout << "Killing child process\n" << std::endl;
+		std::cerr << "Child process hanging, killing child process\n" << std::endl;
 		kill(cgi.child_pid, SIGTERM);
 		wpid = waitpid(cgi.child_pid, &status, 0);
 		cgi.child_pid = -1;
@@ -38,9 +33,7 @@ static void wait_for_child(t_cgiData& cgi)
 		exit_code = WEXITSTATUS(status);
 	if (exit_code != 0)
 		std::cerr << "NOTE: Child didn't end properly, code: " << exit_code << std::endl; 
-
 }
-
 
 
 
@@ -48,27 +41,16 @@ void	createCgiResponse(Client& client, std::string& readData)
 {
 	std::string key = "\r\n\r\n";
 	size_t pos = readData.find(key);
-	// std::cout << "\n\n\n ------------------------ START READ DATA -------------------------------\n\n\n" << readData << "\n\n\n ------------------------ END READ DATA -------------------------------" << std::endl;
 	if (pos == std::string::npos)
 	{
-		std::cout << "NPOS FOUND? INTERNAL SERVER ERROR" << std::endl;
 		serveError(client, "500", client.getServerBlock());
 		return ;
 	}
 
 	std::string actualBody = readData.substr(pos + 4);
-	// std::cout << "ACTUAL BODY:" << actualBody << std::endl;
-
 	std::string contentLength = "Content-Length: " + std::to_string(actualBody.size()) + "\r\n";
-
 	client.setResponseData("HTTP/1.1 200 OK\r\n" + contentLength + readData);
-
 }
-
-
-
-
-
 
 
 void	read_from_pipe(Client& client, t_cgiData& cgi, const Server& server, std::string& readData)

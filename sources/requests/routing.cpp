@@ -197,8 +197,8 @@ static void	handlePostRequest(Client& client, clRequest& cl_request, const Confi
 		if (value.first == "client_max_body_size")
 			maxBody = std::stoul(value.second.front());
 
-	// std::cout << "client_max_body_size: " << maxBody << std::endl;
-	// std::cout << "cl_request.body.size: " << cl_request.body.size() << std::endl;
+	std::cout << "client_max_body_size: " << maxBody << " / " << MAX_BODY_SIZE << std::endl;
+	std::cout << "cl_request.body.size: " << cl_request.body.size() << std::endl;
 	if (cl_request.body.size() > maxBody)
 	{
 		// std::cout << "body too big!" << std::endl;
