@@ -122,13 +122,15 @@ std::string		Client::getServerBlockInfo(std::string search) const
 	std::string found;
 	for (const std::pair<const std::string, std::vector<std::string>> &value : _server_block.values)
 	{
+		std::cout << "Value.first: " << value.first << std::endl;
 		if (value.first == search)
 		{
 			found = value.second.front();
 			return (found);
 		}
 	}
-	return (nullptr);
+	return ("\"\"");
+	// return (nullptr);
 }
 
 
@@ -226,6 +228,7 @@ void	Client::resetClient(int epoll_fd)
 		_cgi = nullptr;
 	}
 	_state = idle;
+	std::cout << "\nClient state set to: idle\n" << std::endl;
 	struct epoll_event event;
 	event.events = EPOLLIN;
 	event.data.fd = _fds[0];

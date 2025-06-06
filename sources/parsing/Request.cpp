@@ -601,6 +601,19 @@ void	parsingRequest(Server& server, Client& client)
 	ConfigBlock serverBlock = config.getServerBlock(cl_request.host, cl_request.port);
 
 
+
+
+
+	std::string close_client = client.getServerBlockInfo("Connection");
+	if (close_client.empty())
+		std::cout << "Close client is empty!" << std::endl;
+	else
+		std::cout << "Close_client: " << close_client << std::endl;
+
+
+
+
+
 	if (cl_request.invalidRequest == true)
 	{
 		serveError(client, "400", serverBlock);

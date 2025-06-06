@@ -3,7 +3,7 @@
 #include "../../headers/Client.hpp"
 #include "Configuration.hpp"
 
-Server::Server(const Configuration& config) : _server_fds_amount(0), _addr_len(sizeof(_address)), _client_count(0), _config(config)
+Server::Server(const Configuration& config) : _server_fds_amount(0), _addr_len(sizeof(_address)), _client_count(0), _close_server(false), _config(config)
 {
 	std::cout	<< "Default constructor"
 				<< std::endl;
@@ -145,9 +145,12 @@ void	Server::run(void)
 
 	while (_close_server == false)
 	{
-		std::cout << "\nEpoll_Wait() ----------------------------------------" << std::endl;
+		// std::cout << "\nEpoll_Wait() ----------------------------------------" << std::endl;
+		std::cout << "\nEpoll_Wait() --------------- clients: " << _client_count << " ----------------" << std::endl;
 		got_signal = 0;
+
 		errno = 0;
+		// std::cout << "CLIENT COUNT: " << _client_count << std::endl;
 		int event_count = epoll_wait(_epoll_fd, ready_events, MAX_EVENTS, 5000);
 		if (event_count == 0)
 		{
@@ -286,10 +289,6 @@ void Server::removeClient(Client* client, int index)
 	if (close(client_fd) == -1)
 		std::cout << "SERVER ERROR: Failed closing client_fd " << client_fd << std::endl;
 
-
-	// REMOVE CLIENT FD FROM _server_fds
-	// this->_server_fds.erase(index);
-
 	_clients.erase(_clients.begin() + index);
 	delete client;
 	_client_count--;
@@ -394,15 +393,16 @@ int Server::recvFromSocket(Client& client)
 	bytes_received = recv(client_fd, buffer, SOCKET_BUFFER, 0);
 	std::cout << "bytes_received: " << bytes_received << std::endl;
 
-	if (bytes_received < 0)
+	if (bytes_received == -1)
 	{
-		std::cout << "No more data to read, waiting for the next EPOLLIN event" << std::endl;
-		return (1); // Wait for the next EPOLLIN event
+		serveError(client, "500", client.getServerBlock());
+		return (1);
 	}
-	else if (bytes_received == 0)
+	else if (bytes_received == 0 && client.getClientReceived().empty())
 	{
-		std::cout << "Client disconnected: " << client_fd << std::endl;
-		return (2); // Indicates the client has disconnected
+		client.setClientState(idle);
+		client.setCloseClientState(true);
+		return (2);
 	}
 	client.setReceivedData(buffer, bytes_received);
 	std::cout << "\n\n--receivedData BEFORE: --\n" << client.getClientReceived() << "\n\n--END receivedData BEFORE--\n" << std::endl;
@@ -451,6 +451,8 @@ int Server::recvFromSocket(Client& client)
 			return (0); // Full request received
 		}
 	}
+	else
+		std::cout << "Client: " << client_fd << ": Didn't find the received end thing \\r\\n\\r\\n" << std::endl;
 	return (1);
 }
 
@@ -477,7 +479,8 @@ void	Server::sendToSocket(Client& client)
 		client.updateBytesSent(bytes_sent);
 		return ;
 	}
-	client.resetClient(_epoll_fd);
+	if (client.getCloseClientState() == false)
+		client.resetClient(_epoll_fd);
 }
 
 

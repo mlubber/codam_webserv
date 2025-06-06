@@ -1,7 +1,0 @@
-Default constructor
-
-Epoll_Wait() ----------------------------------------
-
-Writing signal byte to signal_pipe
-Default destructor
-Closing server
