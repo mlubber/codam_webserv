@@ -176,7 +176,7 @@ void	Server::run(void)
 			for (int i = 0; i < _server_fds_amount; ++i)
 				if (fd == _server_fds[i])
 					connectClient(_epoll_fd, fd);
-			for (int i = 0; i < _client_count; ++i)
+			for (int i = _client_count - 1; i >= 0; --i)
 			{
 				int client_fd_amount = _clients[i]->getClientFds(-1);
 				for (int o = 0; o < client_fd_amount; ++o)
@@ -186,7 +186,7 @@ void	Server::run(void)
 						_clients[i]->handleEvent(*this);
 						if (_clients[i]->getCloseClientState() == true && _clients[i]->getClientState() != sending_response)
 						{
-							removeClient(_clients[i], i);
+							removeClient(i);
 							break ;
 						}
 					}
@@ -196,8 +196,8 @@ void	Server::run(void)
 			if (got_signal != 0)
 				handleReceivedSignal();
 		}
-		// if (_close_server == false)
-		// 	checkTimedOut();
+		if (_close_server == false)
+			checkTimedOut();
 	}
 	close_webserv();
 }
@@ -252,9 +252,9 @@ void Server::connectClient(int _epoll_fd, int server_fd)
 		}
 		std::cout << "Client connected: " << new_client_fd << std::endl;
 
-		Client* new_client = new Client(new_client_fd, serverBlock);
+		std::unique_ptr<Client> new_client = std::make_unique<Client>(new_client_fd, serverBlock);
 
-		this->_clients.push_back(new_client);
+		this->_clients.push_back(std::move(new_client));
 		this->_client_count++;
 	}
 	catch(const std::exception& e)
@@ -263,34 +263,33 @@ void Server::connectClient(int _epoll_fd, int server_fd)
 	}
 }
 
-void Server::removeClient(Client* client, int index)
+void Server::removeClient(int index)
 {
-	int client_fd = client->getClientFds(0);
+	int client_fd = _clients[index]->getClientFds(0);
 
-	if (client->checkCgiPtr())
+	if (_clients[index]->checkCgiPtr())
 	{
-		if (client->getCgiStruct().ets_pipe[1] != -1)
+		if (_clients[index]->getCgiStruct().ets_pipe[0] != -1)
 		{
-			if (close(client->getCgiStruct().ets_pipe[0]) == -1)
+			if (close(_clients[index]->getCgiStruct().ets_pipe[0]) == -1)
 				std::cout << "SERVER ERROR: Failed closing cgi_pipe write_end " << std::endl;
-			if (epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, client->getCgiStruct().ets_pipe[0], NULL) == -1)
-				std::cout << "Failed deleting " << client->getCgiStruct().ets_pipe[0] << " from EPOLL" << std::endl;
+			if (epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, _clients[index]->getCgiStruct().ets_pipe[0], NULL) == -1)
+				std::cout << "Failed deleting " << _clients[index]->getCgiStruct().ets_pipe[0] << " from EPOLL" << std::endl;
 		}
-		if (client->getCgiStruct().ste_pipe[0] != -1)
+		if (_clients[index]->getCgiStruct().ste_pipe[1] != -1)
 		{
-			if (close(client->getCgiStruct().ste_pipe[1]) == -1)
+			if (close(_clients[index]->getCgiStruct().ste_pipe[1]) == -1)
 				std::cout << "SERVER ERROR: Failed closing cgi_pipe read_end " << std::endl;
 		}
 	}
 
-	int status = epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, client_fd, NULL);
-	if (status == -1)
+	if (epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, client_fd, NULL) == -1)
 		std::cout << "SERVER ERROR: Failed deleting client fd " << client_fd << " from epoll!" << std::endl;
 	if (close(client_fd) == -1)
 		std::cout << "SERVER ERROR: Failed closing client_fd " << client_fd << std::endl;
 
 	_clients.erase(_clients.begin() + index);
-	delete client;
+	// _clients[index] = nullptr;
 	_client_count--;
 
 	std::cout << "Client disconnected: " << client_fd << std::endl;
@@ -304,7 +303,7 @@ void Server::close_webserv()
 {
 	// remove clients
 	while (_client_count > 0)
-		removeClient(_clients[_client_count - 1], _client_count - 1);
+		removeClient(_client_count - 1);
 
 
 	// close signal pipe
@@ -460,7 +459,7 @@ void	Server::sendToSocket(Client& client)
 {
 	std::string response = client.getClientResponse();
 
-	// std::cout << "\n\n\n-----------FULL RESPONSE BEFORE SENDING-------------\n\n\n" << response << "\n\n\n-------------- END OF RESPONSE BEFORE SENDING--------------\n\n\n" << std::endl;
+	std::cout << "\n\n\n-----------FULL RESPONSE BEFORE SENDING-------------\n\n\n" << response << "\n\n\n-------------- END OF RESPONSE BEFORE SENDING--------------\n\n\n" << std::endl;
 
 
 	int	socket_fd = client.getClientFds(0);
@@ -516,7 +515,7 @@ void Server::checkTimedOut()
 	int time_since_request;
 	int state;
 	int client_fd;
-	for (int i = 0; i < _client_count; ++i)
+	for (int i = _client_count - 1; i >= 0; --i)
 	{
 		time_since_request = std::time(nullptr) - _clients[i]->getLastRequest();
 		client_fd = _clients[i]->getClientFds(0);
@@ -536,6 +535,6 @@ void Server::checkTimedOut()
 			serveError(*_clients[i], "500", _clients[i]->getServerBlock());
 		}
 		else if (state == idle && time_since_request >= KEEPALIVETIME)
-			removeClient(_clients[i], i);
+			removeClient(i);
 	}
 }

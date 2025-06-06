@@ -28,18 +28,18 @@ class Server
 
 	private:
 
-		std::vector<int>			_server_fds;
-		int							_server_fds_amount;
-		int							_epoll_fd;
-		struct sockaddr_in			_address;
-		socklen_t					_addr_len;
+		std::vector<int>							_server_fds;
+		int											_server_fds_amount;
+		int											_epoll_fd;
+		struct sockaddr_in							_address;
+		socklen_t									_addr_len;
 
-		std::vector<Client*>		_clients;
-		int							_client_count;
+		std::vector<std::unique_ptr<Client>>		_clients;
+		int											_client_count;
 
-		bool						_close_server;
+		bool										_close_server;
 
-		Configuration				_config;
+		Configuration								_config;
 
 	public:
 
@@ -53,7 +53,7 @@ class Server
 		void	run();
 		
 		void	connectClient(int epoll_fd, int server_fd);
-		void	removeClient(Client* client, int index);	
+		void	removeClient(int index);	
 		
 		int 	recvFromSocket(Client& client);
 		void	sendToSocket(Client& client);	
