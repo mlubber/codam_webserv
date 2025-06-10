@@ -3,6 +3,7 @@
 Client::Client(int socket_fd, const ConfigBlock& serverBlock) : _state(reading_request), _cgi(nullptr), _close_client(false), _server_block(serverBlock)
 {
 	_fds.push_back(socket_fd);
+	_last_request = std::time(nullptr);
 }
 
 Client::~Client()
@@ -14,42 +15,34 @@ void	Client::handleEvent(Server& server)
 {
 	int status;
 
-	if (_state == reading_request)
+	if (_state == reading_request || _state == idle)
 	{
-		// status = server.recvFromSocket(*this, this->_request.receivedData);
 		status = server.recvFromSocket(*this);
 		errno = 0;
-		// if (status == 2)
-		// 	return (2);
-		// if (status == 1)
-		// 	return (1);
-		// return ;
+		if (status == 1)
+			return ;
 	}
-
 	if (_state == parsing_request)
 	{
+		std::cout << "parsing" << std::endl;
 		parsingRequest(server, *this);
 		return ;
 	}
-
-
-	if (_state == cgi_write) // POST method
+	if (_state == cgi_write) // POST only
 	{
+		std::cout << "cgi_write" << std::endl;
 		write_to_pipe(*this, this->getCgiStruct(), server);
 		return ;
 	}
-
-
-	if (_state == cgi_read) // GET method or next step after POST
+	if (_state == cgi_read) // GET / POST
 	{
+		std::cout << "cgi_read" << std::endl;
 		read_from_pipe(*this, *this->_cgi, server, _cgi->readData);
 		return ;
 	}
-
-
-
 	if (_state == sending_response)
 	{
+		std::cout << "sending" << std::endl;
 		server.sendToSocket(*this);
 	}
 }
@@ -114,18 +107,26 @@ const ConfigBlock&	Client::getServerBlock() const
 	return (_server_block);
 }
 
-std::string		Client::getServerBlockInfo(std::string search)
+long	Client::getLastRequest() const
+{
+	return (_last_request);
+}
+
+
+std::string		Client::getServerBlockInfo(std::string search) const
 {
 	std::string found;
 	for (const std::pair<const std::string, std::vector<std::string>> &value : _server_block.values)
 	{
+		// std::cout << "Value.first: " << value.first << std::endl;
 		if (value.first == search)
 		{
 			found = value.second.front();
 			return (found);
 		}
 	}
-	return (nullptr);
+	return ("\"\"");
+	// return (nullptr);
 }
 
 
@@ -153,20 +154,25 @@ void	Client::setClientState(int state)
 	switch (_state) // Just for testing
 	{
 		case 0:
-			std::cout << "\nClient state set to: reading_request\n" << std::endl;
+			std::cout << "\nClient state set to: idle\n" << std::endl;
 			break;
 		case 1:
-			std::cout << "\nClient state set to: parsing_request\n" << std::endl;
+			std::cout << "\nClient state set to: reading_request\n" << std::endl;
 			break;
 		case 2:
-			std::cout << "\nClient state set to: cgi_write\n" << std::endl;
+			std::cout << "\nClient state set to: parsing_request\n" << std::endl;
 			break;
 		case 3:
-			std::cout << "\nClient state set to: cgi_read\n" << std::endl;
+			std::cout << "\nClient state set to: cgi_write\n" << std::endl;
 			break;
 		case 4:
+			std::cout << "\nClient state set to: cgi_read\n" << std::endl;
+			break;
+		case 5:
 			std::cout << "\nClient state set to: sending_response\n" << std::endl;
 			break;
+		case 6:
+			std::cout << "\nClient state set to: sending_error\n" << std::endl;
 
 	}
 }
@@ -176,6 +182,10 @@ void	Client::setCloseClientState(bool state)
 	_close_client = state;
 }
 
+void	Client::setLastRequest()
+{
+	_last_request = std::time(nullptr);
+}
 
 
 void Client::addFd(int fd)
@@ -190,7 +200,7 @@ void Client::resetFds(int fd)
 
 /* Update client object data */
 // Pass 0 to clear _received data, and pass 1 or bigger to clear _reponse
-void	Client::clearData(int epollFd)
+void	Client::resetClient(int epoll_fd)
 {
 	_received.clear();
 	_response.clear();
@@ -201,23 +211,28 @@ void	Client::clearData(int epollFd)
 	{
 		if (_cgi->ets_pipe[0] != -1)
 		{
-			std::cout << "Deleting and closing read-end pipe " << _cgi->ets_pipe[0] << std::endl;
-			epoll_ctl(epollFd, EPOLL_CTL_DEL, _cgi->ets_pipe[0], NULL);
+			epoll_ctl(epoll_fd, EPOLL_CTL_DEL, _cgi->ets_pipe[0], NULL);
 			if (close(_cgi->ets_pipe[0]) == -1)
 				std::cerr << "CGI ERROR: Failed closing ets read-end pipe in parent" << std::endl;
 		}
 		if (_cgi->ste_pipe[1] != -1)
 		{
-			std::cout << "Deleting and closing read-end pipe " << _cgi->ste_pipe[1] << std::endl;
-			epoll_ctl(epollFd, EPOLL_CTL_DEL, _cgi->ste_pipe[1], NULL);
+			epoll_ctl(epoll_fd, EPOLL_CTL_DEL, _cgi->ste_pipe[1], NULL);
 			if (close(_cgi->ste_pipe[1]) == -1)
 				std::cerr << "CGI ERROR: Failed closing ets read-end pipe in parent" << std::endl;
 		}
 		_cgi = nullptr;
 	}
-
-	_state = reading_request;
+	_state = idle;
+	std::cout << "\nClient state set to: idle\n" << std::endl;
+	struct epoll_event event;
+	event.events = EPOLLIN;
+	event.data.fd = _fds[0];
+	epoll_ctl(epoll_fd, EPOLL_CTL_MOD, _fds[0], &event);
 }
+
+
+
 
 void	Client::updateBytesSent(size_t bytes_sent)
 {

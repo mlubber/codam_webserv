@@ -97,7 +97,7 @@ int	parseHeaderMultiValueComma(std::string &headerName ,std::string &line, clReq
 	return (0);
 }
 
-int	parseHeaderSingleValue(std::string &headerName ,std::string &line, clRequest &clRequest)
+int	parseHeaderSingleValue(std::string &headerName ,std::string &line, clRequest &clRequest, Client& client)
 {
 	if (isHeaderAppearTwice.find(headerName) != isHeaderAppearTwice.end())
 	{
@@ -137,6 +137,14 @@ int	parseHeaderSingleValue(std::string &headerName ,std::string &line, clRequest
 	}
 //	std::cout << "not host header : key is : (" << headerName  << ")" << std::endl;
 	clRequest.headers[headerName].push_back(line);
+	if (clRequest.headers.find("connection") != clRequest.headers.end())
+	{
+		if (clRequest.headers["connection"].front() == "close")
+		{
+			std::cout << "SETTING CLIENT CLOSE STATE TO TRUE" << std::endl;
+			client.setCloseClientState(true);
+		}
+	}
 	return (0);
 }
 
@@ -149,7 +157,7 @@ void trim(std::string &str)
     str.erase(std::find_if(str.rbegin(), str.rend(), [](unsigned char ch) { return !std::isspace(ch); }).base(), str.end());
 }
 
-int	parseRequestHeaders(std::string &line, clRequest& clRequest) 
+int	parseRequestHeaders(std::string &line, clRequest& clRequest, Client& client) 
 {
 
 	size_t pos = 0;
@@ -205,7 +213,7 @@ int	parseRequestHeaders(std::string &line, clRequest& clRequest)
 	else
 	{
 		// single value
-		if (parseHeaderSingleValue(headerName, headerValue, clRequest))
+		if (parseHeaderSingleValue(headerName, headerValue, clRequest, client))
 		{
 			// std::cout << "here 4" << std::endl;
 			return (1);
@@ -549,7 +557,7 @@ void readRequest(Client& client)
 					// std::cout << "return 4" << std::endl;
 					return;
 				}
-				if (parseRequestHeaders(line, clRequest) != 0 )
+				if (parseRequestHeaders(line, clRequest, client) != 0 )
 				{
 					// std::cout << "return 5" << std::endl;
 					return;
@@ -615,7 +623,7 @@ void	parsingRequest(Server& server, Client& client)
 	}
 
 	struct epoll_event event;
-	event.events = EPOLLIN | EPOLLOUT;
+	event.events = EPOLLOUT;
 	event.data.fd = client_fd;
 	epoll_ctl(server.getEpollFd(), EPOLL_CTL_MOD, client_fd, &event);
 	client.setClientState(sending_response);

@@ -3,24 +3,20 @@
 #include "../../headers/cgi.hpp"
 #include "../../headers/Client.hpp"
 
-int	wait_for_child(t_cgiData& cgi)
+static void wait_for_child(t_cgiData& cgi)
 {
 	pid_t	wpid;
 	int		status;
 	int		exit_code = 0;
 
-	std::cout << "errno before wait_for_child: " << errno << ", str: " << strerror(errno) << std::endl;
-
-	if (errno != 0)
-		return (errno);
-	std::cout << "CHECKING WPID" << std::endl;
 	wpid = waitpid(cgi.child_pid, &status, WNOHANG);
 	if (wpid == 0)
 	{
-		std::cout << "Killing child process\n" << std::endl;
+		std::cerr << "Child process hanging, killing child process\n" << std::endl;
 		kill(cgi.child_pid, SIGTERM);
 		wpid = waitpid(cgi.child_pid, &status, 0);
-		return (0);
+		cgi.child_pid = -1;
+		return ;
 	}
 	if (wpid == -1)
 		exit_code = errno;
@@ -35,12 +31,9 @@ int	wait_for_child(t_cgiData& cgi)
 	}
 	else if (exit_code == 0 && WIFEXITED(status))
 		exit_code = WEXITSTATUS(status);
-	if (exit_code == 0)
-		return (0);
-	else
-		return(2);
+	if (exit_code != 0)
+		std::cerr << "NOTE: Child didn't end properly, code: " << exit_code << std::endl; 
 }
-
 
 
 
@@ -48,52 +41,28 @@ void	createCgiResponse(Client& client, std::string& readData)
 {
 	std::string key = "\r\n\r\n";
 	size_t pos = readData.find(key);
-	// std::cout << "\n\n\n ------------------------ START READ DATA -------------------------------\n\n\n" << readData << "\n\n\n ------------------------ END READ DATA -------------------------------" << std::endl;
 	if (pos == std::string::npos)
 	{
-		std::cout << "NPOS FOUND? INTERNAL SERVER ERROR" << std::endl;
 		serveError(client, "500", client.getServerBlock());
 		return ;
 	}
 
 	std::string actualBody = readData.substr(pos + 4);
-	// std::cout << "ACTUAL BODY:" << actualBody << std::endl;
-
 	std::string contentLength = "Content-Length: " + std::to_string(actualBody.size()) + "\r\n";
-
 	client.setResponseData("HTTP/1.1 200 OK\r\n" + contentLength + readData);
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 void	read_from_pipe(Client& client, t_cgiData& cgi, const Server& server, std::string& readData)
 {
-	std::cout << "\nREAD FROM PIPE" << std::endl;
+	std::cerr << "\nREAD FROM PIPE" << std::endl;
 
 	char	buffer[CGIBUFFER];
 	int		bytes_read = 0;
 
 	bytes_read = read(cgi.ets_pipe[0], buffer, CGIBUFFER - 1);
 	buffer[bytes_read] = '\0';
-	std::cout << "\nBytes read from cgi pipe: " << bytes_read << " / " << CGIBUFFER - 1 << std::endl;
+	std::cerr << "\nBytes read from cgi pipe: " << bytes_read << " / " << CGIBUFFER - 1 << std::endl;
 	if (bytes_read == -1)
 	{
 		std::cout << "\nBYTES_READ -1!" << std::endl;
@@ -109,7 +78,9 @@ void	read_from_pipe(Client& client, t_cgiData& cgi, const Server& server, std::s
 	if (bytes_read > 0)
 		return ;
 
-	epoll_ctl(server.getEpollFd(), EPOLL_CTL_DEL, cgi.ets_pipe[0], NULL);
+	std::cerr << "Done with cgi_read" << std::endl;
+	if (epoll_ctl(server.getEpollFd(), EPOLL_CTL_DEL, cgi.ets_pipe[0], NULL) == -1)
+		std::cerr << "CGI ERROR: Failed deleting ets_pipe fd after reading all data from pipe" << std::endl;
 	if (close(cgi.ets_pipe[0]) == -1)
 		std::cerr << "CGI ERROR: Failed closing ets read-end pipe in parent" << std::endl;
 	cgi.ets_pipe[0] = -1;
@@ -117,26 +88,15 @@ void	read_from_pipe(Client& client, t_cgiData& cgi, const Server& server, std::s
 	createCgiResponse(client, readData);
 
 	struct epoll_event event;
-	event.events = EPOLLIN | EPOLLOUT;
+	event.events = EPOLLOUT;
 	event.data.fd = client.getClientFds(0);
 	epoll_ctl(server.getEpollFd(), EPOLL_CTL_MOD, client.getClientFds(0), &event);
 
 	client.resetFds(client.getClientFds(0));
 	client.setClientState(sending_response);
 	wait_for_child(cgi);
+	cgi.child_pid = -1;
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

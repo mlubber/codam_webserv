@@ -6,12 +6,12 @@
 
 enum state 
 {
+	idle,				// When a client is connected, has sent a request, got a response and is now just connected
 	reading_request,	// In loop of reading the request from the socket
 	parsing_request,	// Received the full request from the socket and now parsing
 	cgi_write,			// In loop of writing data to the cgi_pipe
 	cgi_read,			// In loop of reading data from the cgi_pipe
 	sending_response,	// In loop of sending response to the socket
-	sending_error		// Only used when sending data to client fails and we need to remove the client
 };
 
 struct clRequest 
@@ -44,6 +44,7 @@ class Client
 		size_t						_bytes_sent;		// Amount of bytes_sent to compare with _response_size
 		bool						_close_client;		// Check if we need to close connection to client after sending response
 		ConfigBlock					_server_block;		// Server block the Client is connected to
+		long						_last_request;		// timestamp of last request
 
 		public:
 
@@ -61,17 +62,19 @@ class Client
 		bool				checkCgiPtr()			const;
 		bool				getCloseClientState()	const;
 		const ConfigBlock&	getServerBlock()		const;
-		std::string			getServerBlockInfo(std::string search);
+		long				getLastRequest()		const;
+		std::string			getServerBlockInfo(std::string search) const;
 		
 		void	setReceivedData(const char* data, ssize_t bytes_received);
 		void	setResponseData(std::string data);
 		void	setClientState(int state);
 		void	setCgiStruct(std::unique_ptr<t_cgiData> cgi);
 		void	setCloseClientState(bool state);
+		void	setLastRequest();
 
 		void	addFd(int fd);
 		void	resetFds(int fd);
 
-		void	clearData(int epollFd);
+		void	resetClient(int epollFd);
 		void	updateBytesSent(size_t bytes_sent);
 	};

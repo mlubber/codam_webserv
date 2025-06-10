@@ -82,7 +82,7 @@
 
 		<a href="fly/" class="btn" style="margin-top:-10">Fly</a>
 		
-		<h2 style="margin-top: 50px;">CGI stuff:</h2>
+		<h2 style="margin-top: 50px;">CGI - GET requests</h2>
 		
 		<a href="/cgi-bin/hello.py" class="btn">CGI - Hello</a>
 		<a href="/cgi-bin/dateandtime.py" class="btn">CGI - DateTime</a><br><br>
@@ -105,6 +105,10 @@
 			<input type="submit" value="Submit">
 		</form>
 
+		<h2 style="margin-top: 50px;">Timeout script</h2>
+		<a href="/cgi-bin/timeout_script.py" class="btn">Timeout btn</a>
+		<p>Will result in an internal server error</p>
+		<p>This script will result in an internal server error because it contains a time.sleep(15) which makes the script sleep for 15 seconds before writing the rest of the bytes.</p>
     </div>
 </body>
 </html>

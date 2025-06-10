@@ -19,6 +19,7 @@
 # include <memory>
 # include <algorithm>
 # include <csignal>
+# include <ctime>
 
 class Client;
 class Server;

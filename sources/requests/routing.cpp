@@ -35,6 +35,8 @@ static void serveStaticFile(Client& client, const std::string& filePath, std::st
 		response << "HTTP/1.1 404 Not Found\r\n";
 	else if (status_code == "405")
 		response << "HTTP/1.1 405 Method Not Allowed\r\n";
+	else if (status_code == "408")
+		response << "HTTP/1.1 408 Request Timeout\r\n";
 	else if (status_code == "413")
 		response << "HTTP/1.1 413 Payload Too Large\r\n";
 	else if (status_code == "500")
@@ -87,6 +89,7 @@ void serveError(Client& client, std::string error_code, const ConfigBlock& serve
         {"403", ER403},
         {"404", ER404},
         {"405", ER405},
+		{"408", ER408},
         {"413", ER413},
         {"500", ER500}
     };
@@ -194,8 +197,8 @@ static void	handlePostRequest(Client& client, clRequest& cl_request, const Confi
 		if (value.first == "client_max_body_size")
 			maxBody = std::stoul(value.second.front());
 
-	// std::cout << "client_max_body_size: " << maxBody << std::endl;
-	// std::cout << "cl_request.body.size: " << cl_request.body.size() << std::endl;
+	std::cout << "client_max_body_size: " << maxBody << " / " << MAX_BODY_SIZE << std::endl;
+	std::cout << "cl_request.body.size: " << cl_request.body.size() << std::endl;
 	if (cl_request.body.size() > maxBody)
 	{
 		// std::cout << "body too big!" << std::endl;
@@ -481,7 +484,7 @@ void routeRequest(Client& client, const Server& server, clRequest& cl_request, c
 		rootOverride = "." + rootOverride;
 	if (!rootOverride.empty())
 	{
-		filePath = rootOverride + cl_request.path.substr(locPath.size());
+		filePath = rootOverride + cl_request.path.substr(locPath.size() - 1);
 	}
 	else
 		filePath = root + cl_request.path;
@@ -517,7 +520,7 @@ void routeRequest(Client& client, const Server& server, clRequest& cl_request, c
 
 				std::string fullPath = joinPaths(filePath, index);
 
-				std::cout << "looking for index: " << fullPath << std::endl;
+				// std::cout << "looking for index: " << fullPath << std::endl;
 				if (stat(fullPath.c_str(), &stats) == 0) // checks if the given index is present in the directory
 				{
 					// std::cout << "index found!" << std::endl;

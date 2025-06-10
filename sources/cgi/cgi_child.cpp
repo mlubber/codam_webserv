@@ -2,10 +2,11 @@
 #include "../../headers/Client.hpp"
 #include "../../headers/Server.hpp"
 
-void	get_exe_path(t_cgiData& cgi, const clRequest& cl_request, const Server& server, Client& client)
+void	get_exe_path(t_cgiData& cgi, const clRequest& cl_request, Client& client)
 {
 	std::string path;
-	const std::string& root = server.getServerInfo(2);
+	// const std::string& root = server.getServerInfo(2);
+	const std::string& root = client.getServerBlockInfo("root");
 	if (root[0] != '.')
 		path = "." + root + cl_request.path;
 	else
@@ -51,17 +52,16 @@ std::string	get_header_data(const clRequest& cl_request, std::string header, int
 		return ("\"\"");
 }
 
-std::string get_path_info(const clRequest& cl_request, const Server& server, Client& client)
+std::string get_path_info(const clRequest& cl_request, Client& client)
 {
 	std::string root = client.getServerBlockInfo("root");
 	if (root[0] != '/')
 		root = "/" + root;
 	std::string path_info = getenv("PWD") + root + cl_request.path;
-	(void)server;
 	return (path_info);
 }
 
-void	setup_environment(t_cgiData& cgi, const clRequest& cl_request, const Server& server, Client& client)
+void	setup_environment(t_cgiData& cgi, const clRequest& cl_request, Client& client)
 {
 	cgi.envp = new char*[11]();
 
@@ -77,7 +77,7 @@ void	setup_environment(t_cgiData& cgi, const clRequest& cl_request, const Server
 		cgi.envp[8] = create_env_ptr("QUERY_STRING", cl_request.queryStr);
 	else
 		cgi.envp[8] = create_env_ptr("QUERY_STRING", "\"\"");
-	cgi.envp[9] = create_env_ptr("PATH_INFO", get_path_info(cl_request, server, client));
+	cgi.envp[9] = create_env_ptr("PATH_INFO", get_path_info(cl_request, client));
 
 
 
@@ -117,12 +117,12 @@ static int	setting_fds(t_cgiData& cgi)
 	return (0);
 }
 
-void	cgi_child_process(t_cgiData& cgi, const clRequest& cl_request, const Server& server, Client& client)
+void	cgi_child_process(t_cgiData& cgi, const clRequest& cl_request, Client& client)
 {
 	try
 	{
-		setup_environment(cgi, cl_request, server, client);
-		get_exe_path(cgi, cl_request, server, client);
+		setup_environment(cgi, cl_request, client);
+		get_exe_path(cgi, cl_request, client);
 		get_exe(cgi, cl_request);
 	}
 	catch(const std::exception& e)
