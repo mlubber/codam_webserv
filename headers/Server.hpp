@@ -60,6 +60,7 @@ class Server
 
 		void	close_webserv();
 
+		void 	printClients() const;
 
 		const std::string		getServerInfo(int i) const;
 		int						getEpollFd() const;

@@ -54,7 +54,7 @@ class Client
 
 		int 				getClientFds(int index)	const;
 		int					getClientState() 		const;
-		const std::string&	getClientReceived()		const;
+		std::string&		getClientReceived();
 		const std::string&	getClientResponse()		const;
 		t_cgiData&			getCgiStruct()			const;
 		clRequest&			getClStructRequest();

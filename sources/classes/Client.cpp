@@ -77,7 +77,7 @@ int	Client::getClientState() const
 	return (_state);
 }
 
-const std::string&	Client::getClientReceived() const
+std::string&	Client::getClientReceived()
 {
 	return (_received);
 }

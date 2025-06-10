@@ -591,13 +591,13 @@ void	parsingRequest(Server& server, Client& client)
 {
 	// std::cout << "Errno at start of parsingRequest: " << errno << ", str: " << strerror(errno) << std::endl;
 
-	std::cout << "\n\n---Client received: ---\n" << client.getClientReceived() << "\n--- END OF RECEIVED ---" << std::endl;
 
 	readRequest(client);
 	clRequest		cl_request = client.getClStructRequest();
 	Configuration	config = server.getConfig();
 	int				client_fd = client.getClientFds(0);
 
+	std::cout << "\n\n---Client [" << client_fd << "] received: ---\n" << client.getClientReceived() << "\n--- END OF RECEIVED ---" << std::endl;
 	ConfigBlock serverBlock = config.getServerBlock(cl_request.host, cl_request.port);
 
 
