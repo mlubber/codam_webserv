@@ -209,7 +209,7 @@ static void	handlePostRequest(Client& client, clRequest& cl_request, const Confi
 
 		for (size_t i = 0; i < values_vector.size(); i++)
 		{
-			if (values_vector[i].find("text/plain") != std::string::npos)
+			if (values_vector[i].find("text/plain") != std::string::npos || values_vector[i].find("plain/text") != std::string::npos)
 			{
 				response	<< "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: "
 							<< (cl_request.body.size()) << "\r\n\r\n"
@@ -481,7 +481,6 @@ void routeRequest(Client& client, const Server& server, clRequest& cl_request, c
 		rootOverride = "." + rootOverride;
 	if (!rootOverride.empty())
 	{
-		// std::cout << "root found in nested block: " << rootOverride << std::endl;
 		filePath = rootOverride + cl_request.path.substr(locPath.size());
 	}
 	else

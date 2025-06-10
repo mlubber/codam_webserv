@@ -32,44 +32,6 @@ Server&	Server::operator=(const Server& other)
 	return (*this);
 }
 
-void Server::printClients() const
-{
-	std::cout << "[DEBUG] Current clients (" << _clients.size() << "): ";
-	for (size_t i = 0; i < _clients.size(); ++i)
-	{
-		if (_clients[i])
-			std::cout << _clients[i]->getClientFds(0) << " "; // or any other Client info
-		else
-			std::cout << "nullptr ";
-	}
-	std::cout << std::endl;
-}
-void printOpenFDs(const std::string& msg = "")
-{
-	DIR* dir = opendir("/proc/self/fd");
-	if (!dir) {
-		std::cerr << "Could not open /proc/self/fd" << std::endl;
-		return;
-	}
-	int dir_fd = dirfd(dir);
-	std::vector<int> fds;
-	struct dirent* entry;
-	while ((entry = readdir(dir)) != NULL)
-	{
-		if (entry->d_name[0] >= '0' && entry->d_name[0] <= '9') {
-			int fd = atoi(entry->d_name);
-			if (fd != dir_fd) // Skip the fd for the opened directory itself
-				fds.push_back(fd);
-		}
-	}
-	closedir(dir);
-	std::sort(fds.begin(), fds.end());
-	std::cout << "[DEBUG] Open FDs " << msg << ": ";
-	for (size_t i = 0; i < fds.size(); ++i)
-		std::cout << fds[i] << " ";
-	std::cout << std::endl;
-}
-
 bool Server::initialize(const std::vector<std::pair<std::string, std::vector<int> > >& server_configs)
 {
 	if (pipe(signal_pipe) == -1)
@@ -196,7 +158,6 @@ void Server::run(void)
 	while (true)
 	{
 		std::cout << "\nEpoll_Wait() ----------------------------------------" << std::endl;
-		printOpenFDs("start epoll");
 		got_signal = 0;
 		int event_count = epoll_wait(_epoll_fd, ready_events, MAX_EVENTS, -1);
 		std::cout << "event_count: " << event_count << std::endl;
@@ -299,7 +260,6 @@ void Server::connectClient(int _epoll_fd, int server_fd)
 			return;
 		}
 		std::cout << "Client connected: " << new_client_fd << std::endl;
-		printOpenFDs("after client connected");
 
 		Client* new_client = new Client(new_client_fd, serverBlock);
 
@@ -316,7 +276,6 @@ void Server::connectClient(int _epoll_fd, int server_fd)
 void Server::removeClient(Client* client, int index)
 {
 	int client_fd = client->getClientFds(0);
-	printOpenFDs("before removeClient");
 	if (client->checkCgiPtr())
 	{
 		if (client->getCgiStruct().ets_pipe[1] != -1)
@@ -334,17 +293,6 @@ void Server::removeClient(Client* client, int index)
 	}
 
 
-	// for (int i = 0; i < client->getClientFds(-1); ++i)
-	// {
-	// 	int fd = client->getClientFds(i);
-	// 	if (fd == -1)
-	// 		continue;
-	// 	if (epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, fd, NULL) == -1)
-	// 		std::cerr << "SERVER ERROR: Failed deleting client fd " << fd << " from epoll" << std::endl;
-	// 	if (close(fd) == -1)
-	// 		std::cerr << "SERVER ERROR: Failed closing client fd " << fd << std::endl;
-	// }
-
 	int status = epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, client_fd, NULL);
 	if (status == -1)
 		std::cout << "SERVER ERROR: Failed deleting client fd " << client_fd << " from epoll!" << std::endl;
@@ -354,15 +302,9 @@ void Server::removeClient(Client* client, int index)
 
 	// REMOVE CLIENT FD FROM _server_fds
 	// this->_server_fds.erase(index);
-	printClients();
-	std::cout << "[DEBUG] removing fd: " << client_fd << std::endl;
-	std::cout << "[DEBUG] on index: " << index << std::endl;
-	client->clearFds();
 	_clients.erase(_clients.begin() + index);
 	delete client;
 	_client_count--;
-	printClients();
-	printOpenFDs("after removeClient");
 	std::cout << "Client disconnected: " << client_fd << std::endl;
 
 	return ;
@@ -534,7 +476,7 @@ void	Server::sendToSocket(Client& client)
 
 	int	socket_fd = client.getClientFds(0);
 	ssize_t bytes_sent = send(socket_fd, response.c_str(), response.size(), 0);
-	std::cout << "[DEBUG] Response size / bytes sent to Client [" << socket_fd << "]: " << response.size() << " / " << bytes_sent << std::endl;
+	std::cout << "Response size / bytes sent to Client [" << socket_fd << "]: " << response.size() << " / " << bytes_sent << std::endl;
 	if (bytes_sent <= 0)
 	{
 		std::cout << "Error writing to client: " << socket_fd << std::endl;
