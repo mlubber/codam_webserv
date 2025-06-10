@@ -52,7 +52,9 @@ class Server
 		bool	initialize(const std::vector<std::pair<std::string, std::vector<int> > >& server_configs);
 		void	run();
 		
+		bool	checkIfNewConnections(int fd);
 		void	connectClient(int epoll_fd, int server_fd);
+		int		findClient(int fd);
 		void	removeClient(int index);	
 		
 		int 	recvFromSocket(Client& client);

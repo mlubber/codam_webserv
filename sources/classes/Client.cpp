@@ -22,31 +22,27 @@ void	Client::handleEvent(Server& server)
 		if (status == 1)
 			return ;
 	}
-
 	if (_state == parsing_request)
 	{
+		std::cout << "parsing" << std::endl;
 		parsingRequest(server, *this);
 		return ;
 	}
-
-
 	if (_state == cgi_write) // POST only
 	{
+		std::cout << "cgi_write" << std::endl;
 		write_to_pipe(*this, this->getCgiStruct(), server);
 		return ;
 	}
-
-
 	if (_state == cgi_read) // GET / POST
 	{
+		std::cout << "cgi_read" << std::endl;
 		read_from_pipe(*this, *this->_cgi, server, _cgi->readData);
 		return ;
 	}
-
-
-
 	if (_state == sending_response)
 	{
+		std::cout << "sending" << std::endl;
 		server.sendToSocket(*this);
 	}
 }

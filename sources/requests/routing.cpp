@@ -484,8 +484,14 @@ void routeRequest(Client& client, const Server& server, clRequest& cl_request, c
 		rootOverride = "." + rootOverride;
 	if (!rootOverride.empty())
 	{
-		// std::cout << "root found in nested block: " << rootOverride << std::endl;
-		filePath = rootOverride + cl_request.path.substr(locPath.size());
+		std::cout << "root found in nested block: " << rootOverride << std::endl;
+		// std::cout << "cl_request.path size: " << cl_request.path.substr(locPath.size()) << std::endl;
+		std::cout << "locPath: " << locPath << std::endl;
+		std::cout << "locPath size: " << locPath.size() << std::endl;
+		std::cout << "cl_request.path size:" << cl_request.path.size() << std::endl;
+		std::cout << "cl_request.path: " << cl_request.path << std::endl;
+		filePath = rootOverride + cl_request.path.substr(locPath.size() - 1);
+		std::cout << "after filepath creation" << std::endl;
 	}
 	else
 		filePath = root + cl_request.path;
@@ -521,7 +527,7 @@ void routeRequest(Client& client, const Server& server, clRequest& cl_request, c
 
 				std::string fullPath = joinPaths(filePath, index);
 
-				std::cout << "looking for index: " << fullPath << std::endl;
+				// std::cout << "looking for index: " << fullPath << std::endl;
 				if (stat(fullPath.c_str(), &stats) == 0) // checks if the given index is present in the directory
 				{
 					// std::cout << "index found!" << std::endl;

@@ -12,7 +12,6 @@ enum state
 	cgi_write,			// In loop of writing data to the cgi_pipe
 	cgi_read,			// In loop of reading data from the cgi_pipe
 	sending_response,	// In loop of sending response to the socket
-	sending_error		// Only used when sending data to client fails and we need to remove the client
 };
 
 struct clRequest 

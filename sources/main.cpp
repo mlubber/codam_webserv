@@ -167,10 +167,12 @@ int main(int argc, char **argv)
 		catch(const std::exception& e)
 		{
 			std::cerr << "Server failed: " << e.what() << "\n..server restarting.." << std::endl;
+			// close epoll fd
 		}
 		catch (...)
 		{
 			std::cerr << "Server failed: server restarting.." << std::endl;
+			// close epoll fd
 		}
 	}
 	
