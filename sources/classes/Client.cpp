@@ -18,31 +18,26 @@ void	Client::handleEvent(Server& server)
 	if (_state == reading_request || _state == idle)
 	{
 		status = server.recvFromSocket(*this);
-		errno = 0;
 		if (status == 1)
 			return ;
 	}
 	if (_state == parsing_request)
 	{
-		std::cout << "parsing" << std::endl;
 		parsingRequest(server, *this);
 		return ;
 	}
-	if (_state == cgi_write) // POST only
+	if (_state == cgi_write)
 	{
-		std::cout << "cgi_write" << std::endl;
 		write_to_pipe(*this, this->getCgiStruct(), server);
 		return ;
 	}
-	if (_state == cgi_read) // GET / POST
+	if (_state == cgi_read)
 	{
-		std::cout << "cgi_read" << std::endl;
 		read_from_pipe(*this, *this->_cgi, server, _cgi->readData);
 		return ;
 	}
 	if (_state == sending_response)
 	{
-		std::cout << "sending" << std::endl;
 		server.sendToSocket(*this);
 	}
 }
@@ -214,12 +209,16 @@ void	Client::resetClient(int epoll_fd)
 			epoll_ctl(epoll_fd, EPOLL_CTL_DEL, _cgi->ets_pipe[0], NULL);
 			if (close(_cgi->ets_pipe[0]) == -1)
 				std::cerr << "CGI ERROR: Failed closing ets read-end pipe in parent" << std::endl;
+			if (_fds.size() > 1)
+				_fds.erase(_fds.begin() + 1);
 		}
 		if (_cgi->ste_pipe[1] != -1)
 		{
 			epoll_ctl(epoll_fd, EPOLL_CTL_DEL, _cgi->ste_pipe[1], NULL);
 			if (close(_cgi->ste_pipe[1]) == -1)
 				std::cerr << "CGI ERROR: Failed closing ets read-end pipe in parent" << std::endl;
+			if (_fds.size() > 1)
+				_fds.erase(_fds.begin() + 1);
 		}
 		_cgi = nullptr;
 	}

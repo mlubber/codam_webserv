@@ -224,14 +224,16 @@ int Server::findClient(int fd)
 	bool found = false;
 	int i;
 
-	// std::cout << "yep findClient 1" << std::endl;
+	std::cout << "Find client: " << fd << std::endl;
 	for (i = 0; i < this->_client_count; ++i)
 	{
 		int client_fd_amount = _clients[i]->getClientFds(-1);
 		for (int o = 0; o < client_fd_amount; ++o)
 		{
 			// std::cout << "fd findClient: " << _clients[i]->getClientFds(o) << std::endl;
-			if (fd == _clients[i]->getClientFds(o))
+			if (_clients[i]->getClientFds(o) == -1)
+				continue ;
+			if (_clients[i]->getClientFds(o) == fd)
 			{
 				found = true;
 				break ;
@@ -240,7 +242,11 @@ int Server::findClient(int fd)
 		if (found == true)
 			break ;
 	}
-	// std::cout << "yep findClient 2" << std::endl;
+	if (found == false)
+	{
+		std::cout << "Couldn't find client!" << std::endl;
+		return (-1);
+	}
 	return (i);
 }
 
@@ -256,6 +262,24 @@ bool Server::checkIfNewConnections(int fd)
 	}
 	return (false);
 }
+
+
+
+
+
+// ONLY FOR TESTING
+void	Server::printClientFds(int client_index)
+{
+	int fd_amount = _clients[client_index]->getClientFds(-1);
+	for (int i = 0; i < fd_amount; ++i)
+		std::cout << "Client fd: " << _clients[client_index]->getClientFds(i) << std::endl;
+}
+// ONLY FOR TESTING
+
+
+
+
+
 
 void	Server::run(void)
 {
@@ -291,11 +315,15 @@ void	Server::run(void)
 				continue ;
 			int event_flags = ready_events[i].events;
 			int client_index = findClient(fd);
+			if (client_index == -1)
+				continue ;
 			if (fd == _clients[client_index]->getClientFds(0) && (event_flags & EPOLLHUP || event_flags & EPOLLRDHUP || event_flags & EPOLLERR))
 			{
 				removeClient(client_index);
 				continue ;
 			}
+			std::cout << "\n\nFD: " << fd << " / event: " << event_flags << std::endl;
+			printClientFds(client_index); // <-- ONLY FOR TESTING
 			_clients[client_index]->handleEvent(*this);
 			if ((_clients[client_index]->getCloseClientState() == true && _clients[client_index]->getClientState() == idle))
 			{
@@ -474,7 +502,6 @@ int Server::recvFromSocket(Client& client)
 
 	std::cout << "\nErrno before receiving: " << errno << ", str: " << strerror(errno) << std::endl;
 
-	// Read data from the socket level-triggerd without EPOLLET:
 	bytes_received = recv(client_fd, buffer, SOCKET_BUFFER, 0);
 	std::cout << "bytes_received: " << bytes_received << std::endl;
 
@@ -518,6 +545,10 @@ int Server::recvFromSocket(Client& client)
 			client.setClientState(parsing_request);
 			return (0); // Full request received
 		}
+		struct epoll_event event;
+		event.events = EPOLLOUT;
+		event.data.fd = client.getClientFds(0);
+		epoll_ctl(_epoll_fd, EPOLL_CTL_MOD, client.getClientFds(0), &event);
 	}
 	else
 		std::cout << "Client: " << client_fd << ": Didn't find the received end thing \\r\\n\\r\\n" << std::endl;
@@ -559,15 +590,6 @@ void	Server::sendToSocket(Client& client)
 }
 
 
-// const std::string	Server::getServerInfo(int i) const
-// {
-// 	if (i == 0)
-// 		return (_name);
-// 	else if (i == 1)
-// 		return (_port);
-// 	else
-// 		return (_root);
-// }
 
 int	Server::getEpollFd() const
 {

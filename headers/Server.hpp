@@ -71,6 +71,10 @@ class Server
 		const Configuration&	getConfig() const;
 		bool					getCloseServer() const;
 
+
+
+		void	printClientFds(int client_index);
+
 };
 
 void	routeRequest(Client& client, const Server& server, clRequest& cl_request, const ConfigBlock& serverBlock);

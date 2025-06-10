@@ -61,22 +61,23 @@ void	read_from_pipe(Client& client, t_cgiData& cgi, const Server& server, std::s
 	int		bytes_read = 0;
 
 	bytes_read = read(cgi.ets_pipe[0], buffer, CGIBUFFER - 1);
-	buffer[bytes_read] = '\0';
-	std::cerr << "\nBytes read from cgi pipe: " << bytes_read << " / " << CGIBUFFER - 1 << std::endl;
-	if (bytes_read == -1)
+	std::cout << "\nBytes read from cgi pipe(" << cgi.ets_pipe[0] << "): " << bytes_read << " / " << CGIBUFFER - 1 << std::endl;
+	if (bytes_read < 0)
 	{
-		std::cout << "\nBYTES_READ -1!" << std::endl;
-		serveError(client, "500", client.getServerBlock());
-		epoll_ctl(server.getEpollFd(), EPOLL_CTL_DEL, cgi.ste_pipe[1], NULL);
+		std::cout << "\nBYTES_READ -1!"	<< strerror(errno) << std::endl;
+		epoll_ctl(server.getEpollFd(), EPOLL_CTL_DEL, cgi.ets_pipe[0], NULL);
 		if (close(cgi.ets_pipe[0]) == -1)
 			std::cerr << "CGI ERROR: Failed closing ets read-end pipe in parent" << std::endl;
 		cgi.ets_pipe[0] = -1;
 		wait_for_child(cgi);
+		serveError(client, "500", client.getServerBlock());
 		return ;
 	}
-	readData += buffer;
 	if (bytes_read > 0)
+	{
+		readData.append(buffer, bytes_read);
 		return ;
+	}
 
 	std::cerr << "Done with cgi_read" << std::endl;
 	if (epoll_ctl(server.getEpollFd(), EPOLL_CTL_DEL, cgi.ets_pipe[0], NULL) == -1)

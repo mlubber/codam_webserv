@@ -35,7 +35,7 @@ class Client
 	private:
 
 		int							_state;				// state of the client
-		std::vector<int>			_fds;				// array of fds (socket en pipes)
+		std::vector<int>			_fds;				// array of fds (socket and pipes)
 		clRequest					_request;			// array of parsed request structs
 		std::unique_ptr<t_cgiData>	_cgi;				// unique ptr to cgi struct that handles data for cgi requests
 		std::string					_received;			// data received of socket

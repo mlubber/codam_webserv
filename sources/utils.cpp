@@ -170,8 +170,7 @@ int	check_path(std::string filePath, std::string locPath, std::string locConf)
 		{
 			std::cout << filePath << ": Is a registry!" << std::endl;
 			std::cout << "location path in config: " << locPath << std::endl;
-			size_t pos = filePath.find(locPath);
-			if (pos == std::string::npos || locPath.empty())
+			if (locPath.empty())
 			{
 				
 				std::cout << "request filepath: " << locConf << " NOT FOUND in config filepath" << std::endl;
