@@ -168,12 +168,10 @@ int	check_path(std::string filePath, std::string locPath, std::string locConf)
 		}
 		else if (S_ISREG(stats.st_mode))
 		{
-			std::cout << filePath << ": Is a registry!" << std::endl;
-			std::cout << "location path in config: " << locPath << std::endl;
-			size_t pos = filePath.find(locPath);
-			if (pos == std::string::npos || locPath.empty())
+			if (locPath.empty())
 			{
-				
+				std::cout << "locConf: " << locConf << std::endl;
+				std::cout << "locPath: " << locPath << std::endl;
 				std::cout << "request filepath: " << locConf << " NOT FOUND in config filepath" << std::endl;
 				return (1);
 			}

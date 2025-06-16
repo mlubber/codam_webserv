@@ -1,13 +1,13 @@
 import socket
 
 # Server settings (change if needed)
-HOST = "localhost"
-PORT = 8080
+HOST = "127.0.0.1"
+PORT = 8081
 
 # Constructing a valid HTTP/1.1 chunked request
 request = (
-    "POST /chunkmit HTTP/1.1\r\n"
-    "Host: localhost\r\n"
+    "POST / HTTP/1.1\r\n"
+    "Host: 127.0.0.1:8081\r\n"
     "Transfer-Encoding: chunked\r\n"
 	# "Content-Length: 46\r\n"
     "Content-Type: text/plain\r\n"

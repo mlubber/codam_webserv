@@ -522,7 +522,6 @@ void	Server::sendToSocket(Client& client)
 	int	socket_fd = client.getClientFds(0);
 	ssize_t bytes_sent = send(socket_fd, response.c_str(), response.size(), 0);
 	std::cout << "Response size / bytes sent to Client [" << socket_fd << "]: " << response.size() << " / " << bytes_sent << std::endl;
-	std::cout << "Response size / bytes sent: " << response.size() << " / " << bytes_sent << std::endl;
 	if (bytes_sent <= 0)
 	{
 		std::cout << "Error writing to client: " << socket_fd << std::endl;
