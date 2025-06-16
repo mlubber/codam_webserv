@@ -64,7 +64,7 @@ int main(int argc, char **argv)
 		return (1);
 	} 
 	else if (argc < 2)
-		confFile = "configFile2.conf";
+		confFile = "defaultConfigFile.conf";
 	else 
 		confFile = argv[1];
 	std::ifstream configFile(confFile);
