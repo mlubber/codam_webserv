@@ -34,8 +34,9 @@ class Server
 		struct sockaddr_in							_address;
 		socklen_t									_addr_len;
 
-		std::vector<std::unique_ptr<Client>>		_clients;
 		int											_client_count;
+		std::vector<std::unique_ptr<Client>>		_clients;
+		std::unordered_map<int, long>				_child_pids;
 
 		bool										_close_server;
 
@@ -66,11 +67,12 @@ class Server
 
 		void	close_webserv();
 
-		// const std::string		getServerInfo(int i) const;
-		
 		int						getEpollFd() const;
 		const Configuration&	getConfig() const;
 		bool					getCloseServer() const;
+		
+		void					addChildPidToMap(int child_pid);
+		void					cleanUpChildPids();		
 
 };
 

@@ -223,14 +223,16 @@ int Server::findClient(int fd)
 	bool found = false;
 	int i;
 
-	// std::cout << "yep findClient 1" << std::endl;
+	std::cout << "Find client: " << fd << std::endl;
 	for (i = 0; i < this->_client_count; ++i)
 	{
 		int client_fd_amount = _clients[i]->getClientFds(-1);
 		for (int o = 0; o < client_fd_amount; ++o)
 		{
 			// std::cout << "fd findClient: " << _clients[i]->getClientFds(o) << std::endl;
-			if (fd == _clients[i]->getClientFds(o))
+			if (_clients[i]->getClientFds(o) == -1)
+				continue ;
+			if (_clients[i]->getClientFds(o) == fd)
 			{
 				found = true;
 				break ;
@@ -239,7 +241,11 @@ int Server::findClient(int fd)
 		if (found == true)
 			break ;
 	}
-	// std::cout << "yep findClient 2" << std::endl;
+	if (found == false)
+	{
+		std::cout << "Couldn't find client!" << std::endl;
+		return (-1);
+	}
 	return (i);
 }
 
@@ -256,6 +262,9 @@ bool Server::checkIfNewConnections(int fd)
 	return (false);
 }
 
+
+
+
 void	Server::run(void)
 {
 	struct epoll_event ready_events[MAX_EVENTS];
@@ -266,11 +275,6 @@ void	Server::run(void)
 		got_signal = 0;
 		errno = 0;
 		int event_count = epoll_wait(_epoll_fd, ready_events, MAX_EVENTS, 5000);
-		if (event_count == 0)
-		{
-			checkTimedOut();
-			continue ;
-		}
 		if (event_count == -1)
 		{
 			if (got_signal != 0)
@@ -290,11 +294,14 @@ void	Server::run(void)
 				continue ;
 			int event_flags = ready_events[i].events;
 			int client_index = findClient(fd);
+			if (client_index == -1)
+				continue ;
 			if (fd == _clients[client_index]->getClientFds(0) && (event_flags & EPOLLHUP || event_flags & EPOLLRDHUP || event_flags & EPOLLERR))
 			{
 				removeClient(client_index);
 				continue ;
 			}
+			std::cout << "\n\nFD: " << fd << " / event: " << event_flags << std::endl;
 			_clients[client_index]->handleEvent(*this);
 			if ((_clients[client_index]->getCloseClientState() == true && _clients[client_index]->getClientState() == idle))
 			{
@@ -305,8 +312,9 @@ void	Server::run(void)
 			if (got_signal != 0)
 				handleReceivedSignal();
 		}
-		if (_close_server == false)
-			checkTimedOut();
+
+		checkTimedOut();
+		cleanUpChildPids();	
 	}
 	close_webserv();
 }
@@ -436,6 +444,8 @@ void Server::close_webserv()
 	epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, _epoll_fd, NULL);
 	if (close(_epoll_fd) == -1)
 		std::cerr << "Failed closing epoll fd on closing webserv" << std::endl;
+	// checkChildPids();
+	cleanUpChildPids();	
 	
 	_close_server = true;
 }
@@ -464,7 +474,6 @@ int Server::recvFromSocket(Client& client)
 
 	std::cout << "\nErrno before receiving: " << errno << ", str: " << strerror(errno) << std::endl;
 
-	// Read data from the socket level-triggerd without EPOLLET:
 	bytes_received = recv(client_fd, buffer, SOCKET_BUFFER, 0);
 	std::cout << "bytes_received: " << bytes_received << std::endl;
 	if (bytes_received == -1)
@@ -506,6 +515,10 @@ int Server::recvFromSocket(Client& client)
 			client.setClientState(parsing_request);
 			return (0); // Full request received
 		}
+		struct epoll_event event;
+		event.events = EPOLLOUT;
+		event.data.fd = client.getClientFds(0);
+		epoll_ctl(_epoll_fd, EPOLL_CTL_MOD, client.getClientFds(0), &event);
 	}
 	else
 		std::cout << "Client: " << client_fd << ": Didn't find the received end thing \\r\\n\\r\\n" << std::endl;
@@ -541,15 +554,6 @@ void	Server::sendToSocket(Client& client)
 }
 
 
-// const std::string	Server::getServerInfo(int i) const
-// {
-// 	if (i == 0)
-// 		return (_name);
-// 	else if (i == 1)
-// 		return (_port);
-// 	else
-// 		return (_root);
-// }
 
 int	Server::getEpollFd() const
 {
@@ -573,9 +577,10 @@ void Server::checkTimedOut()
 	int time_since_request;
 	int state;
 	int client_fd;
+	long timestamp = std::time(nullptr);
 	for (int i = _client_count - 1; i >= 0; --i)
 	{
-		time_since_request = std::time(nullptr) - _clients[i]->getLastRequest();
+		time_since_request = timestamp - _clients[i]->getLastRequest();
 		client_fd = _clients[i]->getClientFds(0);
 		state = _clients[i]->getClientState();
 		if (state == reading_request && time_since_request >= TIMEOUT)
@@ -589,10 +594,86 @@ void Server::checkTimedOut()
 		else if ((state == cgi_write || state == cgi_read) && time_since_request >= TIMEOUT)
 		{
 			if (_clients[i]->checkCgiPtr() && _clients[i]->getCgiStruct().child_pid != -1)
-				kill(_clients[i]->getCgiStruct().child_pid, SIGTERM);
+			{
+				int	child_pid = _clients[i]->getCgiStruct().child_pid;
+				if (_clients[i]->getCgiStruct().child_pid != -1)
+				{
+					pid_t	wpid;
+					int		status;
+
+					kill(_clients[i]->getCgiStruct().child_pid, SIGTERM);
+					wpid = waitpid(_clients[i]->getCgiStruct().child_pid, &status, 0);
+					std::cerr << "Child process hanging, killing child process (" << child_pid << ")\n" << std::endl;
+				}
+			}
 			serveError(*_clients[i], "500", _clients[i]->getServerBlock());
 		}
 		else if (state == idle && time_since_request >= KEEPALIVETIME)
 			removeClient(i);
+	}
+}
+
+
+
+void	Server::addChildPidToMap(int child_pid)
+{
+	std::cout << "Adding child_pid " << child_pid << " to map with timestamp " << std::time(nullptr) << std::endl;
+	_child_pids.insert({child_pid, std::time(nullptr)});
+	std::cout << "Child_pid Map size: " << _child_pids.size() << std::endl;
+}
+
+
+
+void	Server::cleanUpChildPids()
+{
+	pid_t	wpid;
+	long	timestamp = std::time(nullptr);
+	int		status;
+	int		exit_code;
+
+	for (auto it = _child_pids.begin(); it != _child_pids.end();)
+	{
+		try
+		{
+			std::cout << "Pid: " << it->first << std::endl;
+			exit_code = 0;
+			wpid = waitpid(it->first, &status, WNOHANG);
+			if (wpid == 0)
+			{
+				if (timestamp - it->second > TIMEOUT)
+				{
+					kill(it->first, SIGTERM);
+					wpid = waitpid(it->first, &status, 0);
+					it = _child_pids.erase(it);
+				}
+				else
+					++it;
+			}
+			else if (wpid == -1)
+				exit_code = errno;
+			else
+			{
+				if (WIFSIGNALED(status))
+				{
+					int signal_number = WTERMSIG(status);
+					std::cerr << "CGI ERROR: Child terminated by signal: " << signal_number << std::endl;
+					if (signal_number == SIGINT)
+						exit_code = 130;
+					else
+						exit_code = 128 + signal_number;
+				}
+				else if (exit_code == 0 && WIFEXITED(status))
+					exit_code = WEXITSTATUS(status);
+				if (exit_code != 0)
+					std::cerr << "NOTE: Child didn't end properly, code: " << exit_code << std::endl;
+				std::cout << "Removed child from Child_pids map with pid: " << it->first << std::endl;
+				it = _child_pids.erase(it);
+			}
+		}
+		catch(const std::exception& e)
+		{
+			std::cerr << "CGI ERROR: Couldn't find child process to handle termination" << std::endl;
+			++it;
+		}
 	}
 }
