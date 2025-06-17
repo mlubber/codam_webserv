@@ -37,6 +37,22 @@ static bool	init_cgi_struct(Client& client, clRequest& cl_request, const Server&
 {
 	std::unique_ptr<t_cgiData> cgi = std::make_unique<t_cgiData>();
 
+	std::cout << "Setting up cgi!" << std::endl;
+
+	if (cl_request.path.length() > 3)
+	{
+		size_t length = cl_request.path.length();
+		if (cl_request.path.compare(length - 3, length, ".py") == 0)
+			cgi->script_type = python;
+		else if (length > 4 && cl_request.path.compare(length - 4, length, ".php") == 0)
+			cgi->script_type = php;
+		else
+		{
+			std::cerr << "CGI Error: invalid script type - Only .py and .php scripts allowed!" << std::endl;
+			return (1);
+		}
+	}
+
 	cgi->path = nullptr;
 	cgi->exe = nullptr;
 	cgi->envp = nullptr;
@@ -46,6 +62,7 @@ static bool	init_cgi_struct(Client& client, clRequest& cl_request, const Server&
 	cgi->ste_pipe[1] = -1;
 	cgi->child_pid = -1;
 	cgi->started_reading = false;
+
 
 	if (pipe(cgi->ets_pipe) == -1)
 		return (1);
@@ -140,13 +157,5 @@ bool	cgi_check(std::string& path)
 {
 	if (path.compare(0, 9, "/cgi-bin/") == 0)
 		return (true);
-	if (path.length() > 3)
-	{
-		size_t length = path.length();
-		if (path.compare(length - 3, length, ".py") == 0)
-			return (true);
-		else if (length > 4 && path.compare(length - 3, length, ".php") == 0)
-			return (true);
-	}
 	return (false);
 }

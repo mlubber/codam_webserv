@@ -4,30 +4,49 @@
 
 void	get_exe_path(t_cgiData& cgi, const clRequest& cl_request, Client& client)
 {
-	std::string path;
-	// const std::string& root = server.getServerInfo(2);
-	const std::string& root = client.getServerBlockInfo("root");
-	if (root[0] != '.')
-		path = "." + root + cl_request.path;
+	if (cgi.script_type == python)
+	{
+		std::string path;
+		const std::string& root = client.getServerBlockInfo("root");
+		if (root[0] != '.')
+			path = "." + root + cl_request.path;
+		else
+			path = root + cl_request.path;
+		cgi.path = new char[path.size() + 1];
+		std::strcpy(cgi.path, path.c_str());
+		std::cout << "CGI PATH: " << cgi.path <<std::endl;
+	}
 	else
-		path = root + cl_request.path;
-	cgi.path = new char[path.size() + 1];
-	std::strcpy(cgi.path, path.c_str());
-	(void)client;
+	{
+		cgi.path = new char[17];
+		std::strcpy(cgi.path, "/usr/bin/php-cgi");
+		std::cout << "CGI PATH: " << cgi.path <<std::endl;
+	}
 }
 
 void	get_exe(t_cgiData& cgi, const clRequest& cl_request)
 {
 	cgi.exe = new char*[2]();
-	int i = cl_request.path.find_last_of('/'); 
-	std::string exe = cl_request.path.substr(i + 1);
-	cgi.exe[0] = new char[exe.length() + 1];
-	std::strcpy(cgi.exe[0], exe.c_str());
+	if (cgi.script_type == python)
+	{
+		int i = cl_request.path.find_last_of('/'); 
+		std::string exe = cl_request.path.substr(i + 1);
+		cgi.exe[0] = new char[exe.length() + 1];
+		std::strcpy(cgi.exe[0], exe.c_str());
+		std::cout << "CGI EXE[0]: " << cgi.exe[0] <<std::endl;
+	}
+	else
+	{
+		cgi.exe[0] = new char[8];
+		std::strcpy(cgi.exe[0], "cgi-php");
+		std::cout << "CGI EXE[0]: " << cgi.exe[0] <<std::endl;
+	}
 }
 
 char* create_env_ptr(std::string key, std::string value)
 {
-	for (char& c : key) c = toupper(c);
+	for (char& c : key)
+		c = toupper(c);
 	std::string newstr = key + "=" + value;
 	char* str = new char[newstr.length() + 1];
 	std::strcpy(str, newstr.c_str());
@@ -63,34 +82,35 @@ std::string get_path_info(const clRequest& cl_request, Client& client)
 
 void	setup_environment(t_cgiData& cgi, const clRequest& cl_request, Client& client)
 {
-	cgi.envp = new char*[11]();
+	cgi.envp = new char*[13]();
 
 	cgi.envp[0] = create_env_ptr("REQUEST_METHOD", cl_request.method);
 	cgi.envp[1] = create_env_ptr("SCRIPT_NAME", cl_request.path);
-	cgi.envp[2] = create_env_ptr("SERVER_NAME", client.getServerBlockInfo("host"));
-	cgi.envp[3] = create_env_ptr("SERVER_PORT", client.getServerBlockInfo("listen"));
-	cgi.envp[4] = create_env_ptr("SERVER_PROTOCOL", "HTTP/1.1");
-	cgi.envp[5] = create_env_ptr("GATEWAY_INTERFACE", "CGI/1.1");
-	cgi.envp[6] = create_env_ptr("CONTENT_LENGTH", get_header_data(cl_request, "content-length", 0));
-	cgi.envp[7] = create_env_ptr("CONTENT_TYPE", get_header_data(cl_request, "content-type", 1));
+	cgi.envp[2] = create_env_ptr("SCRIPT_FILENAME", get_path_info(cl_request, client));
+	cgi.envp[3] = create_env_ptr("SERVER_NAME", client.getServerBlockInfo("host"));
+	cgi.envp[4] = create_env_ptr("SERVER_PORT", client.getServerBlockInfo("listen"));
+	cgi.envp[5] = create_env_ptr("SERVER_PROTOCOL", "HTTP/1.1");
+	cgi.envp[6] = create_env_ptr("GATEWAY_INTERFACE", "CGI/1.1");
+	cgi.envp[7] = create_env_ptr("CONTENT_LENGTH", get_header_data(cl_request, "content-length", 0));
+	cgi.envp[8] = create_env_ptr("CONTENT_TYPE", get_header_data(cl_request, "content-type", 1));
 	if (!cl_request.queryStr.empty())
-		cgi.envp[8] = create_env_ptr("QUERY_STRING", cl_request.queryStr);
+		cgi.envp[9] = create_env_ptr("QUERY_STRING", cl_request.queryStr);
 	else
-		cgi.envp[8] = create_env_ptr("QUERY_STRING", "\"\"");
-	cgi.envp[9] = create_env_ptr("PATH_INFO", get_path_info(cl_request, client));
+		cgi.envp[9] = create_env_ptr("QUERY_STRING", "\"\"");
+	cgi.envp[10] = create_env_ptr("PATH_INFO", get_path_info(cl_request, client));
+	cgi.envp[11] = create_env_ptr("REDIRECT_STATUS", "200");
 
 
 
 	//  Test printing environment
 	std::cout << "\n--- CGI Environment ---" << std::endl;
-	for (int i = 0; i < 10; ++i) {
+	for (int i = 0; i < 12; ++i) {
 		if (cgi.envp[i] == nullptr)
 			std::cout << "null\n";
 		else
 			std::cout << cgi.envp[i] << "\n";
 	} std::cout << std::endl;
 	//  End test printing environment
-	std::cout << "ACTUAL SERVER_NAME=" << client.getServerBlockInfo("host") << std::endl;
 }
 
 static int	setting_fds(t_cgiData& cgi)
