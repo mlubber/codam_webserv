@@ -50,6 +50,4 @@ class Configuration
 	
 		std::vector<Token>			tokenize(std::ifstream &line);
 		void						parseConfig(const std::string &filename);
-		void						printConfig(const ConfigBlock &config, int depth);
-		// std::vector<std::string>	getConfigValues(ConfigBlock& config, const std::string& key);
 };

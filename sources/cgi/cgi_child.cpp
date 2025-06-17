@@ -14,13 +14,11 @@ void	get_exe_path(t_cgiData& cgi, const clRequest& cl_request, Client& client)
 			path = root + cl_request.path;
 		cgi.path = new char[path.size() + 1];
 		std::strcpy(cgi.path, path.c_str());
-		std::cout << "CGI PATH: " << cgi.path <<std::endl;
 	}
 	else
 	{
 		cgi.path = new char[17];
 		std::strcpy(cgi.path, "/usr/bin/php-cgi");
-		std::cout << "CGI PATH: " << cgi.path <<std::endl;
 	}
 }
 
@@ -33,13 +31,11 @@ void	get_exe(t_cgiData& cgi, const clRequest& cl_request)
 		std::string exe = cl_request.path.substr(i + 1);
 		cgi.exe[0] = new char[exe.length() + 1];
 		std::strcpy(cgi.exe[0], exe.c_str());
-		std::cout << "CGI EXE[0]: " << cgi.exe[0] <<std::endl;
 	}
 	else
 	{
 		cgi.exe[0] = new char[8];
 		std::strcpy(cgi.exe[0], "cgi-php");
-		std::cout << "CGI EXE[0]: " << cgi.exe[0] <<std::endl;
 	}
 }
 
@@ -47,9 +43,12 @@ char* create_env_ptr(std::string key, std::string value)
 {
 	for (char& c : key)
 		c = toupper(c);
+
 	std::string newstr = key + "=" + value;
+
 	char* str = new char[newstr.length() + 1];
 	std::strcpy(str, newstr.c_str());
+
 	return (str);
 }
 
@@ -57,7 +56,6 @@ std::string	get_header_data(const clRequest& cl_request, std::string header, int
 {
 	for (const auto& pair : cl_request.headers)
 	{
-		// std::cout << "Header data: " << pair.first << std::endl;
 		if (pair.first == header)
 		{
 			for (const auto& value : pair.second)
@@ -99,18 +97,6 @@ void	setup_environment(t_cgiData& cgi, const clRequest& cl_request, Client& clie
 		cgi.envp[9] = create_env_ptr("QUERY_STRING", "\"\"");
 	cgi.envp[10] = create_env_ptr("PATH_INFO", get_path_info(cl_request, client));
 	cgi.envp[11] = create_env_ptr("REDIRECT_STATUS", "200");
-
-
-
-	//  Test printing environment
-	std::cout << "\n--- CGI Environment ---" << std::endl;
-	for (int i = 0; i < 12; ++i) {
-		if (cgi.envp[i] == nullptr)
-			std::cout << "null\n";
-		else
-			std::cout << cgi.envp[i] << "\n";
-	} std::cout << std::endl;
-	//  End test printing environment
 }
 
 static int	setting_fds(t_cgiData& cgi)

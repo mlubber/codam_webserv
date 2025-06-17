@@ -16,7 +16,6 @@ std::vector<Host>& makeServerArray(ConfigBlock& configData)
 		std::string  tHost, tRoot, tServerName;
 		std::vector<std::string> tPort;
 		
-		//std::cout << "i is : " << i << std::endl;
 		std::string n = serverBlock.first;
 		if (serverBlock.second.values.find("root") !=  serverBlock.second.values.end())
 			tRoot = serverBlock.second.values["root"].front();
@@ -34,22 +33,6 @@ std::vector<Host>& makeServerArray(ConfigBlock& configData)
 		lastServer.getServerBlock().values = serverBlock.second.values;
 		++i;
 	}
-	// i = 0;
-	// for (Server &data : serverArray) {
-	// 	std::cout << "server number : " << i << std::endl;
-	// 	ConfigBlock map = data.getServerBlock();
-	// 	for (const std::pair<const std::string, std::vector<std::string>> &value : map.values) {
-	// 		std::cout << value.first <<"  :  ";
-	// 		for (const std::string& str : value.second)
-    // 			std::cout << str << ",  ";
-
-	// 		// for (std::vector<std::string>::const_iterator it = value.second.begin(); it != value.second.end(); ++it)
-	// 		// 	std::cout << *it <<",  ";
-	// 		std::cout << std::endl;
-	// 	}
-	// 	++i;
-	// 	std::cout << std::endl;
-	// }
 	return (serverArray);
 }
 
@@ -76,64 +59,14 @@ int main(int argc, char **argv)
 
 	Configuration myconfig;
 	myconfig.parseConfig(confFile);
-	// std::cout << "printing all server blocks begin!\n\n\n\n" << std::endl;
-	// myconfig.printConfig(myconfig.getConfigData(), 0);
-
-
-
-	ValidationConfigFile	validator(myconfig.getConfigData());
-	// std::cout << "printing all server blocks after check and add all base key value!\n\n\n\n" << std::endl;
-	//validator.printConfig(validator.getConfig(), 0);
-	// myconfig.printConfig(myconfig.getConfigData(), 0);
-
-	// ConfigBlock serverBlock = myconfig.getServerBlock("127.0.0.2", "8082");
-
-	// for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values) 
-	// {
-	// 	std::cout << value.first <<": ";
-	// 	for (const std::string& str : value.second)
-	// 		std::cout << str << ", ";
-	// 	std::cout << std::endl;
-	// }
-	// for (const std::pair<const std::string, ConfigBlock> &nested : serverBlock.nested) {
-	// 	std::cout << nested.first << " {" << std::endl;
-	// 	for (const std::pair<const std::string, std::vector<std::string>> &value : nested.second.values) {
-	// 		std::cout << value.first <<": ";
-	// 		for (const std::string& str : value.second)
-	// 			std::cout << str << ", ";
-	// 		std::cout << std::endl;
-	// 	}
-	// 	std::cout << "}" << std::endl;
-	// }
-
+	ValidationConfigFile validator(myconfig.getConfigData());
 	std::vector<Host> serverArray = makeServerArray(myconfig.getConfigData());
-
-	// std::cout << "print server array: \n\n\n" << std::endl;
-	// for (size_t i = 0; i < serverArray.size(); i++)
-	// {
-	// 	std::cout << "server index : " << i << std::endl;
-	// 	ConfigBlock map = serverArray[i].getServerBlock();
-	// 	for (const std::pair<const std::string, std::vector<std::string>> &value : map.values) {
-	// 		std::cout << value.first <<"  :  ";
-	// 		for (const std::string& str : value.second)
-	// 			std::cout << str << ",  ";
-	// 		std::cout << std::endl;
-	// 	}
-	// 	std::cout << std::endl;
-	// }
-
 	std::vector<std::pair<std::string, std::vector<int>>> configdata(serverArray.size());
 
 	for (size_t i = 0; i < serverArray.size(); i++)
 	{
 		configdata[i].first = serverArray[i].getHost();
 		configdata[i].second = convertToInt(serverArray[i].getPort());
-		// std::cout << "host: " << serverArray[i].getHost() << std::endl;
-		
-		// for (size_t j = 0; j < serverArray[i].getPort().size(); j++)
-		// {
-		// 	std::cout << "ports: " << serverArray[i].getPort()[j] << std::endl;
-		// }
 	}
 
 	if (pipe(signal_pipe) == -1)
@@ -151,10 +84,10 @@ int main(int argc, char **argv)
 
 	while (1)
 	{
+		Server server(myconfig);
+
 		try
 		{
-			Server server(myconfig);
-		
 			if (!server.initialize(configdata))
 			{
 				close_signal_pipe(0);
@@ -167,12 +100,14 @@ int main(int argc, char **argv)
 		catch(const std::exception& e)
 		{
 			std::cerr << "Server failed: " << e.what() << "\n..server restarting.." << std::endl;
-			// close epoll fd
+			if (close(server.getEpollFd()) == -1)
+				std::cerr << "ERROR: Failed closing epoll fd" << std::endl;
 		}
 		catch (...)
 		{
 			std::cerr << "Server failed: server restarting.." << std::endl;
-			// close epoll fd
+			if (close(server.getEpollFd()) == -1)
+				std::cerr << "ERROR: Failed closing epoll fd" << std::endl;
 		}
 	}
 	

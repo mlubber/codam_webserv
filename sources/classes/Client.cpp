@@ -42,15 +42,6 @@ void	Client::handleEvent(Server& server)
 	}
 }
 
-
-
-
-
-
-
-
-
-
 /* GETTERS */
 int Client::getClientFds(int index) const
 {
@@ -107,13 +98,11 @@ long	Client::getLastRequest() const
 	return (_last_request);
 }
 
-
 std::string		Client::getServerBlockInfo(std::string search) const
 {
 	std::string found;
 	for (const std::pair<const std::string, std::vector<std::string>> &value : _server_block.values)
 	{
-		// std::cout << "Value.first: " << value.first << std::endl;
 		if (value.first == search)
 		{
 			found = value.second.front();
@@ -121,7 +110,6 @@ std::string		Client::getServerBlockInfo(std::string search) const
 		}
 	}
 	return ("\"\"");
-	// return (nullptr);
 }
 
 
@@ -151,30 +139,6 @@ void	Client::setServerBlock(ConfigBlock serverBlock)
 void	Client::setClientState(int state)
 {
 	_state = state;
-	switch (_state) // Just for testing
-	{
-		case 0:
-			std::cout << "\nClient state set to: idle\n" << std::endl;
-			break;
-		case 1:
-			std::cout << "\nClient state set to: reading_request\n" << std::endl;
-			break;
-		case 2:
-			std::cout << "\nClient state set to: parsing_request\n" << std::endl;
-			break;
-		case 3:
-			std::cout << "\nClient state set to: cgi_write\n" << std::endl;
-			break;
-		case 4:
-			std::cout << "\nClient state set to: cgi_read\n" << std::endl;
-			break;
-		case 5:
-			std::cout << "\nClient state set to: sending_response\n" << std::endl;
-			break;
-		case 6:
-			std::cout << "\nClient state set to: sending_error\n" << std::endl;
-
-	}
 }
 
 void	Client::setCloseClientState(bool state)
@@ -198,8 +162,6 @@ void Client::resetFds(int fd)
 	_fds = { fd };
 }
 
-/* Update client object data */
-// Pass 0 to clear _received data, and pass 1 or bigger to clear _reponse
 void	Client::resetClient(int epoll_fd)
 {
 	_received.clear();
@@ -228,7 +190,6 @@ void	Client::resetClient(int epoll_fd)
 		_cgi = nullptr;
 	}
 	_state = idle;
-	std::cout << "\nClient state set to: idle\n" << std::endl;
 	struct epoll_event event;
 	event.events = EPOLLIN;
 	event.data.fd = _fds[0];

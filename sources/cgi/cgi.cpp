@@ -37,8 +37,6 @@ static bool	init_cgi_struct(Client& client, clRequest& cl_request, const Server&
 {
 	std::unique_ptr<t_cgiData> cgi = std::make_unique<t_cgiData>();
 
-	std::cout << "Setting up cgi!" << std::endl;
-
 	if (cl_request.path.length() > 3)
 	{
 		size_t length = cl_request.path.length();
@@ -76,17 +74,13 @@ static bool	init_cgi_struct(Client& client, clRequest& cl_request, const Server&
 		return (1);
 	}
 	client.addFd(cgi->ets_pipe[0]);
-	std::cout << "ETS PIPE: " << cgi->ets_pipe[0] << " & " << cgi->ets_pipe[1] << std::endl;
 
-	// Only needed to set when method is POST
 	if (cl_request.method == "POST")
 	{
 		cgi->started_writing = false;
 		cgi->dataWritten = 0;
-		std::cout << "Request body: " << cl_request.body << std::endl;
 		cgi->writeData = cl_request.body;
 		cgi->dataToWrite = cgi->writeData.size();
-		std::cout << "CGI Data To Write: " << cgi->dataToWrite << std::endl;
 		if (pipe(cgi->ste_pipe) == -1)
 		{
 			if (close(cgi->ets_pipe[0]) == -1 || close(cgi->ets_pipe[1]) == -1)
@@ -95,7 +89,6 @@ static bool	init_cgi_struct(Client& client, clRequest& cl_request, const Server&
 			cgi->ets_pipe[0] = -1;
 			return (1);
 		}
-		std::cout << "STE PIPE: " << cgi->ste_pipe[0] << " & " << cgi->ste_pipe[1] << std::endl;
 		setNonBlocking(cgi->ste_pipe[1]);
 		struct epoll_event ste_pipe;
 		ste_pipe.events = EPOLLOUT;

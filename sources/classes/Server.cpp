@@ -5,31 +5,14 @@
 
 Server::Server(const Configuration& config) : _server_fds_amount(0), _addr_len(sizeof(_address)), _client_count(0), _close_server(false), _config(config)
 {
-	std::cout	<< "Default constructor"
-				<< std::endl;
-}
 
-Server::Server(const Server& other)
-{
-	std::cout << "Copy constructor" << std::endl;
-	(void)other;
 }
 
 Server::~Server()
 {
-	std::cout	<< "Default destructor"
-				<< "\nClosing server"
-				<< std::endl;
 	for (int i = 0; i < _server_fds_amount; ++i)
 		if (close(_server_fds[i]) == -1)
 			std::cerr << "CLOSING ERROR: Failed closing server_fd: " << _server_fds[i] << std::endl;
-}
-
-Server&	Server::operator=(const Server& other)
-{
-	std::cout << "Copy assignment operator" << std::endl;
-	(void)other;
-	return (*this);
 }
 
 bool Server::initialize(const std::vector<std::pair<std::string, std::vector<int> > >& server_configs)
@@ -119,8 +102,6 @@ bool Server::initialize(const std::vector<std::pair<std::string, std::vector<int
                 continue ;
             }
 
-            // std::cout << "Listening on " << host << ":" << ports[j] << std::endl;
-
             event.data.fd = socket_fd;
             if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, socket_fd, &event) == -1)
             {
@@ -133,7 +114,6 @@ bool Server::initialize(const std::vector<std::pair<std::string, std::vector<int
         }
     }
 
-	// std::cout << "END SERVER INITIALIZATION ---------------------" << std::endl;
     return (!_server_fds.empty());
 }
 
@@ -142,13 +122,11 @@ int Server::findClient(int fd)
 	bool found = false;
 	int i;
 
-	std::cout << "Find client: " << fd << std::endl;
 	for (i = 0; i < this->_client_count; ++i)
 	{
 		int client_fd_amount = _clients[i]->getClientFds(-1);
 		for (int o = 0; o < client_fd_amount; ++o)
 		{
-			// std::cout << "fd findClient: " << _clients[i]->getClientFds(o) << std::endl;
 			if (_clients[i]->getClientFds(o) == -1)
 				continue ;
 			if (_clients[i]->getClientFds(o) == fd)
@@ -161,10 +139,7 @@ int Server::findClient(int fd)
 			break ;
 	}
 	if (found == false)
-	{
-		std::cout << "Couldn't find client!" << std::endl;
 		return (-1);
-	}
 	return (i);
 }
 
@@ -190,7 +165,6 @@ void	Server::run(void)
 
 	while (_close_server == false)
 	{
-		std::cout << "\nEpoll_Wait() --------------- clients: " << _client_count << " ----------------" << std::endl;
 		got_signal = 0;
 		errno = 0;
 		int event_count = epoll_wait(_epoll_fd, ready_events, MAX_EVENTS, 5000);
@@ -220,7 +194,6 @@ void	Server::run(void)
 				removeClient(client_index);
 				continue ;
 			}
-			std::cout << "\n\nFD: " << fd << " / event: " << event_flags << std::endl;
 			_clients[client_index]->handleEvent(*this);
 			if ((_clients[client_index]->getCloseClientState() == true && _clients[client_index]->getClientState() == idle))
 			{
@@ -243,12 +216,7 @@ void	Server::handleReceivedSignal()
 {
 	if (got_signal == SIGINT)
 	{
-		std::cout << "SIGNAL: Received SIGINT, closing webserv.." << std::endl;
 		_close_server = true;
-	}
-	if (got_signal == SIGPIPE)
-	{
-		std::cout << "SIGNAL: Received SIGPIPE, disconnecting client now.." << std::endl;
 	}
 }
 
@@ -262,9 +230,7 @@ void Server::connectClient(int _epoll_fd, int server_fd)
 		sockaddr_in addr;
 		socklen_t len = sizeof(addr);
 		getsockname(server_fd, (sockaddr*)&addr, &len);
-
-		// ConfigBlock serverBlock = _config.getServerBlock(ip_to_string(addr.sin_addr), std::to_string(ntohs(addr.sin_port)));
-		
+	
 		if (new_client_fd < 0)
 		{
 			std::cerr << "ERROR: Failed to accept connection" << std::endl;
@@ -287,7 +253,6 @@ void Server::connectClient(int _epoll_fd, int server_fd)
 			close(new_client_fd);
 			return;
 		}
-		std::cout << "Client connected: " << new_client_fd << std::endl;
 
 		std::unique_ptr<Client> new_client = std::make_unique<Client>(new_client_fd);
 
@@ -304,7 +269,6 @@ void Server::connectClient(int _epoll_fd, int server_fd)
 void Server::removeClient(int index)
 {
 	int client_fd = _clients[index]->getClientFds(0);
-	std::cout << "REMOVE: CLIENT FD IN REMOVE CLIENT: " << client_fd << std::endl;
 
 	if (_clients[index]->checkCgiPtr())
 	{
@@ -333,51 +297,26 @@ void Server::removeClient(int index)
 	_clients[index] = nullptr;
 	_clients.erase(_clients.begin() + index);
 	_client_count--;
-	std::cout << "Client disconnected: " << client_fd << std::endl;
 
 	return ;
 }
 
 
-
-
-
-
-
-
 void Server::close_webserv()
 {
-	// remove clients
-	std::cerr << "Quiting webserv" << std::endl;
 	while (_client_count > 0)
-	{
-		std::cout << "END OF WEBSERV - REMOVING " << _client_count << std::endl;
 		removeClient(_client_count - 1);
-	}
 
-
-	// close signal pipe
 	close_signal_pipe(0);
 
-	// close epoll fd
 	epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, _epoll_fd, NULL);
 	if (close(_epoll_fd) == -1)
 		std::cerr << "Failed closing epoll fd on closing webserv" << std::endl;
-	// checkChildPids();
 	cleanUpChildPids();	
 	
 	_close_server = true;
+	std::cout << "\nClosing server" << std::endl;
 }
-
-
-
-
-
-
-
-
-
-
 
 int Server::recvFromSocket(Client& client)
 {
@@ -391,7 +330,6 @@ int Server::recvFromSocket(Client& client)
 		client.setLastRequest();
 
 	bytes_received = recv(client_fd, buffer, SOCKET_BUFFER, 0);
-	std::cout << "bytes_received: " << bytes_received << std::endl;
 	if (bytes_received == -1)
 	{
 		serveError(client, "500", client.getServerBlock());
@@ -406,36 +344,29 @@ int Server::recvFromSocket(Client& client)
 	client.setReceivedData(buffer, bytes_received);
 	std::string tempReceivedData = client.getClientReceived();
 	
-	// Check if the headers are fully received
 	size_t headerEnd = tempReceivedData.find("\r\n\r\n");
-	// size_t headerEnd = receivedData.find("\r\n\r\n");
 	if (headerEnd != std::string::npos)
 	{
-		// Headers are complete, check if the body is also complete
 		size_t contentLength = 0;
 		size_t contentLengthPos = tempReceivedData.find("Content-Length:");
 		if (contentLengthPos != std::string::npos)
 		{
-			size_t start = contentLengthPos + 15; // Skip "Content-Length: "
+			size_t start = contentLengthPos + 15;
 			size_t end = tempReceivedData.find("\r\n", start);
 			contentLength = std::stoul(tempReceivedData.substr(start, end - start));
 		}
 
-		// Check if the full request (headers + body) has been received
-		size_t totalLength = headerEnd + 4 + contentLength; // Headers + "\r\n\r\n" + Body
+		size_t totalLength = headerEnd + 4 + contentLength;
 		if (tempReceivedData.size() >= totalLength)
 		{
-			// std::cout << "Full request received (" << tempReceivedData.size() << " bytes)" << std::endl;
 			client.setClientState(parsing_request);
-			return (0); // Full request received
+			return (0);
 		}
 		struct epoll_event event;
 		event.events = EPOLLOUT;
 		event.data.fd = client.getClientFds(0);
 		epoll_ctl(_epoll_fd, EPOLL_CTL_MOD, client.getClientFds(0), &event);
 	}
-	else
-		std::cout << "Client: " << client_fd << ": Didn't find the received end thing \\r\\n\\r\\n" << std::endl;
 	return (1);
 }
 
@@ -443,15 +374,11 @@ void	Server::sendToSocket(Client& client)
 {
 	std::string response = client.getClientResponse();
 
-	// std::cout << "\n\n\n-----------FULL RESPONSE BEFORE SENDING-------------\n\n\n" << response << "\n\n\n-------------- END OF RESPONSE BEFORE SENDING--------------\n\n\n" << std::endl;
-
-
 	int	socket_fd = client.getClientFds(0);
 	ssize_t bytes_sent = send(socket_fd, response.c_str(), response.size(), 0);
-	std::cout << "Response size / bytes sent to Client [" << socket_fd << "]: " << response.size() << " / " << bytes_sent << std::endl;
 	if (bytes_sent <= 0)
 	{
-		std::cout << "Error writing to client: " << socket_fd << std::endl;
+		std::cerr << "Error writing to client: " << socket_fd << std::endl;
 		client.setCloseClientState(true);
 		client.setClientState(idle);
 		return ;
@@ -487,7 +414,6 @@ bool	Server::getCloseServer() const
 
 void Server::checkTimedOut()
 {
-	std::cout << "\nChecking time outs\n" << std::endl;
 	int time_since_request;
 	int state;
 	int client_fd;
@@ -527,16 +453,10 @@ void Server::checkTimedOut()
 	}
 }
 
-
-
 void	Server::addChildPidToMap(int child_pid)
 {
-	std::cout << "Adding child_pid " << child_pid << " to map with timestamp " << std::time(nullptr) << std::endl;
 	_child_pids.insert({child_pid, std::time(nullptr)});
-	std::cout << "Child_pid Map size: " << _child_pids.size() << std::endl;
 }
-
-
 
 void	Server::cleanUpChildPids()
 {
@@ -549,7 +469,6 @@ void	Server::cleanUpChildPids()
 	{
 		try
 		{
-			std::cout << "Pid: " << it->first << std::endl;
 			exit_code = 0;
 			wpid = waitpid(it->first, &status, WNOHANG);
 			if (wpid == 0)
@@ -580,7 +499,6 @@ void	Server::cleanUpChildPids()
 					exit_code = WEXITSTATUS(status);
 				if (exit_code != 0)
 					std::cerr << "NOTE: Child didn't end properly, code: " << exit_code << std::endl;
-				std::cout << "Removed child from Child_pids map with pid: " << it->first << std::endl;
 				it = _child_pids.erase(it);
 			}
 		}

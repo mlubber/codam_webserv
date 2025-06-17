@@ -27,12 +27,11 @@ class Server;
 struct clRequest;
 struct ConfigBlock;
 
-extern int	signal_pipe[2]; // To wake up epoll_wait for signals
-extern int	got_signal;		// To check the received signal
+extern int	signal_pipe[2];
+extern int	got_signal;
 
 int					initialize_signals();
 int					check_if_signal();
-void				handleReceivedSignal(Server& server);
 void				close_signal_pipe(int message);
 
 
@@ -44,6 +43,5 @@ std::vector<int>	convertToInt(std::vector<std::string> &portsStr);
 std::string			ip_to_string(struct in_addr addr);
 std::string			extract_first_word(std::string path);
 void				parsingRequest(Server& server, Client& client);
-int					check_path(std::string filePath, std::string locPath, std::string locConf);
+int					check_path(std::string filePath, std::string locPath);
 
-// void				close_webserv(Server& server);

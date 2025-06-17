@@ -6,7 +6,6 @@
 
 int	setNonBlocking(int fd)
 {
-	// std::cout << "Setting non-blocking mode for fd: " << fd << std::endl;
 	int flag = fcntl(fd, F_GETFL, 0);
 	if (flag == -1)
 	{
@@ -71,7 +70,6 @@ std::string urlDecode(const std::string& encoded)
 		else
 			decoded << encoded[i];
 	}
-	// std::cout << "decoded filename: " << decoded.str() << std::endl;
 	return(decoded.str());
 }
 
@@ -108,10 +106,6 @@ std::string	extract_first_word(std::string path)
 {
 	std::string word;
 
-	// std::cout << "extract first word here" << std::endl;
-	// std::cout << "from this path: " << path << std::endl;
-	word = "first word\n";
-
 	if (path.size() > 1)
 	{
 		std::string::size_type first = path.find('/');
@@ -119,21 +113,13 @@ std::string	extract_first_word(std::string path)
 		{
 			std::string::size_type second = path.find('/', first + 1);
 			if (second != std::string::npos)
-			{
 				word = path.substr(first, second + 1 - first);
-				// std::cout << "first word: " << word << std::endl;
-			}
 			else
 			{
-				// std::cout << "second slash not found" << std::endl;
 				word = path.substr(first);
-				// std::cout << "first word: " << word << std::endl;
 				std::string::size_type dot = word.find('.');
 				if (dot != std::string::npos)
-				{
-					// std::cout << "extension found" << std::endl;
 					word = path.substr(0, 1);
-				}
 				if (!word.empty() && *word.rbegin() != '/')
 					word.append("/");
 			}
@@ -144,36 +130,21 @@ std::string	extract_first_word(std::string path)
 	return (word);
 }
 
-int	check_path(std::string filePath, std::string locPath, std::string locConf)
+int	check_path(std::string filePath, std::string locPath)
 {
 	struct stat stats;
 	if (stat(filePath.c_str(), &stats) == 0)
 	{
-		std::cout << "\nINSIDE CHECK PATH\nSize: " << stats.st_size << " bytes" << std::endl;
-		std::cout << "filePath: " << filePath << std::endl;
 		if (S_ISDIR(stats.st_mode))
 		{
-			std::cout << filePath << ": Is a directory!" << std::endl;
 			if (locPath.empty())
-			{
-				std::cout << "request filepath: " << locConf << " NOT FOUND in config filepath" << std::endl;
 				return (1);
-			}
-			std::cout << "request filepath: \"" << locConf << "\" matches config filepath: \"" << locPath << "\"" << std::endl;
 			return (0);
 		}
 		else if (S_ISREG(stats.st_mode))
 		{
-			std::cout << filePath << ": Is a registry!" << std::endl;
-			std::cout << "location path in config: " << locPath << std::endl;
 			if (locPath.empty())
-			{
-				std::cout << "locConf: " << locConf << std::endl;
-				std::cout << "locPath: " << locPath << std::endl;
-				std::cout << "request filepath: " << locConf << " NOT FOUND in config filepath" << std::endl;
 				return (1);
-			}
-			std::cout << "request filepath: \"" << locConf << "\" matches config filepath: \"" << locPath << "\"" << std::endl;
 			return (0);
 		}
 	}

@@ -45,10 +45,7 @@ class Server
 	public:
 
 		Server(const Configuration& config);
-		Server(const Server& other);
 		~Server();
-
-		Server&	operator=(const Server& other);
 
 		bool	initialize(const std::vector<std::pair<std::string, std::vector<int> > >& server_configs);
 		void	run();

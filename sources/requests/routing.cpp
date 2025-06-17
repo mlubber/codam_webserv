@@ -11,17 +11,12 @@ static void serveStaticFile(Client& client, const std::string& filePath, std::st
 		return ;
 	}
 	
-	// Get file content
 	std::ostringstream fileStream;
 	fileStream << file.rdbuf();
 	std::string fileContent = fileStream.str();
-	// std::cout << fileContent << std::endl;
 
-	// Get content type
 	std::string	contentType = getExtType(filePath);
-	// std::cout << contentType << std::endl;
 
-	// Create HTTP response
 	std::ostringstream response;
 
 	if (status_code == "200")
@@ -42,7 +37,6 @@ static void serveStaticFile(Client& client, const std::string& filePath, std::st
 	else if (status_code == "500")
 		response << "HTTP/1.1 500 Internal Server Error\r\n";
 
-	// response << "HTTP/1.1 200 OK\r\n";
 	response << "Content-Type: " << contentType << "\r\n";
 	response << "Content-Length: " << fileContent.size() << "\r\n";
 	response << "\r\n";
@@ -54,13 +48,9 @@ static void serveStaticFile(Client& client, const std::string& filePath, std::st
 
 void serveError(Client& client, std::string error_code, const ConfigBlock& serverBlock)
 {
-	std::cout << "-------------- SOME ERROR ---------------- " << error_code << std::endl;
+	std::cerr << "Serving error: " << error_code << std::endl;
 	client.setCloseClientState(true);
 	std::string root = client.getServerBlockInfo("root");
-	// for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values)
-	// 	if (value.first == "root")
-	// 		root = value.second.front();
-	
 	
 	std::string path;
     for (const std::pair<const std::string, std::vector<std::string>>& value : serverBlock.values) 
@@ -72,13 +62,9 @@ void serveError(Client& client, std::string error_code, const ConfigBlock& serve
             {
                 if (*it == error_code) 
                 {
-                    std::cout << error_code << " FOUND" << std::endl;
-                    if (++it != errorValues.end()) // Check if the next value exists
-                    {
-                        path = *it; // Save the next value
-                        std::cout << "Path for Error " << error_code << ": " << path << std::endl;
-                    }
-                    break; // Exit the loop after finding the next value
+                    if (++it != errorValues.end())
+                        path = *it;
+                    break;
                 }
             }
         }
@@ -95,8 +81,6 @@ void serveError(Client& client, std::string error_code, const ConfigBlock& serve
     };
 
 	std::string filePath = root + path;
-	std::cout << "filePath for error: " << filePath << std::endl;
-	std::cout << "error_code: " << error_code << std::endl;
 
 	struct stat stats;
 	if (!path.empty() && stat(filePath.c_str(), &stats) == 0)
@@ -112,7 +96,7 @@ void serveError(Client& client, std::string error_code, const ConfigBlock& serve
 		client.setResponseData(it->second);
 		return ;
 	}
-	client.setResponseData(ER500); // Fallback to 500 Internal Server Error*
+	client.setResponseData(ER500);
 }
 
 static void saveFile(const clRequest& cl_request, const std::string& boundary, const ConfigBlock& serverBlock)
@@ -124,71 +108,49 @@ static void saveFile(const clRequest& cl_request, const std::string& boundary, c
 	if (root[0] != '.')
 		root = "." + root;
 	
-	// std::cout << "save file client" << std::endl;
 	size_t start = cl_request.body.find(boundary);
 	if (start == std::string::npos)
-	{
-		// std::cout << "Boundary not found!" << std::endl;
 		return;
-	}
 	start += boundary.length();
-	// std::cout << "start position: " << start << std::endl;
 
 	size_t dispositionPos = cl_request.body.find("Content-Disposition:", start);
 	if (dispositionPos ==  std::string::npos)
 		return;
-	// std::cout << "Content-disposition position: " << dispositionPos << std::endl;
 	
 	size_t	filenamePos = cl_request.body.find("filename=\"", dispositionPos);
 	if (filenamePos == std::string::npos)
 		return;
 	filenamePos += 10;
-	// std::cout << "filename position: " << filenamePos << std::endl;
 	
 	size_t filenameEnd = cl_request.body.find("\"", filenamePos);
 	std::string fileName = cl_request.body.substr(filenamePos, filenameEnd - filenamePos);
-	// std::cout << "filename: " << fileName << std::endl;
 
-	// std::cout << "client request path: " << cl_request.path << std::endl;
 	std::string filePath = joinPaths(root + cl_request.path, fileName);
-	// std::cout << "registry path: " << filePath << std::endl;
 
 	size_t dataStart = cl_request.body.find("\r\n\r\n", filenameEnd);
 	if (dataStart == std::string::npos)
 		return;
 	dataStart += 4;
-	// std::cout << "data start position: " << dataStart << std::endl;
 
 	size_t dataEnd = cl_request.body.find(boundary, dataStart);
 	if (dataEnd == std::string::npos)
 		return;
 	dataEnd -= 2;
-	// std::cout << "data end position: " << dataEnd << std::endl;
 
 	std::string fileData = cl_request.body.substr(dataStart, dataEnd - dataStart);
-	// std::cout << "file data: \n" << fileData << std::endl;
 
 	std::ofstream outFile(filePath.c_str(), std::ios::binary);
 	if (!outFile)
-	{
-		// std::cout << "Error opening file for writing: " << fileName << std::endl;
 		return;
-	}
 
 	outFile.write(fileData.c_str(), fileData.size());
 	outFile.close();
-
-	// std::cout << "File saved: " << fileName << std::endl;
 }
 
 static void	handlePostRequest(Client& client, clRequest& cl_request, const ConfigBlock& serverBlock)
 {
-	// std::string filePath = STATIC_DIR + request.path + std::string("/index.html");
 	std::ostringstream response;
 	std::string root = client.getServerBlockInfo("root");
-	// for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values)
-	// 	if (value.first == "root")
-	// 		root = value.second.front();
 	if (root[0] != '.')
 		root = "." + root;
 
@@ -197,11 +159,8 @@ static void	handlePostRequest(Client& client, clRequest& cl_request, const Confi
 		if (value.first == "client_max_body_size")
 			maxBody = std::stoul(value.second.front());
 
-	std::cout << "client_max_body_size: " << maxBody << " / " << MAX_BODY_SIZE << std::endl;
-	std::cout << "cl_request.body.size: " << cl_request.body.size() << std::endl;
 	if (cl_request.body.size() > maxBody)
 	{
-		// std::cout << "body too big!" << std::endl;
 		serveError(client, "413", serverBlock);
 		return ;
 	}
@@ -222,7 +181,6 @@ static void	handlePostRequest(Client& client, clRequest& cl_request, const Confi
 			}
 			else if (values_vector[i].find("application/x-www-form-urlencoded") != std::string::npos)
 			{
-				std::cout << "application/x-www-form-urlencoded found! " << cl_request.body << std::endl;
 				response	<< "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: "
 							<< (cl_request.body.size()) << "\r\n\r\n"
 							<< cl_request.body;
@@ -243,15 +201,10 @@ static void	handlePostRequest(Client& client, clRequest& cl_request, const Confi
 					while ((car = boundary.find('\r')) != std::string::npos)
 						boundary.erase(car, 1);
 					std::string closing_boundary = "--" + boundary + "--";
-
-					// std::cout << "BOUNDARY: " << boundary << std::endl;
-					// std::cout << "CLOSING:" << closing_boundary << std::endl;
-
 					saveFile(cl_request, boundary, serverBlock);
 				}
 
 				std::string filePath = joinPaths((root + cl_request.path), "upload.html");
-				// std::cout << "filePath: " << filePath << std::endl;
 				serveStaticFile(client, filePath, "200");
 				return ;
 			}
@@ -270,13 +223,9 @@ static void	handlePostRequest(Client& client, clRequest& cl_request, const Confi
 void	showDirList(Client& client, clRequest& cl_request, const std::string& filePath, const ConfigBlock& serverBlock)
 {
 	std::string root = client.getServerBlockInfo("root");
-	// for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values)
-	// 	if (value.first == "root")
-	// 		root = value.second.front();
 	if (root[0] != '.')
 		root = "." + root;
 	
-	// std::cout << "show directory listing" << std::endl;
 	std::ostringstream response;
 	std::ostringstream list;
 
@@ -299,7 +248,6 @@ void	showDirList(Client& client, clRequest& cl_request, const std::string& fileP
 	cutPath = cutPath.substr(0, cutPath.find_last_of('/'));
 	if (cutPath.empty())
 		cutPath = "../";
-	// std::cout << "cut client request: " << cutPath << std::endl;
 
 	if (filePath != home)
 		list << "<li><a href=\"" << cutPath << "\">../</a></li>\n";
@@ -321,8 +269,6 @@ void	showDirList(Client& client, clRequest& cl_request, const std::string& fileP
 			list << "<li><a href=\"" << href << "\">" << name << "</a></li>\n";
 	}
 
-	// std::cout << list.str() << std::endl;
-	// std::cout << list.str().size() << std::endl;
 
 	response	<< "HTTP/1.1 200 OK\r\n"
 				<< "Content-Length: " << (113 + cl_request.path.size() + list.str().size()) << "\r\n"
@@ -339,26 +285,18 @@ void	showDirList(Client& client, clRequest& cl_request, const std::string& fileP
 static void	deleteFile(Client& client, clRequest& cl_request, const ConfigBlock& serverBlock)
 {
 	std::ostringstream response;
-	// std::cout << "delete file here" << std::endl;
-	// std::cout << cl_request.path << std::endl;
-	// std::cout << cl_request.queryStr << std::endl;
 	
 	std::string root = client.getServerBlockInfo("root");
-	// for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values)
-	// 	if (value.first == "root")
-	// 	root = value.second.front();
 	if (root[0] != '.')
 		root = "." + root;
 	
 	size_t	filenamePos = cl_request.queryStr.find("filename=");
-	// std::cout << "filenamepos: " << filenamePos << std::endl;
 	if (filenamePos == std::string::npos)
 	{
 		client.setResponseData("HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\nContent-Length: 9\r\n\r\nBad Query");
 		return ;
 	}
 	filenamePos += 9;
-	// std::cout << urlDecode(cl_request.queryStr.substr(filenamePos)) << std::endl;
 
 	std::string uploads = "/uploads/";
 	for (const std::pair<const std::string, ConfigBlock>& nested : serverBlock.nested)
@@ -367,21 +305,14 @@ static void	deleteFile(Client& client, clRequest& cl_request, const ConfigBlock&
 		{
 			if (value.first == "upload_store")
 			{
-				// std::cout << "Found upload_store in location: " << nested.first << std::endl;
-				// std::cout << "Upload store path: " << value.second.front() << std::endl;
 				uploads = value.second.front();
 				if (!uploads.empty() && *uploads.rbegin() != '/')
 					uploads.append("/");
 			}
 		}
 	}
-	// std::cout << "uploads path: " << uploads << std::endl;
-
 	std::string fileName = uploads + cl_request.queryStr.substr(filenamePos);
-
-	// std::cout << "filename: " << fileName << std::endl;
 	std::string filePath = root + fileName;
-	// std::cout << "filepath: " << filePath << std::endl;
 
 	if (remove(filePath.c_str()) == 0)
 		client.setResponseData("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 12\r\n\r\nFile Deleted");
@@ -392,10 +323,6 @@ static void	deleteFile(Client& client, clRequest& cl_request, const ConfigBlock&
 void routeRequest(Client& client, const Server& server, clRequest& cl_request, const ConfigBlock& serverBlock)
 {
 	std::string root = client.getServerBlockInfo("root");
-
-	// for (const std::pair<const std::string, std::vector<std::string>> &value : serverBlock.values)
-	// 	if (value.first == "root")
-	// 		root = value.second.front();
 	if (root[0] != '.')
 		root = "." + root;
 
@@ -419,8 +346,6 @@ void routeRequest(Client& client, const Server& server, clRequest& cl_request, c
 				if (tempPath.find(tempLoc) == 0)
 				{
 					locPath = tempLoc;
-					// std::cout << "locpath: " << locPath << std::endl;
-					// std::cout << "locconf: " << locConf << std::endl;
 					if (locPath != locConf)
 						locPath.erase();
 					locBlock = nested.second;
@@ -429,8 +354,6 @@ void routeRequest(Client& client, const Server& server, clRequest& cl_request, c
 			}
 		}
 	}
-
-	// std::cout << "locationPath: " << locPath << std::endl;
 
 	for (const std::pair<const std::string, std::vector<std::string>> &value : locBlock.values)
     {
@@ -451,9 +374,7 @@ void routeRequest(Client& client, const Server& server, clRequest& cl_request, c
 	for (const std::pair<const std::string, std::vector<std::string>> &value : locBlock.values)
 		if (value.first == "index")
 			index = value.second.front();
-	if (!index.empty())
-		std::cout << "index found in nested block: " << index << std::endl;
-	else
+	if (index.empty())
 		index = "index.html";
 
 	std::string autoindex;
@@ -469,8 +390,6 @@ void routeRequest(Client& client, const Server& server, clRequest& cl_request, c
 			upload_store = value.second.front();
 			if (!upload_store.empty() && *upload_store.rbegin() != '/')
 				upload_store.append("/");
-			// std::cout << "alt upload location: " << upload_store << std::endl;
-			// std::cout << "client request path: " << cl_request.path << std::endl;
 			cl_request.path = upload_store;
 		}
 	}
@@ -493,12 +412,7 @@ void routeRequest(Client& client, const Server& server, clRequest& cl_request, c
 	for (const std::pair<const std::string, std::vector<std::string>> &value : locBlock.values)
 	{
 		if (value.first == "methods")
-		{
 			methods = value.second;
-			// for (const std::string& method : methods)
-			// 	std::cout << method << " ";
-			// std::cout << std::endl;
-		}
 	}
 	if (std::find(methods.begin(), methods.end(), cl_request.method) == methods.end())
 	{
@@ -509,37 +423,25 @@ void routeRequest(Client& client, const Server& server, clRequest& cl_request, c
 	if (cl_request.method == "GET")
 	{
 		struct stat stats;
-		// std::cout << "after GET filling stats" << std::endl;
-		std::cout << "this is the filepath: " << filePath << std::endl;
-		if (stat(filePath.c_str(), &stats) == 0) //fills stats with metadata from filePath if filePath exists
+		if (stat(filePath.c_str(), &stats) == 0)
 		{
-			std::cout << "Size: " << stats.st_size << " bytes" << std::endl;
-			if (S_ISDIR(stats.st_mode) && !locPath.empty()) // checks if filePath is a working directory
+			if (S_ISDIR(stats.st_mode) && !locPath.empty())
 			{
-				// std::cout << filePath << " is a directory!" << std::endl;
-
 				std::string fullPath = joinPaths(filePath, index);
-
-				// std::cout << "looking for index: " << fullPath << std::endl;
-				if (stat(fullPath.c_str(), &stats) == 0) // checks if the given index is present in the directory
+				if (stat(fullPath.c_str(), &stats) == 0)
 				{
-					// std::cout << "index found!" << std::endl;
-					// std::cout << "filePath: " << fullPath << std::endl;
 					serveStaticFile(client, fullPath, "200");
 					return ;
 				}
 				else
 				{
-					std::cout << "no index found" << std::endl;
 					if (autoindex == "on")
 					{
-						std::cout << "autoindex on, show directory" << std::endl;
 						showDirList(client, cl_request, filePath, serverBlock);
 						return ;
 					}
 					else
 					{
-						std::cout << "autoindex off. Serve 404 error" << std::endl; 
 						serveError(client, "404", serverBlock);
 						return ;
 					}
@@ -549,22 +451,7 @@ void routeRequest(Client& client, const Server& server, clRequest& cl_request, c
 			{
 				if (!filePath.empty() && filePath[filePath.size() - 1] == '/')
 					filePath.erase(filePath.size() - 1);
-				// if (stat(filePath.c_str(), &stats) == 0)
-				// {
-					// std::cout << "Size: " << stats.st_size << " bytes" << std::endl;
-				// if (S_ISREG(stats.st_mode)) // checks if filePath is an existing file (registry)
-				// {
-				// std::cout << filePath << " is a registry!" << std::endl;
-				// std::cout << "location path in config: " << locPath << std::endl;
-				// size_t pos = filePath.find(locPath);
-				// if (pos == std::string::npos || locPath.empty())
-				// {
-				// 	std::cout << "request filepath: " << locConf << " not found in config filepath" << std::endl;
-				// 	serveError(client, "404", serverBlock);
-				// 	return;
-				// }
-				// std::cout << "request filepath: \"" << locConf << "\" matches config filepath: \"" << locPath << "\"" << std::endl;
-				if (check_path(filePath, locPath, locConf) == 1)
+				if (check_path(filePath, locPath) == 1)
 				{
 					serveError(client, "404", serverBlock);
 					return ;
@@ -572,7 +459,6 @@ void routeRequest(Client& client, const Server& server, clRequest& cl_request, c
 				if (cgi_check(cl_request.path))
 				{
 					int status = start_cgi(cl_request, server, client);
-					std::cout << "\n\nSTATUS: " << status << "\n\n" << std::endl;
 					if (status != 0)
 					{
 						serveError(client, "500", serverBlock);
@@ -585,13 +471,6 @@ void routeRequest(Client& client, const Server& server, clRequest& cl_request, c
 				else
 					serveStaticFile(client, filePath, "200");
 				return ;
-				// }
-				// }
-				// else
-				// {
-				// 	serveError(client, "404", serverBlock);
-				// 	return ;
-				// }
 			}
 			else
 			{
@@ -608,7 +487,7 @@ void routeRequest(Client& client, const Server& server, clRequest& cl_request, c
 	}
 	else if (cl_request.method == "POST")
 	{
-		if (check_path(filePath, locPath, locConf) == 1)
+		if (check_path(filePath, locPath) == 1)
 		{
 			serveError(client, "404", serverBlock);
 			return ;
@@ -616,7 +495,6 @@ void routeRequest(Client& client, const Server& server, clRequest& cl_request, c
 		if (cgi_check(cl_request.path))
 		{
 			int status = start_cgi(cl_request, server, client);
-			std::cout << "\n\nSTATUS: " << status << "\n\n" << std::endl;
 			if (status != 0)
 			{
 				serveError(client, "500", serverBlock);
@@ -630,10 +508,7 @@ void routeRequest(Client& client, const Server& server, clRequest& cl_request, c
 			return ;
 		}
 		else
-		{
-			std::cout << "handlePostRequest here" << std::endl;
 			handlePostRequest(client, cl_request, serverBlock);
-		}
 		return ;
 	}
 	else if (cl_request.method == "DELETE")

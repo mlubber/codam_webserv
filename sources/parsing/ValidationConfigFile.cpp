@@ -2,7 +2,6 @@
 #include <iterator>
 #include <algorithm>
 
-//std::vector<std::vector<std::string>> compare;
 std::vector<std::map<std::string, std::vector<std::string>>> compareArray;
 
 ValidationConfigFile::~ValidationConfigFile(){}
@@ -21,30 +20,11 @@ ValidationConfigFile& ValidationConfigFile::operator=(const ValidationConfigFile
 	return (*this);
 }
 
-// void	isSeversSame() {
-
-// 	for (size_t i = 0; i < compare.size() ; ++i)  {
-// 		std::vector<std::string> s1 = compare[i];
-// 		for (size_t j = i + 1; j < compare.size() ; ++j)  {
-// 			std::vector<std::string> s2 = compare[j];
-// 			for (size_t isub = 0; isub < s1.size(); ++isub){
-// 				for (size_t jsub = 0; jsub < s2.size(); ++jsub) {
-// 					if (s1[isub] == s2[jsub]) {
-// 						std::cerr << "Error: servers can't has same port! => " << s1[isub] << std::endl;
-// 						std::exit(1);
-// 					}
-// 				}
-// 			}
-// 		}
-// 	}
-// }
-
 void isSeversSame()
 {
     for (size_t i = 0; i < compareArray.size(); ++i)
 	{
-        std::map<std::string, std::vector<std::string>>& s1 = compareArray[i];  // Reference to avoid copying
-        // Iterate through the map s1
+        std::map<std::string, std::vector<std::string>>& s1 = compareArray[i];
         for (const auto& entry1 : s1)
 		{
             const std::string& host1 = entry1.first;
@@ -53,7 +33,7 @@ void isSeversSame()
 
             for (size_t j = i + 1; j < compareArray.size(); ++j)
 			{
-                std::map<std::string, std::vector<std::string>>& s2 = compareArray[j];  // Reference to avoid copying
+                std::map<std::string, std::vector<std::string>>& s2 = compareArray[j];
                 for (const auto& entry2 : s2)
 				{
                     const std::string& host2 = entry2.first;
@@ -85,36 +65,6 @@ void isSeversSame()
         }
     }
 }
-
-
-
-// void	isSeversSame() {
-
-// 	for (size_t i = 0; i < compareArray.size(); ++i)  {
-// 		std::map<std::string, std::vector<std::string>> s1 = compareArray[i];
-
-
-// 		std::vector<std::string> listen1 = s1.second;
-// 		std::string host1 = s1.first;
-// 		for (size_t j = i + 1; j < compareArray.size() ; ++j)  {
-// 			std::map<std::string, std::vector<std::string>> s2 = compareArray[j];
-// 			std::vector<std::string> listen2 = s2.second;
-// 			std::string host2 = s2.first;
-// 			if (host1 == host2){
-// 				for (size_t k = 0; k < listen1.size(); ++k){
-// 					std::string lis1 = listen1[k];
-// 					for (size_t l = 0; l < listen2.size(); ++l){
-// 						std::string lis2 = listen2[l];
-// 						if (lis1 == lis2){
-// 							std::cerr << "Error: servers can't has same port!" << std::endl;
-// 							std::exit(1);
-// 						}
-// 					}
-// 				}
-// 			}
-// 		}
-// 	}
-// }
 
 void	onlyPrintErrorExit(std::string key, int i) 
 {
@@ -195,9 +145,6 @@ void	ValidationConfigFile::duplicateKey()
 	std::vector<std::string> keyOneValue = {"host", "client_max_body_size", "root", "index",
 	"autoindex", "upload_store", "cgi_pass" ,"location", "server_name"};
 
-	// also checking the value of autoindex and method  that should be only (on , off , get, post , delete) not its else.
-	
-	//looping all values inside server block NOT location block that should has only one value  
 	for (std::pair<const std::string, ConfigBlock> &server : _configData.nested)
 	{
 		if (server.second.values.find("server_name") == server.second.values.end())
@@ -223,7 +170,6 @@ void	ValidationConfigFile::duplicateKey()
 		}
 	}
 
-	//looping all values insidelocation block that should has only one value 
 	for (std::pair<const std::string, ConfigBlock> &server : _configData.nested)
 	{
 		for (size_t i = 0; i < keyOneValue.size(); ++i)
@@ -260,12 +206,6 @@ void	ValidationConfigFile::duplicateKey()
 							if (itValue.compare("POST") != 0 && itValue.compare("GET") != 0 && itValue.compare("DELETE") != 0) 
 								onlyPrintErrorExit("methods", 1);
 						}
-						// if (location.second.values["methods"].size() != 1) 
-						// 	onlyPrintErrorExit("methods", 1);
-						
-						// std::string tempMethod = location.second.values["methods"].front();
-						// if (tempMethod.compare("POST") != 0)
-						// 	onlyPrintErrorExit("methods", 1);
 					}
 				}
 				else 
@@ -296,13 +236,6 @@ void	checkListen(std::vector<std::string> &listens)
 			onlyPrintErrorExit("listen", 3);
 		}
 	}
-
-	// for (std::string listen : listens) {
-	// 	for (size_t i = 0; i < listen.size(); ++i){
-	// 		if (!std::isdigit(listen[i]))
-	// 			onlyPrintErrorExit("listen", 3);
-	// 	}
-	// }
 }
 
 void	checkHost(std::string host)
@@ -363,40 +296,10 @@ void	checkHost(std::string host)
 
 ValidationConfigFile::ValidationConfigFile(ConfigBlock &configData) : _configData(configData)
 {
-	// duplicateKey();
-	// int i = 0;
-	// for (std::pair<const std::string, ConfigBlock> &server : _configData.nested){
-	// 	compare.push_back(std::vector<std::string>());
-	
-	// 	if (server.second.values.find("listen") != server.second.values.end()) {
-	// 		compare[i].push_back(server.second.values["listen"].front());	 
-	// 	}else {
-	// 		compare[i].push_back("");
-	// 	}
-	// 	if (server.second.values.find("host") != server.second.values.end()) {
-	// 		compare[i].push_back(server.second.values["host"].front());	 
-	// 	}else {
-	// 		compare[i].push_back("");
-	// 	}
-	// 	if (server.second.values.find("server_name") != server.second.values.end()) {
-	// 		compare[i].push_back(server.second.values["server_name"].front());	 
-	// 	}else  {
-	// 		compare[i].push_back("");
-	// 	}
-	// 	if (server.second.values.find("client_max_body_size") != server.second.values.end()) {
-	// 		checkBodySize(server.second.values["client_max_body_size"].front());
-	// 	}
-	// 	++i;
-	// }
-	// isSeversSame();
-
-
 	duplicateKey();
 	int i = 0;
 	for (std::pair<const std::string, ConfigBlock> &server : _configData.nested)
 	{
-		//compare.push_back(std::vector<std::string>());
-		//compareArray.push_back(std::map<std::string, std::vector<std::string>>());
 		std::string key;
 		std::vector<std::string> valueForKey;
 		std::map<std::string, std::vector<std::string>> myMap;
@@ -405,35 +308,24 @@ ValidationConfigFile::ValidationConfigFile(ConfigBlock &configData) : _configDat
 		{
 			checkHost(server.second.values["host"].front());
 			key = server.second.values["host"].front();
-			//compareArray[i].first = server.second.values["host"].front();
 		}
 		else
 			onlyPrintErrorExit("host", 2);
 		if (server.second.values.find("listen") != server.second.values.end())
 		{
-			//compare[i] = server.second.values["listen"];
 			checkListen(server.second.values["listen"]);
 			valueForKey = server.second.values["listen"];
-			//compareArray[i].second = server.second.values["listen"];
-			//compare[i].push_back(server.second.values["listen"].front());	 
 		}
 		else
 			onlyPrintErrorExit("listen", 2);
 
 		if (server.second.values.find("server_name") != server.second.values.end())
 		{
-			valueForKey.push_back(server.second.values["server_name"].front());
-			//compareArray[i].second = server.second.values["listen"];
-			//compare[i].push_back(server.second.values["listen"].front());	 
-		}else{
-			valueForKey.push_back("");
+			valueForKey.push_back(server.second.values["server_name"].front());	 
 		}
+		else
+			valueForKey.push_back("");
 
-		// if (server.second.values.find("server_name") != server.second.values.end()) {
-		// 	compare[i].push_back(server.second.values["server_name"].front());	 
-		// }else  {
-		// 	compare[i].push_back("");
-		// }
 		if (server.second.values.find("client_max_body_size") != server.second.values.end())
 			checkBodySize(server.second.values["client_max_body_size"].front());
 		myMap[key] = valueForKey;
@@ -442,196 +334,3 @@ ValidationConfigFile::ValidationConfigFile(ConfigBlock &configData) : _configDat
 	}
 	isSeversSame();
 }
-
-//#include <filesystem>
-// std::map<std::string, bool>	errorPages;
-// std::map<std::string, std::string>	pathPages;
-
-// std::string resolvePath(const std::string& userPath) {
-//     return std::filesystem::absolute(userPath).string();
-// }
-
-// void	fileOrDirectoryExists(std::string path) {
-// 	std::string filepath = resolvePath(path);
-// 	std::cout << "whole path is : " << filepath << std::endl;
-// 	bool res = std::filesystem::exists(filepath);
-// 	std::cout << "res is : " << res << std::endl;
-// 	if (!res) { 
-// 		std::cerr << "here Error: directory doesn't exist! =>  " << path << std::endl;
-// 		std::exit(1);
-// 	} else {
-// 		std::cout << "succefully find the wholePath is : " << path << std::endl;
-// 	}
-// }
-
-
-// void	ValidationConfigFile::checkErrorPageExist(std::string defRoot, std::string overrideRoot, std::vector<std::string> errorPath, int blockIndex, bool add) 
-// {
-// 	errorPages = {{"400", false} ,{"404", false}, {"413", false}, {"500", false}};
-// 	pathPages = {{"400", "/errors/400.html"} ,{"404", "/errors/404.html"}, {"413", "/errors/413.html"}, {"500", "/errors/500.html"}};
-	
-
-// 	for (std::vector<std::string>::iterator it = errorPath.begin(); it != errorPath.end(); ++it) {
-// 		std::string path;
-// 		size_t	dotPosition;
-// 		size_t	slashPosition;
-// 		std::string	strErrorPath = *it;
-// 		std::string	nameErrorFile;
-
-// 		if (overrideRoot.empty()) 
-// 			path = defRoot + *it;
-// 		else
-// 			path = overrideRoot + *it;
-// 		fileOrDirectoryExists(path);
-
-// 		slashPosition = strErrorPath.find_last_of("/");
-// 		if (slashPosition == std::string::npos)
-// 			slashPosition = strErrorPath[0];
-// 		else
-// 			slashPosition++;
-// 		nameErrorFile = strErrorPath.substr(slashPosition);
-// 		dotPosition = strErrorPath.find_last_of(".");
-		
-// 		if (dotPosition != std::string::npos) {
-// 			nameErrorFile = nameErrorFile.substr(0, dotPosition - slashPosition);
-// 		} else {
-// 			std::cerr << "Error: invalid file path!" << std::endl;
-// 			std::exit(1);
-// 		}
-// 		if (errorPages.find(nameErrorFile) != errorPages.end()) {
-// 			errorPages[nameErrorFile] = true;
-// 		}
-// 	}
-
-// 	if (add) {
-// 		std::multimap<std::string, ConfigBlock>::iterator it = _configData.nested.begin();
-// 		std::advance(it, blockIndex);
-// 		std::vector<std::string> &existingValues = it->second.values["error_page"];
-// 		for(const std::pair<const std::string, bool> &page : errorPages) {
-// 			if (page.second == false) {
-// 				std::map<std::string, std::string>::iterator pa = pathPages.find(page.first);
-// 				if (pa != pathPages.end()) {
-// 					existingValues.push_back(pa->first);
-// 					existingValues.push_back(pa->second);
-// 				}
-// 			}
-// 		}
-// 	}
-// }
-
-
-// void	ValidationConfigFile::addBaseValueIfNeedit(){
-// 	std::map<std::string, std::vector<std::string>> defaultConfigKeyValue = { 
-// 	{"listen", {"80"}},{"client_max_body_size", {"1m"}},{"root",{"./www"}},
-// 	{"server_name",{"default_server"}} ,{"host", {"127.0.0.1"}} 
-// 	,{"error_page",{"400","/errors/400.html", "404", "/errors/404.html", "413", "/errors/413.html", "500", "/errors/500.html"}}
-// 	};
-// 	std::vector<std::string> baseValues = {"listen", "host", "client_max_body_size", "root", "error_page"};
-// 	int blockIndex = 0;
-
-
-// 	std::string  temp, overrideRoot;
-// 	for (std::pair<const std::string, ConfigBlock> &server : _configData.nested){
-// 		std::vector<std::string> errorPath;
-// 		std::string defRoot = "./www";
-
-// 		for (std::pair<const std::string, ConfigBlock> location : server.second.nested) {
-// 			if (location.second.values.find("location") != location.second.values.end()) {
-// 				temp = location.second.values["location"].front();
-// 				if (temp.compare(0, 7,"/errors") == 0) {
-// 					if (location.second.values.find("root") != location.second.values.end())
-// 						overrideRoot = location.second.values["root"].front();
-// 				}
-// 			}
-// 		}
-
-// 		for (std::vector<std::string>::iterator it = baseValues.begin(); it != baseValues.end(); ++it)
-// 		{
-// 			std::map<std::string, std::vector<std::string>>::iterator default_value = defaultConfigKeyValue.find(*it);
-// 			if (*it != "error_page") {
-// 				if (server.second.values.find(*it) == server.second.values.end())
-// 				{
-// 					if (default_value != defaultConfigKeyValue.end())
-// 						server.second.values[*it] = default_value->second;
-// 				}
-// 			} else if (*it == "error_page") {
-// 				std::map<std::string, std::vector<std::string>>::iterator itErrorPage = server.second.values.find(*it);
-// 				if (itErrorPage != server.second.values.end()) {
-// 					for (const std::string &value : itErrorPage->second) {
-// 						if (value.find('.') != std::string::npos) {
-// 							errorPath.push_back(value);
-// 						}
-// 					}
-// 				}	
-// 			}
-// 			if (*it == "root"){
-// 				std::cout << "here" << std::endl;
-// 				defRoot = server.second.values[*it].front();
-// 				std::cout << "defRoot" << defRoot << std::endl;
-// 			}
-// 		}
-// 		// if the root or override root is same as our default root we can add the error pages of doesn't exist.
-// 		if (overrideRoot == "./www" || defRoot == "./www")
-// 			checkErrorPageExist(defRoot, overrideRoot, errorPath, blockIndex, true);
-// 		else
-// 			checkErrorPageExist(defRoot, overrideRoot, errorPath, blockIndex, false);
-// 		++blockIndex;
-// 	}
-// }
-
-
-
-// ValidationConfigFile::ValidationConfigFile(ConfigBlock &configData) : _configData(configData)
-// {
-// 	duplicateKey();
-// 	addBaseValueIfNeedit();
-
-// 	std::string temp, tempFileName, tempOverRoot, tempUploadPath;
-// 	std::string defRoot = "./www";
-
-
-// 	for (std::pair<const std::string, ConfigBlock> &server : _configData.nested){
-
-
-// 		if (server.second.values.find("root") != server.second.values.end()) {
-// 			defRoot = server.second.values["root"].front();
-// 			fileOrDirectoryExists(defRoot);
-// 		}
-// 		if (server.second.values.find("client_max_body_size") != server.second.values.end()) {
-// 			checkBodySize(server.second.values["client_max_body_size"].front());
-// 		}
-// 		if (server.second.values.find("index") != server.second.values.end()) {
-// 			tempFileName = defRoot + server.second.values["index"].front();
-// 			fileOrDirectoryExists(tempFileName);
-// 		}
-// 		if (server.second.values.find("upload_store") != server.second.values.end()) {
-// 			tempUploadPath = server.second.values["upload_store"].front();
-// 			fileOrDirectoryExists(tempUploadPath);
-// 		}	
-
-// 		// looping all location of one server block to CHECK IF FILE AND DIRECTORY ARE EXIST.
-// 		for (std::pair<const std::string, ConfigBlock> location : server.second.nested) {
-// 			if (location.second.values.find("location") != location.second.values.end()) {
-// 				temp = location.second.values["location"].front();
-// 				if (location.second.values.find("root") != location.second.values.end()) {
-// 					tempOverRoot = location.second.values["root"].front();
-// 					fileOrDirectoryExists(tempOverRoot);
-// 				}
-// 				if (location.second.values.find("index") != location.second.values.end()) {
-// 					tempFileName =  location.second.values["index"].front();
-// 					std::string tf;
-
-// 					if (tempOverRoot.empty())
-// 						tf = defRoot + temp + tempFileName;
-// 					else 
-// 						tf = tempOverRoot + tempFileName;
-// 					fileOrDirectoryExists(tf);
-// 				}
-// 				if (location.second.values.find("upload_store") != location.second.values.end()) {
-// 					tempUploadPath = location.second.values["upload_store"].front();
-// 					fileOrDirectoryExists(tempUploadPath);
-// 				}	
-// 			}
-// 		}
-// 	}
-// }

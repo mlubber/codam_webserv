@@ -1,12 +1,11 @@
 #include "../headers/headers.hpp"
 
-int	signal_pipe[2]; // To wake up epoll_wait for signals
-int	got_signal = 0;	// To check the received signal
+int	signal_pipe[2];
+int	got_signal = 0;
 
 void signalHandler(int sig)
 {
 	char signal = static_cast<char>(sig);
-	std::cout << "\nWriting signal byte to signal_pipe" << std::endl;
 	write(signal_pipe[1], &signal, 1);
 	got_signal = sig;
 }

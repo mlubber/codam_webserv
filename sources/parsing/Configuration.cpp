@@ -49,39 +49,25 @@ ConfigBlock&	Configuration::getServerBlock(const std::string& host, const std::s
 
 			if (hostMatch && portMatch)
 			{
-				// std::cout << "host and port match" << std::endl;
 				if (++tempIT != _configData.nested.end())
 				{
 					if (!firstMatchServerBlock)
-					{
-						// std::cout << "inside first match" << std::endl;
 						firstMatchServerBlock = &serverBlock;
-					}
 				}
 				else if (!firstMatchServerBlock)
-				{
-					// std::cout << "no more server blocks to search" << std::endl;
 					return (serverBlock);
-				}
 			} 
 			if(serverName.size() > 0 && hostMatch && portMatch)
 			{
-				// std::cout << "not empty server_name in config file" << std::endl;
 				if (hostMatch && portMatch && nameMatch)
 					return (serverBlock);
 			}
 		}
 	}
 	if (firstMatchServerBlock)
-	{
-		std::cout << "first match server returned" << std::endl;
 		return (*firstMatchServerBlock);
-	}
 	else
-	{
-		std::cout << "Fallback server returned" << std::endl;
 		return (*fallBackServerBlock);
-	}
 	throw std::runtime_error("No server blocks found in the configuration");
 }
 
@@ -185,7 +171,7 @@ void	callectAllValuesForAKeyPushToVector(std::vector<Token> &chunkTokens, std::s
 
 	std::vector<std::string> values;
 	
-	for (size_t i = 1; i < chunkTokens.size() - 1; ++i) // Collect all values before ;
+	for (size_t i = 1; i < chunkTokens.size() - 1; ++i)
 	{
 		if (chunkTokens[i].type == VALUE)
 			values.push_back(chunkTokens[i].value);
@@ -281,22 +267,4 @@ void Configuration::parseConfig(const std::string &filename)
 	_configData = std::move(blockStack.top().second); 
 }
 
-// only print to see values and keys doesn't need it later 
-void Configuration::printConfig(const ConfigBlock &config, int depth)
-{
-    std::string indent(depth * 2, ' ');
-
-    for (const std::pair<const std::string, std::vector<std::string>> &pair : config.values)
-	{
-        std::cout << indent << pair.first << " = ";
-		std::copy(pair.second.begin(), pair.second.end(), std::ostream_iterator<std::string>(std::cout, ", "));
-		std::cout << std::endl;
-    }
-    for (const std::pair<const std::string, ConfigBlock> &block : config.nested)
-	{
-        std::cout << indent << "Block: " << block.first << " {" << std::endl;
-        printConfig(block.second, depth + 1);
-        std::cout << indent << "}" << std::endl;
-    }
-}
 
