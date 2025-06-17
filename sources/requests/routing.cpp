@@ -621,7 +621,10 @@ void routeRequest(Client& client, const Server& server, clRequest& cl_request, c
 			{
 				serveError(client, "500", serverBlock);
 				if (client.checkCgiPtr() && client.getCgiStruct().child_pid != -1)
+				{
 					kill(client.getCgiStruct().child_pid, SIGTERM);
+					waitpid(client.getCgiStruct().child_pid, &status, 0);
+				}
 				return ;
 			}
 			return ;

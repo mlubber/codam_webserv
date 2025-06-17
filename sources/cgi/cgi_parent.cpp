@@ -76,6 +76,8 @@ void	read_from_pipe(Client& client, t_cgiData& cgi, Server& server, std::string&
 		return ;
 	}
 
+	std::cout << "\n------ReadDATA--------\n" << readData << std::endl;
+
 	std::cout << "Done with cgi_read" << std::endl;
 	if (epoll_ctl(server.getEpollFd(), EPOLL_CTL_DEL, cgi.ets_pipe[0], NULL) == -1)
 		std::cerr << "CGI ERROR: Failed deleting ets_pipe fd after reading all data from pipe" << std::endl;

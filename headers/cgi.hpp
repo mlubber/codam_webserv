@@ -7,6 +7,11 @@
 
 struct clRequest;
 
+enum script_type {
+	python,		// Python script
+	php,		// PHP script
+};
+
 typedef struct s_cgiData
 {
 	char*		path;				// path to executable
@@ -21,6 +26,7 @@ typedef struct s_cgiData
 	int			dataToWrite;		// Bytes needed to be written to
 	int			dataWritten;		// bytes written to pipe
 	std::string	readData;			// bytes read from pipe
+	int			script_type;		// Python or PHP
 }	t_cgiData;
 
 bool	cgi_check(std::string& path);
