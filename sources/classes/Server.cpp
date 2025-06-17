@@ -344,7 +344,7 @@ void Server::connectClient(int _epoll_fd, int server_fd)
 		socklen_t len = sizeof(addr);
 		getsockname(server_fd, (sockaddr*)&addr, &len);
 
-		ConfigBlock serverBlock = _config.getServerBlock(ip_to_string(addr.sin_addr), std::to_string(ntohs(addr.sin_port)));
+		// ConfigBlock serverBlock = _config.getServerBlock(ip_to_string(addr.sin_addr), std::to_string(ntohs(addr.sin_port)));
 		
 		if (new_client_fd < 0)
 		{
@@ -370,7 +370,7 @@ void Server::connectClient(int _epoll_fd, int server_fd)
 		}
 		std::cout << "Client connected: " << new_client_fd << std::endl;
 
-		std::unique_ptr<Client> new_client = std::make_unique<Client>(new_client_fd, serverBlock);
+		std::unique_ptr<Client> new_client = std::make_unique<Client>(new_client_fd);
 
 		this->_clients.push_back(std::move(new_client));
 		this->_client_count++;
@@ -471,9 +471,6 @@ int Server::recvFromSocket(Client& client)
 	if (client.getClientReceived().empty())
 		client.setLastRequest();
 
-
-	std::cout << "\nErrno before receiving: " << errno << ", str: " << strerror(errno) << std::endl;
-
 	bytes_received = recv(client_fd, buffer, SOCKET_BUFFER, 0);
 	std::cout << "bytes_received: " << bytes_received << std::endl;
 	if (bytes_received == -1)
@@ -489,8 +486,6 @@ int Server::recvFromSocket(Client& client)
 	}
 	client.setReceivedData(buffer, bytes_received);
 	std::string tempReceivedData = client.getClientReceived();
-
-	std::cout << "\nErrno after receiving: " << errno << ", str: " << strerror(errno) << std::endl;
 	
 	// Check if the headers are fully received
 	size_t headerEnd = tempReceivedData.find("\r\n\r\n");

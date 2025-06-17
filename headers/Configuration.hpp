@@ -46,7 +46,7 @@ class Configuration
 		Configuration(const Configuration& other);
 
 		ConfigBlock&				getConfigData();
-		ConfigBlock&				getServerBlock(const std::string& host, const std::string& port);
+		ConfigBlock&				getServerBlock(const std::string& host, const std::string& port, const std::string& name);
 	
 		std::vector<Token>			tokenize(std::ifstream &line);
 		void						parseConfig(const std::string &filename);

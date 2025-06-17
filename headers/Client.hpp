@@ -48,7 +48,7 @@ class Client
 
 		public:
 
-		Client(int socket_fd, const ConfigBlock& serverBlock);
+		Client(int socket_fd);
 		~Client();
 
 		void				handleEvent(Server& server);
@@ -67,6 +67,7 @@ class Client
 		
 		void	setReceivedData(const char* data, ssize_t bytes_received);
 		void	setResponseData(std::string data);
+		void	setServerBlock(ConfigBlock serverBlock);
 		void	setClientState(int state);
 		void	setCgiStruct(std::unique_ptr<t_cgiData> cgi);
 		void	setCloseClientState(bool state);

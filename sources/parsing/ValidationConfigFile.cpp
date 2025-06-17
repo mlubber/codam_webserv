@@ -49,6 +49,7 @@ void isSeversSame()
 		{
             const std::string& host1 = entry1.first;
             const std::vector<std::string>& listen1 = entry1.second;
+			const std::string& serverName1 = *(entry1.second.end() - 1);
 
             for (size_t j = i + 1; j < compareArray.size(); ++j)
 			{
@@ -57,19 +58,24 @@ void isSeversSame()
 				{
                     const std::string& host2 = entry2.first;
                     const std::vector<std::string>& listen2 = entry2.second;
+					const std::string& serverName2 = *(entry2.second.end() - 1);
 
                     if (host1 == host2)
 					{
-                        for (size_t k = 0; k < listen1.size(); ++k)
+                        for (size_t k = 0; k < listen1.size() - 1; ++k)
 						{
                             std::string lis1 = listen1[k];
-                            for (size_t l = 0; l < listen2.size(); ++l)
+                            for (size_t l = 0; l < listen2.size() - 1; ++l)
 							{
                                 std::string lis2 = listen2[l];
                                 if (lis1 == lis2)
 								{
-                                    std::cerr << "Error: servers can't have the same host!" << std::endl;
-                                    std::exit(1);
+									if (serverName1 == serverName2) 
+									{
+										std::cerr << "Error: servers can't have the same host!" << std::endl;
+                                    	std::exit(1);
+									}
+
                                 }
                             }
                         }
@@ -187,13 +193,17 @@ void	checkBodySize(std::string &bodySize)
 void	ValidationConfigFile::duplicateKey() 
 {
 	std::vector<std::string> keyOneValue = {"host", "client_max_body_size", "root", "index",
-	"autoindex", "upload_store", "cgi_pass" ,"location"};
+	"autoindex", "upload_store", "cgi_pass" ,"location", "server_name"};
 
 	// also checking the value of autoindex and method  that should be only (on , off , get, post , delete) not its else.
 	
 	//looping all values inside server block NOT location block that should has only one value  
 	for (std::pair<const std::string, ConfigBlock> &server : _configData.nested)
 	{
+		if (server.second.values.find("server_name") == server.second.values.end())
+		{
+			server.second.values["server_name"].push_back("");
+		}
 		if (server.second.values.find("autoindex") != server.second.values.end())
 		{
 			std::string tempAutoIndex = server.second.values["autoindex"].front();
@@ -409,6 +419,15 @@ ValidationConfigFile::ValidationConfigFile(ConfigBlock &configData) : _configDat
 		}
 		else
 			onlyPrintErrorExit("listen", 2);
+
+		if (server.second.values.find("server_name") != server.second.values.end())
+		{
+			valueForKey.push_back(server.second.values["server_name"].front());
+			//compareArray[i].second = server.second.values["listen"];
+			//compare[i].push_back(server.second.values["listen"].front());	 
+		}else{
+			valueForKey.push_back("");
+		}
 
 		// if (server.second.values.find("server_name") != server.second.values.end()) {
 		// 	compare[i].push_back(server.second.values["server_name"].front());	 

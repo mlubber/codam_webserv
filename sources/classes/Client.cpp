@@ -1,6 +1,6 @@
 #include "../../headers/Client.hpp"
 
-Client::Client(int socket_fd, const ConfigBlock& serverBlock) : _state(reading_request), _cgi(nullptr), _close_client(false), _server_block(serverBlock)
+Client::Client(int socket_fd) : _state(reading_request), _cgi(nullptr), _close_client(false)
 {
 	_fds.push_back(socket_fd);
 	_last_request = std::time(nullptr);
@@ -140,6 +140,11 @@ void	Client::setReceivedData(const char* data, ssize_t bytes_received)
 void	Client::setResponseData(std::string data)
 {
 	_response = data;
+}
+
+void	Client::setServerBlock(ConfigBlock serverBlock)
+{
+	_server_block = serverBlock;
 }
 
 

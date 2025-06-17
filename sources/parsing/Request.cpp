@@ -598,17 +598,34 @@ void	generateHttpResponse(Client& client, const Server& server, clRequest& cl_re
 void	parsingRequest(Server& server, Client& client)
 {
 	// std::cout << "Errno at start of parsingRequest: " << errno << ", str: " << strerror(errno) << std::endl;
-
+	sockaddr_in addr;
+	socklen_t len = sizeof(addr);
 
 	readRequest(client);
 	clRequest		cl_request = client.getClStructRequest();
 	Configuration	config = server.getConfig();
 	int				client_fd = client.getClientFds(0);
 
+	if (getsockname(client_fd, (sockaddr*)&addr, &len) == -1)
+	{
+		std::cerr << "fout" << std::endl;
+	}
+
+	std::cout << "IP ADDRESS: " << ip_to_string(addr.sin_addr) << std::endl;
+	std::cout << "PORT: " << std::to_string(ntohs(addr.sin_port)) << std::endl;
+
 	std::cout << "\n\n---Client [" << client_fd << "] received: ---\n" << client.getClientReceived() << "\n--- END OF RECEIVED ---" << std::endl;
-	ConfigBlock serverBlock = config.getServerBlock(cl_request.host, cl_request.port);
+	
+	std::cout << "CONFIG HOSTHEADER: " << client.getServerBlockInfo("server_name") << std::endl;
+	std::cout << "CLIENT REQUEST HOST: " << cl_request.host << std::endl;
+	std::cout << "CLIENT REQUEST PORT: " << cl_request.port << std::endl;
+
+	ConfigBlock serverBlock = config.getServerBlock(ip_to_string(addr.sin_addr), std::to_string(ntohs(addr.sin_port)), cl_request.host);
+	client.setServerBlock(serverBlock);
+	std::cout << "HOST IN SERVERBOCK FOUND:" << serverBlock.values["host"].front() << std::endl;
 
 
+	
 	if (cl_request.invalidRequest == true)
 	{
 		serveError(client, "400", serverBlock);

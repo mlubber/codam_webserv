@@ -24,12 +24,14 @@ ConfigBlock&	Configuration::getConfigData()
 	return (_configData);
 }
 
-ConfigBlock&	Configuration::getServerBlock(const std::string& host, const std::string& port)
+ConfigBlock&	Configuration::getServerBlock(const std::string& host, const std::string& port, const std::string& name)
 {
 	ConfigBlock* fallBackServerBlock = nullptr;
+	ConfigBlock* firstMatchServerBlock = nullptr;
 
 	for (std::map<std::string, ConfigBlock>::iterator it = _configData.nested.begin(); it != _configData.nested.end(); ++it)
 	{
+		std::map<std::string, ConfigBlock>::iterator tempIT = it;
 		if (it->first == "server")
 		{
 			ConfigBlock& serverBlock = it->second;
@@ -37,18 +39,49 @@ ConfigBlock&	Configuration::getServerBlock(const std::string& host, const std::s
 			if (!fallBackServerBlock)
 				fallBackServerBlock = &serverBlock;
 
-			std::vector<std::string> serverHosts = serverBlock.values["host"];
+			std::string serverHost = serverBlock.values["host"].front();
 			std::vector<std::string> listenPorts = serverBlock.values["listen"];
+			std::string serverName = serverBlock.values["server_name"].front();
 
-			if ((std::find(serverHosts.begin(), serverHosts.end(), host) != serverHosts.end() || host == "localhost") &&
-				std::find(listenPorts.begin(), listenPorts.end(), port) != listenPorts.end())
+			bool hostMatch = serverHost == host;
+			bool portMatch = (std::find(listenPorts.begin(), listenPorts.end(), port) != listenPorts.end());
+			bool nameMatch = serverName == name;
+
+			if (hostMatch && portMatch)
 			{
-				return (serverBlock);
+				// std::cout << "host and port match" << std::endl;
+				if (++tempIT != _configData.nested.end())
+				{
+					if (!firstMatchServerBlock)
+					{
+						// std::cout << "inside first match" << std::endl;
+						firstMatchServerBlock = &serverBlock;
+					}
+				}
+				else if (!firstMatchServerBlock)
+				{
+					// std::cout << "no more server blocks to search" << std::endl;
+					return (serverBlock);
+				}
+			} 
+			if(serverName.size() > 0 && hostMatch && portMatch)
+			{
+				// std::cout << "not empty server_name in config file" << std::endl;
+				if (hostMatch && portMatch && nameMatch)
+					return (serverBlock);
 			}
 		}
 	}
-	if (fallBackServerBlock)
+	if (firstMatchServerBlock)
+	{
+		std::cout << "first match server returned" << std::endl;
+		return (*firstMatchServerBlock);
+	}
+	else
+	{
+		std::cout << "Fallback server returned" << std::endl;
 		return (*fallBackServerBlock);
+	}
 	throw std::runtime_error("No server blocks found in the configuration");
 }
 
