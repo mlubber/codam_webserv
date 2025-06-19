@@ -9,12 +9,12 @@ int	setNonBlocking(int fd)
 	int flag = fcntl(fd, F_GETFL, 0);
 	if (flag == -1)
 	{
-		std::cerr << flag << " fcntl get failed\n";
+		std::cerr << "SERVER ERROR: fcntl F_GETFL flag failed\n";
 		return (-1);
 	}
 	if (fcntl(fd, F_SETFL, flag | O_NONBLOCK) == -1)
 	{
-		std::cerr << "fcntl set failed\n";
+		std::cerr << "SERVER ERROR: fcntl F_SETFL flag failed\n";
 		return (-1);
 	}
 	return (0);
@@ -85,7 +85,7 @@ std::vector<int> convertToInt(std::vector<std::string> &portsStr)
 		}
 		catch(const std::exception &e) 
 		{
-			std::cerr << "Error : Conversion failed!" << e.what() << std::endl;
+			std::cerr << "SERVER ERROR: Port to int conversion failed: " << e.what() << std::endl;
 		}
 	}
 	return (portsInt);

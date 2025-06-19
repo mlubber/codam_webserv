@@ -48,7 +48,7 @@ static void serveStaticFile(Client& client, const std::string& filePath, std::st
 
 void serveError(Client& client, std::string error_code, const ConfigBlock& serverBlock)
 {
-	std::cerr << "Serving error: " << error_code << std::endl;
+	std::cerr << "RETURNING ERROR: " << error_code << std::endl;
 	client.setCloseClientState(true);
 	std::string root = client.getServerBlockInfo("root");
 	

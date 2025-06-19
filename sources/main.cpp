@@ -43,7 +43,7 @@ int main(int argc, char **argv)
 	std::string confFile;
 	if (argc > 2) 
 	{
-		std::cerr << "you can only pass one argument to program." << std::endl;
+		std::cerr << "SERVER ERROR: You can only pass one argument to the webserver" << std::endl;
 		return (1);
 	} 
 	else if (argc < 2)
@@ -53,7 +53,7 @@ int main(int argc, char **argv)
 	std::ifstream configFile(confFile);
 	if (!configFile) 
 	{
-		std::cerr << "Error: Could not open configuration file: " << confFile << std::endl;
+		std::cerr << "SERVER ERROR: Could not open configuration file: " << confFile << std::endl;
 		return (1);
 	}
 
@@ -99,15 +99,15 @@ int main(int argc, char **argv)
 		}
 		catch(const std::exception& e)
 		{
-			std::cerr << "Server failed: " << e.what() << "\n..server restarting.." << std::endl;
+			std::cerr << "SERVER ERROR: Server failed: " << e.what() << "\n..server restarting.." << std::endl;
 			if (close(server.getEpollFd()) == -1)
-				std::cerr << "ERROR: Failed closing epoll fd" << std::endl;
+				std::cerr << "SERVER ERROR: Failed closing epoll fd" << std::endl;
 		}
 		catch (...)
 		{
-			std::cerr << "Server failed: server restarting.." << std::endl;
+			std::cerr << "SERVER ERROR: Server failed\n..server restarting.." << std::endl;
 			if (close(server.getEpollFd()) == -1)
-				std::cerr << "ERROR: Failed closing epoll fd" << std::endl;
+				std::cerr << "SERVER ERROR: Failed closing epoll fd" << std::endl;
 		}
 	}
 	

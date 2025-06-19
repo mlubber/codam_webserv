@@ -126,7 +126,7 @@ std::vector<Token> Configuration::tokenize(std::ifstream &file)
 						word += c;
 					else 
 					{
-						std::cerr << "Error: invalid character inside config file: ( " << c << " ), in line: " << line << std::endl;
+						std::cerr << "CONFIG ERROR: Invalid character inside config file: ( " << c << " ), in line: " << line << std::endl;
 						std::exit(1);
 					}
 				} 
@@ -145,14 +145,14 @@ void	checkErrorPage(std::vector<std::string> values)
 {
 	if (values.size() != 2)
 	{
-		std::cerr << "Error: Invalid syntax in config file.(error_page has to have page number and path)!" << std::endl;
+		std::cerr << "CONFIG ERROR: Invalid syntax in config file.(error_page has to have page number and path)!" << std::endl;
 		std::exit(1);
 	} 
 	else 
 	{
 		if (values[0].size() != 3 || !isdigit(values[0][0]) || !isdigit(values[0][1]) || !isdigit(values[0][2]))
 		{
-			std::cerr << "Error: Invalid syntax, (page number should be 3 digits)!" << std::endl;
+			std::cerr << "CONFIG ERROR: Invalid syntax, (page number should be 3 digits)!" << std::endl;
 			std::exit(1);
 		}
 	}
@@ -165,7 +165,7 @@ void	callectAllValuesForAKeyPushToVector(std::vector<Token> &chunkTokens, std::s
 
 	if (std::find(validKeywords.begin(), validKeywords.end(), key) == validKeywords.end()) 
 	{
-		std::cerr << "Error: Using invalid keyword in configuration file: " << key << std::endl;
+		std::cerr << "CONFIG ERROR: Using invalid keyword in configuration file: " << key << std::endl;
 		std::exit(1);
 	}
 
@@ -177,7 +177,7 @@ void	callectAllValuesForAKeyPushToVector(std::vector<Token> &chunkTokens, std::s
 			values.push_back(chunkTokens[i].value);
 		else 
 		{
-			std::cerr << "Error: Invalid syntax near '" << chunkTokens[i].value << "' in config file." << std::endl;
+			std::cerr << "CONFIG ERROR: Invalid syntax near '" << chunkTokens[i].value << "' in config file." << std::endl;
 			std::exit(1);
 		}
 	}
@@ -193,10 +193,10 @@ void Configuration::parseConfig(const std::string &filename)
     std::ifstream file(filename);
     if (!file.is_open())
 	{
-        std::cerr << "Error: Could not open config file: " << filename << std::endl;
+        std::cerr << "CONFIG ERROR: Could not open config file: " << filename << std::endl;
 		if (errno)
 		{
-            std::cerr << "System error: " << std::strerror(errno) << " (errno " << errno << ")" << std::endl;
+            std::cerr << "CONFIG ERROR: " << std::strerror(errno) << " (errno: " << errno << ")" << std::endl;
         }
         std::exit(1);
     }
@@ -225,7 +225,7 @@ void Configuration::parseConfig(const std::string &filename)
 				} 
 				else 
 				{
-					std::cerr << "Error: Unexpected BLOCK_START without a key." << std::endl;
+					std::cerr << "CONFIG ERROR: Unexpected BLOCK_START without a key." << std::endl;
 					std::exit(1);
 				}
 				break;
@@ -247,7 +247,7 @@ void Configuration::parseConfig(const std::string &filename)
 				} 
 				else
 				{
-					std::cerr << "Error: Mismatched closing '}' in config file." << std::endl;
+					std::cerr << "CONFIG ERROR: Mismatched closing '}' in config file." << std::endl;
 					std::exit(1);
 				}
 				++itFinder;
@@ -260,7 +260,7 @@ void Configuration::parseConfig(const std::string &filename)
 	}
 	if (blockStack.size() > 1)
 	{
-        std::cerr << "Error: Unclosed block in config file." << std::endl;
+        std::cerr << "CONFIG ERROR: Unclosed block in config file." << std::endl;
         std::exit(1);
     }
 

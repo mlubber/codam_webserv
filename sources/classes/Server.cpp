@@ -12,7 +12,7 @@ Server::~Server()
 {
 	for (int i = 0; i < _server_fds_amount; ++i)
 		if (close(_server_fds[i]) == -1)
-			std::cerr << "CLOSING ERROR: Failed closing server_fd: " << _server_fds[i] << std::endl;
+			std::cerr << "ERROR: Failed closing server_fd: " << _server_fds[i] << std::endl;
 }
 
 bool Server::initialize(const std::vector<std::pair<std::string, std::vector<int> > >& server_configs)
@@ -24,7 +24,7 @@ bool Server::initialize(const std::vector<std::pair<std::string, std::vector<int
     _epoll_fd = epoll_create(10);
     if (_epoll_fd == -1)
     {
-        std::cerr << "Failed to create epoll instance" << std::endl;
+        std::cerr << "SERVER INIT ERROR: Failed to create epoll instance" << std::endl;
         return (false);
     }
 	if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, signal_pipe[0], &event) == -1)
@@ -45,7 +45,7 @@ bool Server::initialize(const std::vector<std::pair<std::string, std::vector<int
             std::pair<std::string, int> host_port_pair = std::make_pair(host, ports[j]);
             if (bound_servers.find(host_port_pair) != bound_servers.end())
             {
-                std::cerr << "Skipping duplicate binding: " << host << ":" << ports[j] << std::endl;
+                std::cerr << "SERVER INIT ERROR: Skipping duplicate binding: " << host << ":" << ports[j] << std::endl;
                 continue ;
             }
             bound_servers.insert(host_port_pair);
@@ -53,7 +53,7 @@ bool Server::initialize(const std::vector<std::pair<std::string, std::vector<int
             int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
             if (socket_fd == -1)
             {
-                std::cerr << "Socket creation failed for " << host << ":" << ports[j] << std::endl;
+                std::cerr << "SERVER INIT ERROR: Socket creation failed for " << host << ":" << ports[j] << std::endl;
                 continue ;
             }
 
@@ -79,7 +79,7 @@ bool Server::initialize(const std::vector<std::pair<std::string, std::vector<int
 
                 if (getaddrinfo(host.c_str(), NULL, &hints, &res) != 0)
                 {
-                    std::cerr << "Failed to resolve hostname: " << host << std::endl;
+                    std::cerr << "SERVER INIT ERROR: Failed to resolve hostname: " << host << std::endl;
                     close(socket_fd);
                     continue ;
                 }
@@ -90,14 +90,14 @@ bool Server::initialize(const std::vector<std::pair<std::string, std::vector<int
 
             if (bind(socket_fd, (struct sockaddr*)&address, sizeof(address)) < 0)
             {
-                std::cerr << "Binding failed on " << host << ":" << ports[j] << std::endl;
+                std::cerr << "SERVER INIT ERROR: Binding failed on " << host << ":" << ports[j] << std::endl;
                 close(socket_fd);
                 continue ;
             }
 
             if (listen(socket_fd, 100) < 0)
             {
-                std::cerr << "Listening failed on " << host << ":" << ports[j] << std::endl;
+                std::cerr << "SERVER INIT ERROR: Listening failed on " << host << ":" << ports[j] << std::endl;
                 close(socket_fd);
                 continue ;
             }
@@ -105,7 +105,7 @@ bool Server::initialize(const std::vector<std::pair<std::string, std::vector<int
             event.data.fd = socket_fd;
             if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, socket_fd, &event) == -1)
             {
-                std::cerr << "Failed to add server socket to epoll" << std::endl;
+                std::cerr << "SERVER INIT ERROR: Failed to add server socket to epoll" << std::endl;
                 close(socket_fd);
                 continue ;
             }
@@ -176,7 +176,7 @@ void	Server::run(void)
 					break ;
 			}
 			else
-				std::cerr << "Epoll wait error: " << strerror(errno) << std::endl;
+				std::cerr << "EPOLL ERROR: " << strerror(errno) << std::endl;
 			continue;
 		}
 
@@ -233,13 +233,13 @@ void Server::connectClient(int _epoll_fd, int server_fd)
 	
 		if (new_client_fd < 0)
 		{
-			std::cerr << "ERROR: Failed to accept connection" << std::endl;
+			std::cerr << "CLIENT ERROR: Failed to accept connection" << std::endl;
 			return ;
 		}
 		if (setNonBlocking(new_client_fd) == -1)
 		{
 			if (close(new_client_fd) == -1)
-				std::cerr << "ERROR: Closing new_client_fd failed" << std::endl;
+				std::cerr << "CLIENT ERROR: Closing new_client_fd failed" << std::endl;
 			return ;
 		}
 
@@ -261,7 +261,7 @@ void Server::connectClient(int _epoll_fd, int server_fd)
 	}
 	catch(const std::exception& e)
 	{
-		std::cerr << e.what() << '\n' << "CLIENT ERROR: failed connecting new client" << std::endl;
+		std::cerr << "CLIENT ERROR: " << e.what() << std::endl;
 	}
 }
 
@@ -275,7 +275,7 @@ void Server::removeClient(int index)
 		if (_clients[index]->getCgiStruct().ets_pipe[0] != -1)
 		{
 			if (epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, _clients[index]->getCgiStruct().ets_pipe[0], NULL) == -1)
-				std::cerr << "Failed deleting " << _clients[index]->getCgiStruct().ets_pipe[0] << " from EPOLL" << std::endl;
+				std::cerr << "SERVER ERROR: Failed deleting " << _clients[index]->getCgiStruct().ets_pipe[0] << " from EPOLL" << std::endl;
 			if (close(_clients[index]->getCgiStruct().ets_pipe[0]) == -1)
 				std::cerr << "SERVER ERROR: Failed closing cgi_pipe write_end " << std::endl;
 			_clients[index]->getCgiStruct().ets_pipe[0] = -1;
@@ -283,7 +283,7 @@ void Server::removeClient(int index)
 		if (_clients[index]->getCgiStruct().ste_pipe[1] != -1)
 		{
 			if (epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, _clients[index]->getCgiStruct().ste_pipe[1], NULL) == -1)
-				std::cerr << "Failed deleting " << _clients[index]->getCgiStruct().ste_pipe[1] << " from EPOLL" << std::endl;
+				std::cerr << "SERVER ERROR: Failed deleting " << _clients[index]->getCgiStruct().ste_pipe[1] << " from EPOLL" << std::endl;
 			if (close(_clients[index]->getCgiStruct().ste_pipe[1]) == -1)
 				std::cerr << "SERVER ERROR: Failed closing cgi_pipe read_end " << std::endl;
 			_clients[index]->getCgiStruct().ste_pipe[1] = -1;
@@ -306,14 +306,11 @@ void Server::close_webserv()
 {
 	while (_client_count > 0)
 		removeClient(_client_count - 1);
-
 	close_signal_pipe(0);
-
 	epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, _epoll_fd, NULL);
 	if (close(_epoll_fd) == -1)
-		std::cerr << "Failed closing epoll fd on closing webserv" << std::endl;
+		std::cerr << "SERVER ERROR: Failed closing epoll fd on closing webserv" << std::endl;
 	cleanUpChildPids();	
-	
 	_close_server = true;
 	std::cout << "\nClosing server" << std::endl;
 }
@@ -378,7 +375,7 @@ void	Server::sendToSocket(Client& client)
 	ssize_t bytes_sent = send(socket_fd, response.c_str(), response.size(), 0);
 	if (bytes_sent <= 0)
 	{
-		std::cerr << "Error writing to client: " << socket_fd << std::endl;
+		std::cerr << "SERVER ERROR: Failed writing to client: " << socket_fd << std::endl;
 		client.setCloseClientState(true);
 		client.setClientState(idle);
 		return ;
@@ -443,7 +440,7 @@ void Server::checkTimedOut()
 
 					kill(_clients[i]->getCgiStruct().child_pid, SIGTERM);
 					wpid = waitpid(_clients[i]->getCgiStruct().child_pid, &status, 0);
-					std::cerr << "Child process hanging, killing child process (" << child_pid << ")\n" << std::endl;
+					std::cerr << "NOTE: Child process hanging, killing child process (" << child_pid << ")" << std::endl;
 				}
 			}
 			serveError(*_clients[i], "500", _clients[i]->getServerBlock());
