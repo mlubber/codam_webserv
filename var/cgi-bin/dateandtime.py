@@ -1,15 +1,9 @@
 #!/usr/bin/env python3
 
-import cgi
-import os
-import sys
+from datetime import datetime
 
-# Read the POST body from stdin
-form = cgi.FieldStorage()
-language = form.getvalue("language", "Unknown")
-level = form.getvalue("level", "Not specified")
+now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-# Respond
 print("Content-Type: text/html\r\n\r\n")
 print(f"""
 <!DOCTYPE html>
@@ -17,13 +11,13 @@ print(f"""
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>CGI: Name & Age - Webserv</title>
+	<title>Server Time</title>
 	<style>
 		body {{
 			font-family: Arial, sans-serif;
 			margin: 0;
 			padding: 0;
-			background-color: #ffffff;
+			background-color: #121212;
 			color: #e0e0e0;
 			text-align: center;
 		}}
@@ -34,6 +28,14 @@ print(f"""
 			background: #90EE90;
 			box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.5);
 			border-radius: 8px;
+		}}
+		.time-box {{
+			display: inline-block;
+			background: #fff3cd;
+			padding: 20px 40px;
+			border-radius: 12px;
+			box-shadow: 0 0 8px rgba(0,0,0,0.1);
+			font-size: 1.5em;
 		}}
 		h1 {{
 			color: #000000;
@@ -61,9 +63,8 @@ print(f"""
 </head>
 <body>
 	<div class="container">
-		<h1>Thanks for your submission!</h1>
-		<p>Your favorite language is <strong>{language}</strong>.</p>
-		<p>Your skill level is <strong>{level}</strong>.</p>
+		<p>Current Server Time: </p>
+		<h1><strong>{now}</strong></h1>
 		<a href="javascript:history.back()" class="btn">Go Back</a>
 		<a href="/" class="btn">Home</a>
 	</div>

@@ -1,38 +1,30 @@
-<!-- <h1>THIS IS A TEST PAGE</h1> -->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Post - Webserv</title>
+    <title>CGI: Name & Age - Webserv</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #121212;
+            background-color: #f4f4f4;
             text-align: center;
         }
         .container {
             max-width: 800px;
             margin: 50px auto;
             padding: 20px;
-            background: #1e1e1e;
+            background: white;
             box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
             border-radius: 8px;
         }
         h1 {
-            color: #ffffff;
-        }
-		h2 {
-            color: #ffffff;
-        }
-		label {
-            color: #ffffff;
+            color: #333;
         }
         p {
-            color: #cccccc;
+            color: #666;
             font-size: 18px;
         }
         .btn {
@@ -54,11 +46,11 @@
 </head>
 <body>
 	<div class="container">
-		<h2>Submit a Message</h2>
-		<form action="/submit" method="POST">
-			<label for="message">Enter your message:</label><br>
-			<textarea id="message" name="message" rows="4" cols="50" required></textarea><br><br>
-			<button type="submit">Submit</button>
+		<h2>Name & Age:</h2>
+		<form method="get" action="/cgi-bin/greet.py" style="margin-top: 10px;">
+			<input type="text" name="name" placeholder="Enter your name" required><br><br>
+			<input type="number" name="age" placeholder="Enter your age" required><br><br>
+			<input type="submit" value="Submit">
 		</form>
 		<p>
 			<a href="javascript:history.back()" class="btn">Go Back</a>

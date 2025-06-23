@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Webserv</title>
+    <title>Delete - Webserv</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -73,53 +73,10 @@
 				});
 			}
 		</script>
-		<a href="/upload" class="btn">Go Back</a>
-		<a href="/" class="btn">Home</a>
+		<p>
+			<a href="javascript:history.back()" class="btn">Go Back</a>
+			<a href="/" class="btn">Home</a>
+		</p>
     </div>
 </body>
 </html>
-
-<!-- <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Delete Files</title>
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin: 40px; }
-        input, button { padding: 10px; margin: 10px; }
-        button { cursor: pointer; }
-    </style>
-</head>
-<body>
-
-    <h1>Delete a File</h1>
-
-    <input type="text" id="filename" placeholder="Enter filename">
-    <button onclick="deleteFile()">Delete</button>
-
-    <p id="result"></p>
-
-    <script>
-        function deleteFile() {
-            const filename = document.getElementById("filename").value;
-            if (!filename) {
-                document.getElementById("result").textContent = "Please enter a filename.";
-                return;
-            }
-
-            fetch(`/delete?filename=${encodeURIComponent(filename)}`, {
-                method: "DELETE",
-            })
-            .then(response => response.text())
-            .then(data => {
-                document.getElementById("result").textContent = data;
-            })
-            .catch(error => {
-                document.getElementById("result").textContent = "Error deleting file.";
-            });
-        }
-    </script>
-
-</body>
-</html> -->

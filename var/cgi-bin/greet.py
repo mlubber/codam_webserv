@@ -1,15 +1,11 @@
 #!/usr/bin/env python3
 
 import cgi
-import os
-import sys
 
-# Read the POST body from stdin
 form = cgi.FieldStorage()
-language = form.getvalue("language", "Unknown")
-level = form.getvalue("level", "Not specified")
+name = form.getvalue("name", "Stranger")
+age = form.getvalue("age", "unknown")
 
-# Respond
 print("Content-Type: text/html\r\n\r\n")
 print(f"""
 <!DOCTYPE html>
@@ -17,13 +13,13 @@ print(f"""
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>CGI: Name & Age - Webserv</title>
+	<title>Hello CGI</title>
 	<style>
 		body {{
 			font-family: Arial, sans-serif;
 			margin: 0;
 			padding: 0;
-			background-color: #ffffff;
+			background-color: #121212;
 			color: #e0e0e0;
 			text-align: center;
 		}}
@@ -61,9 +57,8 @@ print(f"""
 </head>
 <body>
 	<div class="container">
-		<h1>Thanks for your submission!</h1>
-		<p>Your favorite language is <strong>{language}</strong>.</p>
-		<p>Your skill level is <strong>{level}</strong>.</p>
+		<h1>Hello, {name}!</h1>
+		<p>You are {age} years old.</p>
 		<a href="javascript:history.back()" class="btn">Go Back</a>
 		<a href="/" class="btn">Home</a>
 	</div>
