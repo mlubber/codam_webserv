@@ -144,7 +144,7 @@ int	parseRequestHeaders(std::string &line, clRequest& clRequest, Client& client)
 		clRequest.hundredContinue = true;
 	if (std::any_of(headerName.begin(), headerName.end(), [](unsigned char c) {return std::isspace(c);}))
 	{
-		std::cerr << "header name (key) can't have any space! => " << headerName << std::endl;
+		std::cerr << "REQUEST ERROR: Header name (key) can't have any space! => " << headerName << std::endl;
 		clRequest.invalidRequest = true;
 		return (1);
 	}
@@ -275,7 +275,7 @@ int	parseChunkedBody(std::string &body, clRequest &clRequest)
 		}
 		catch (const std::exception& e)
 		{
-			std::cerr << "Error:" << e.what() << std::endl;
+			std::cerr << "REQUEST ERROR: " << e.what() << std::endl;
 			clRequest.invalidRequest = true;
 			return (1);
 		}
@@ -322,7 +322,7 @@ int	parseBody(std::string &body, clRequest &clRequest)
 		}
 		catch (const std::exception &e)
 		{
-			std::cerr << "can't convert content length" << e.what() << std::endl;
+			std::cerr << "REQUEST ERROR: Can't convert content length" << e.what() << std::endl;
 			clRequest.invalidRequest = true;
 			return (1);
 		}
@@ -361,7 +361,7 @@ void readRequest(Client& client)
     size_t headerEndPos = strClRequest.find("\r\n\r\n");
     if (headerEndPos == std::string::npos) 
 	{
-        std::cerr << "Headers not complete" << std::endl;
+        std::cerr << "REQUEST ERROR: Headers incomplete" << std::endl;
         clRequest.invalidRequest = true;
         return;
     }
@@ -451,7 +451,7 @@ void	parsingRequest(Server& server, Client& client)
 	sockaddr_in addr;
 	socklen_t len = sizeof(addr);
 	if (getsockname(client_fd, (sockaddr*)&addr, &len) == -1)
-		std::cerr << "Error: couldn't find sock name" << std::endl;
+		std::cerr << "REQUEST ERROR: Couldn't find sock name" << std::endl;
 
 	ConfigBlock serverBlock = config.getServerBlock(ip_to_string(addr.sin_addr), std::to_string(ntohs(addr.sin_port)), cl_request.host);
 	client.setServerBlock(serverBlock);

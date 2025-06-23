@@ -20,7 +20,7 @@ ValidationConfigFile& ValidationConfigFile::operator=(const ValidationConfigFile
 	return (*this);
 }
 
-void isSeversSame()
+void isServersSame()
 {
     for (size_t i = 0; i < compareArray.size(); ++i)
 	{
@@ -52,7 +52,7 @@ void isSeversSame()
 								{
 									if (serverName1 == serverName2) 
 									{
-										std::cerr << "Error: servers can't have the same host!" << std::endl;
+										std::cerr << "CONFIG ERROR: servers can't have the same host!" << std::endl;
                                     	std::exit(1);
 									}
 
@@ -69,15 +69,15 @@ void isSeversSame()
 void	onlyPrintErrorExit(std::string key, int i) 
 {
 	if (i == 1)
-		std::cerr << "Error: unknown methods or invalid! => " << key << std::endl;
+		std::cerr << "CONFIG ERROR: unknown methods or invalid! => " << key << std::endl;
 	if (i == 2)
-		std::cerr << "Error: ( " << key << " ) should exist and have a value!" << std::endl;
+		std::cerr << "CONFIG ERROR: ( " << key << " ) should exist and have a value!" << std::endl;
 	if (i == 3)
-		std::cerr << "Error: ( " << key << " ) should contain only didgit !" << std::endl;
+		std::cerr << "CONFIG ERROR: ( " << key << " ) should contain only didgit !" << std::endl;
 	if (i == 4)
-		std::cerr << "Error: ( " << key << " ) has to have correct format => (0 - 255 and 3 dot !) 127.0.0.0" << std::endl;
+		std::cerr << "CONFIG ERROR: ( " << key << " ) has to have correct format => (0 - 255 and 3 dot !) 127.0.0.0" << std::endl;
 	if (i == 5)
-		std::cerr << "Error: ( " << key << " ) has incorrect format !" << std::endl;
+		std::cerr << "CONFIG ERROR: ( " << key << " ) has incorrect format !" << std::endl;
 	std::exit(1);
 }
 
@@ -97,8 +97,7 @@ void	checkBodySize(std::string &bodySize)
 		}
 		catch(const std::exception& e)
 		{
-			std::cerr << e.what() << std::endl;
-			std::cerr << "Error: can't convert the clint body size to long! => " << bodySize << std::endl;
+			std::cerr << "CONFIG ERROR: can't convert the clint body size to long! => " << bodySize << "\n" << e.what() << std::endl;
 			std::exit(1);
 		}
 	}
@@ -113,8 +112,7 @@ void	checkBodySize(std::string &bodySize)
 		}
 		catch(const std::exception& e)
 		{
-			std::cerr << "Error:" << e.what() << std::endl;
-			std::cerr << "Error: can't convert the clint body size to long! => " << bodySize << std::endl;
+			std::cerr << "CONFIG ERROR: can't convert the clint body size to long! => " << bodySize << "\n" << e.what() << std::endl;
 			std::exit(1);
 		}
 		switch (std::tolower(last))
@@ -129,12 +127,12 @@ void	checkBodySize(std::string &bodySize)
 			sizeInByte = i * 1024 * 1024 * 1024;
 			break;	
 		default:
-			std::cerr << "Error: unknown unit! => " << bodySize << std::endl;
+			std::cerr << "CONFIG ERROR: unknown unit! => " << bodySize << std::endl;
 			std::exit(1);
 			break;
 		}
 		if (sizeInByte > 1048576) {
-			std::cerr << "Error: clint body size is too big! => " << bodySize << std::endl;
+			std::cerr << "CONFIG ERROR: clint body size is too big! => " << bodySize << std::endl;
 			std::exit(1);
 		}
 	}
@@ -163,7 +161,7 @@ void	ValidationConfigFile::duplicateKey()
 			{
 				if (server.second.values[keyOneValue[i]].size() != 1)
 				{
-					std::cerr << "Error: key duplicated or the number of values incorrect ! => " << keyOneValue[i]  << std::endl;
+					std::cerr << "CONFIG ERROR: key duplicated or the number of values incorrect ! => " << keyOneValue[i]  << std::endl;
 					std::exit(1);
 				}
 			}
@@ -180,7 +178,7 @@ void	ValidationConfigFile::duplicateKey()
 				{
 					if (location.second.values[keyOneValue[i]].size() != 1)
 					{
-						std::cerr << "Error: key duplicated or the number of values incorrect ! => " << keyOneValue[i]  << std::endl;
+						std::cerr << "CONFIG ERROR: key duplicated or the number of values incorrect ! => " << keyOneValue[i]  << std::endl;
 						std::exit(1);
 					}
 				}
@@ -258,7 +256,7 @@ void	checkHost(std::string host)
 			}
 			catch(const std::exception& e)
 			{
-				std::cerr << "Error: convert host to  int failed! " << e.what() << std::endl;
+				std::cerr << "CONFIG ERROR: convert host to  int failed - " << e.what() << std::endl;
 				std::exit(1);
 			}
 			if (convertToInt > 255 || convertToInt < 0)
@@ -283,7 +281,7 @@ void	checkHost(std::string host)
 			}
 			catch(const std::exception& e)
 			{
-				std::cerr << "Error: convert host to  int failed! " << e.what() << std::endl;
+				std::cerr << "CONFIG ERROR: convert host to  int failed - " << e.what() << std::endl;
 				std::exit(1);
 			}
 			if (convertToInt > 255 || convertToInt < 0)
@@ -332,5 +330,5 @@ ValidationConfigFile::ValidationConfigFile(ConfigBlock &configData) : _configDat
 		compareArray.push_back(myMap);
 		++i;
 	}
-	isSeversSame();
+	isServersSame();
 }

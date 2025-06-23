@@ -36,22 +36,22 @@ void	close_signal_pipe(int message)
 	switch (message)
 	{
 		case 1:
-			std::cerr << "ERROR: Failed setting signal_pipe[0] to nonblocking" << std::endl;
+			std::cerr << "SERVER ERROR: Failed setting signal_pipe[0] to nonblocking" << std::endl;
 			break ;
 		case 2:
-			std::cerr << "ERROR: Failed initializing signals" << std::endl;
+			std::cerr << "SERVER ERROR: Failed initializing signals" << std::endl;
 			break ;
 		case 3:
-			std::cerr << "Failed to add signal_pipe[0] to epoll" << std::endl;
+			std::cerr << "SERVER ERROR: Failed to add signal_pipe[0] to epoll" << std::endl;
 			break ;
 		default:
 			break ;
 	}
 
 	if (signal_pipe[0] != -1 && close(signal_pipe[0]) == -1)
-		std::cerr << "ERROR: Failed closing signal_pipe 0" << std::endl;
+		std::cerr << "SERVER ERROR: Failed closing signal_pipe 0" << std::endl;
 	signal_pipe[0] = -1;
 	if (signal_pipe[1] != -1 && close(signal_pipe[1]) == -1)
-		std::cerr << "ERROR: Failed closing signal_pipe 1" << std::endl;
+		std::cerr << "SERVER ERROR: Failed closing signal_pipe 1" << std::endl;
 	signal_pipe[1] = -1;	
 }

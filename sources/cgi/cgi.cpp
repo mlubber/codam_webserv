@@ -46,7 +46,7 @@ static bool	init_cgi_struct(Client& client, clRequest& cl_request, const Server&
 			cgi->script_type = php;
 		else
 		{
-			std::cerr << "CGI Error: invalid script type - Only .py and .php scripts allowed!" << std::endl;
+			std::cerr << "CGI ERROR: invalid script type - Only .py and .php scripts allowed!" << std::endl;
 			return (1);
 		}
 	}
