@@ -1,11 +1,9 @@
-<!-- <h1>THIS IS A TEST PAGE</h1> -->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Post - Webserv</title>
+    <title>Get Started - Webserv</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -26,9 +24,6 @@
             color: #ffffff;
         }
 		h2 {
-            color: #ffffff;
-        }
-		label {
             color: #ffffff;
         }
         p {
@@ -54,12 +49,10 @@
 </head>
 <body>
 	<div class="container">
-		<h2>Submit a Message</h2>
-		<form action="/submit" method="POST">
-			<label for="message">Enter your message:</label><br>
-			<textarea id="message" name="message" rows="4" cols="50" required></textarea><br><br>
-			<button type="submit">Submit</button>
-		</form>
+		<h2>Get Started:</h2>
+		<a href="/submit" class="btn">Post</a>
+		<a href="/upload" class="btn">Upload</a>
+		<a href="/delete" class="btn">Delete</a>
 		<p>
 			<a href="javascript:history.back()" class="btn">Go Back</a>
 			<a href="/" class="btn">Home</a>

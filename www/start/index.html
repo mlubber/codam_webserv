@@ -1,11 +1,9 @@
-<!-- <h1>THIS IS A TEST PAGE</h1> -->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Webserv</title>
+    <title>Get Started - Webserv</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -47,43 +45,15 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>Test</h2>
-		<p>Methods:</p>
-		<form id="headRequestForm">
-			<button type="button" onclick="sendHeadRequest()">Send HEAD Request</button>
-		</form>
-
-		<script>
-		function sendHeadRequest() {
-			fetch("/test", { method: "BLA" })
-			.then(response => console.log(response.status, response.headers))
-			.catch(error => console.error(error));
-		}
-		</script>
-
-        <a href="/" class="btn">Go Back</a>
-    </div>
+	<div class="container">
+		<h2>Get Started:</h2>
+		<a href="/submit" class="btn">Post</a>
+		<a href="/upload" class="btn">Upload</a>
+		<a href="/delete" class="btn">Delete</a>
+		<p>
+			<a href="javascript:history.back()" class="btn">Go Back</a>
+			<a href="/" class="btn">Home</a>
+		</p>
+	</div>
 </body>
 </html>
-
-
-<!-- <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HEAD Request Test</title>
-    <script>
-        window.onload = function() {
-            fetch(window.location.href, { method: "HEAD" })
-                .then(response => console.log("HEAD Response:", response))
-                .catch(error => console.error("Error:", error));
-        };
-    </script>
-</head>
-<body>
-    <h1>Testing HEAD Request</h1>
-    <p>Check the console (F12 > Console) to see the HEAD request response.</p>
-</body>
-</html> -->
